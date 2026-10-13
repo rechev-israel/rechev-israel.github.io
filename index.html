@@ -43,6 +43,14 @@ button{cursor:pointer}
 .brand b{font-family:var(--f-lux);font-weight:900;font-size:1.3rem;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
 .btn{border:0;border-radius:12px;padding:11px 18px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--metal);color:var(--accent-ink);box-shadow:0 6px 18px rgb(56 182 255 / .3),inset 0 1px 0 rgb(255 255 255 / .55)}
 .btn.wa{background:var(--wa);color:var(--wa-ink);box-shadow:0 6px 18px rgb(37 211 102 / .3)}
+.reqbox{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin:6px 0 18px;padding:18px;border-radius:20px;border:1px solid var(--line-2);background:linear-gradient(135deg,rgb(56 182 255 / .16),rgb(9 25 52 / .7))}
+.reqbox .rq-t{display:flex;flex-direction:column;gap:3px;min-width:200px;flex:1}
+.reqbox .rq-t b{font-family:var(--f-lux);font-size:1.25rem;color:var(--sky-2)}
+.reqbox .rq-t span{color:var(--muted);font-size:.95rem}
+.reqbox .rq-b{display:flex;gap:8px;flex-wrap:wrap}
+.reqbox .rq-who{flex-basis:100%;color:var(--muted);font-size:.85rem}
+.reqbox .rq-who button{background:none;border:0;color:var(--sky);text-decoration:underline;font:inherit;padding:0;cursor:pointer}
+@media (max-width:480px){ .reqbox .rq-b{width:100%} .reqbox .rq-b .btn{flex:1} }
 .btn.ghost{background:transparent;color:var(--sky-2);border:1px solid var(--line-2);box-shadow:none}
 .btn.sm{padding:8px 14px;font-size:.92rem}
 .btn svg{width:18px;height:18px;flex:none}
@@ -369,6 +377,12 @@ textarea.inp{resize:vertical}
       <div class="skel"></div><div class="skel"></div><div class="skel"></div>
     </section>
 
+    <section class="reqbox" id="reqBox" aria-label="בקשה לרכב">
+      <div class="rq-t"><b>לא מצאתם את הרכב שחיפשתם?</b><span>השאירו בקשה, ונעדכן אתכם ברגע שיגיע רכב מתאים.</span></div>
+      <div class="rq-b"><button class="btn" type="button" data-req>השארת בקשה לרכב</button><button class="btn ghost" type="button" data-reg id="regBtn">הרשמה לעדכונים</button></div>
+      <div class="rq-who" id="rqWho" hidden></div>
+    </section>
+
     <section class="reviews" id="reviews" hidden>
       <div class="sec-h"><h2>מה הלקוחות שלנו אומרים</h2></div>
       <div class="rv-list" id="rvList"></div>
@@ -404,6 +418,9 @@ textarea.inp{resize:vertical}
       <button class="calc-x" id="drawerX" type="button" aria-label="סגירת התפריט">✕</button>
     </div>
     <div class="dr-list">
+      <button class="dr-item" id="mReg" type="button" data-reg><span class="dr-ic">☺</span><span class="dr-t"><b id="mRegT">הרשמה לאתר</b><small id="mRegS">השאירו שם וטלפון ונעדכן אתכם על רכבים חדשים</small></span></button>
+      <button class="dr-item" id="mReq" type="button" data-req><span class="dr-ic">⌕</span><span class="dr-t"><b>בקשה לרכב שלא במלאי</b><small>ספרו לנו מה אתם מחפשים ונמצא בשבילכם</small></span></button>
+      <div class="dr-sep">הרכבים שלי</div>
       <button class="dr-item" id="mFav" type="button"><span class="dr-ic">♥</span><span class="dr-t"><b>המועדפים שלי</b><small>הרכבים ששמרתם</small></span><span class="dr-badge" id="mFavN">0</span></button>
       <button class="dr-item" id="mCmp" type="button"><span class="dr-ic">⇄</span><span class="dr-t"><b>השוואת רכבים</b><small id="mCmpHint">סמנו 2 או 3 רכבים עם "+ להשוואה"</small></span><span class="dr-badge" id="mCmpN">0</span></button>
       <button class="dr-item" id="mRecent" type="button" aria-expanded="false"><span class="dr-ic">◷</span><span class="dr-t"><b>צפיתם לאחרונה</b><small>חזרה לרכבים שפתחתם</small></span><span class="dr-badge" id="mRecentN">0</span></button>
@@ -416,7 +433,7 @@ textarea.inp{resize:vertical}
       <button class="dr-item" id="mReviews" type="button"><span class="dr-ic">★</span><span class="dr-t"><b>מה הלקוחות אומרים</b><small id="mRvHint">ביקורות של לקוחות שקנו אצלנו</small></span></button>
       <button class="dr-item" id="rvOpen" type="button"><span class="dr-ic">✎</span><span class="dr-t"><b>השאירו ביקורת</b><small>קניתם אצלנו? נשמח לשמוע</small></span></button>
       <div class="dr-sep">צרו קשר</div>
-      <a class="dr-item" id="findWa" target="_blank" rel="noopener" href="#"><span class="dr-ic">⌕</span><span class="dr-t"><b>לא מצאתם? נחפש בשבילכם</b><small>ספרו לנו מה אתם מחפשים</small></span></a>
+      <a class="dr-item" id="findWa" hidden target="_blank" rel="noopener" href="#"><span class="dr-ic">⌕</span><span class="dr-t"><b>לא מצאתם? נחפש בשבילכם</b><small>ספרו לנו מה אתם מחפשים</small></span></a>
       <a class="dr-item wa" id="mWa" target="_blank" rel="noopener" href="#"><span class="dr-ic">✆</span><span class="dr-t"><b>דברו איתנו בוואטסאפ</b><small id="mPhone"></small></span></a>
     </div>
   </nav>
@@ -606,7 +623,7 @@ textarea.inp{resize:vertical}
     if(!list.length && onlyFavs){ g.innerHTML = '<div class="empty"><strong>עוד לא שמרתם רכבים</strong>לחצו על הלב בתמונה של רכב כדי לשמור אותו כאן.</div>'; return; }
     if(!list.length){
       const w = waLink(`שלום, אני מחפש רכב${budget ? ' עד ' + money(budget) : ''}. יש משהו מתאים?`);
-      g.innerHTML = `<div class="empty"><strong>אין כרגע רכב שמתאים לחיפוש</strong>נסו להגדיל את התקציב או לנקות סינון.${w ? `<div style="margin-top:14px"><a class="btn wa" target="_blank" rel="noopener" href="${w}">ספרו לנו מה אתם מחפשים</a></div>` : ''}</div>`;
+      g.innerHTML = `<div class="empty"><strong>אין כרגע רכב שמתאים לחיפוש</strong>נסו להגדיל את התקציב או לנקות סינון, או השאירו בקשה ונמצא בשבילכם.<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" type="button" data-req>השארת בקשה לרכב</button>${w ? `<a class="btn wa" target="_blank" rel="noopener" href="${w}">וואטסאפ</a>` : ''}</div></div>`;
       return;
     }
     g.innerHTML = list.map(card).join('');
@@ -830,6 +847,52 @@ textarea.inp{resize:vertical}
   function openDrawer(){ $('#drawer').hidden = false; $('#drawerBg').hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { $('#drawer').classList.add('open'); $('#drawerBg').classList.add('open'); })); $('#menuBtn').setAttribute('aria-expanded','true'); document.body.style.overflow = 'hidden'; setTimeout(() => $('#drawerX').focus(), 60); }
   function closeDrawer(){ if($('#drawer').hidden) return; $('#drawer').classList.remove('open'); $('#drawerBg').classList.remove('open'); $('#menuBtn').setAttribute('aria-expanded','false'); document.body.style.overflow = ''; setTimeout(() => { $('#drawer').hidden = true; $('#drawerBg').hidden = true; }, 260); }
   $('#menuBtn').addEventListener('click', openDrawer);
+  /* ---- site registration + car requests (Tally forms) ---- */
+  const REG_FORM = 'XxVAy4', REQ_FORM = 'LZAxqG', USER_KEY = 'rv_user';
+  function getUser(){ try { const u = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); return u && u.name && u.phone ? u : null; } catch(e){ return null; } }
+  function setUser(u){ try { if(u) localStorage.setItem(USER_KEY, JSON.stringify(u)); else localStorage.removeItem(USER_KEY); } catch(e){} paintUser(); }
+  function paintUser(){
+    const u = getUser();
+    $('#mRegT').textContent = u ? 'שלום ' + u.name : 'הרשמה לאתר';
+    $('#mRegS').textContent = u ? 'אתם רשומים · ' + u.phone : 'השאירו שם וטלפון ונעדכן אתכם על רכבים חדשים';
+    $('#regBtn').hidden = !!u;
+    const w = $('#rqWho'); w.hidden = !u;
+    if(u) w.innerHTML = 'רשומים בתור <b>' + esc(u.name) + '</b> · <button type="button" id="rqSwitch">לא אתם?</button>';
+  }
+  function tallyOpen(id, opts){
+    if(window.Tally && Tally.openPopup){ Tally.openPopup(id, Object.assign({ layout: 'modal', width: 460, overlay: true, autoClose: 2500 }, opts)); return; }
+    const q = new URLSearchParams(opts && opts.hiddenFields || {}).toString();
+    location.href = 'https://tally.so/r/' + id + (q ? '?' + q : '');
+  }
+  function fieldVal(fields, word){
+    const f = (fields || []).find(x => String(x.title || x.label || '').includes(word));
+    if(!f) return '';
+    let a = f.answer; if(a && typeof a === 'object' && 'value' in a) a = a.value;
+    if(Array.isArray(a)) a = a.join(' ');
+    return String(a == null ? '' : a).trim();
+  }
+  let pendingReq = false;
+  function openReg(thenReq){
+    pendingReq = !!thenReq;
+    tallyOpen(REG_FORM, { onSubmit: p => {
+      const u = { name: fieldVal(p && p.fields, 'שם'), phone: fieldVal(p && p.fields, 'טלפון') };
+      if(u.name && u.phone){ setUser(u); toast('נרשמתם בהצלחה, תודה ' + u.name + '!'); }
+      if(pendingReq){ pendingReq = false; setTimeout(() => openReq(), 2700); }
+    }});
+  }
+  function openReq(){
+    const u = getUser();
+    if(!u){ toast('כדי להשאיר בקשה, קודם נרשמים. זה לוקח 10 שניות'); openReg(true); return; }
+    tallyOpen(REQ_FORM, { hiddenFields: { name: u.name, phone: u.phone }, onSubmit: () => toast('הבקשה התקבלה! נחזור אליכם כשנמצא רכב מתאים') });
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-req],[data-reg],#rqSwitch'); if(!t) return;
+    if(t.id === 'rqSwitch'){ setUser(null); openReg(false); return; }
+    closeDrawer();
+    if(t.hasAttribute('data-req')) openReq(); else openReg(false);
+  });
+  paintUser();
+
   $('#drawerX').addEventListener('click', closeDrawer);
   $('#drawerBg').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer(); });
@@ -904,5 +967,6 @@ textarea.inp{resize:vertical}
 })();
 </script>
 
+<script async src="https://tally.so/widgets/embed.js"></script>
 </body>
 </html>
