@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rechev-israel.github.io/sitemap.xml
