@@ -504,6 +504,15 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
 .qz-res{display:flex;flex-direction:column;gap:8px}
 html[data-theme="light"] .qz-opts button{background:#fff}
 html[data-theme="light"] .proof div{background:#f4f8fd}
+
+.hero-bg .hs{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 60%;opacity:0;transform:scale(1.06);transition:opacity 1s ease,transform 4s ease-out}
+.hero-bg .hs.on{opacity:1;transform:scale(1)}
+@media (prefers-reduced-motion:reduce){ .hero-bg .hs{transition:opacity .4s;transform:none} }
+.blessing{margin:0 0 6px;font-family:var(--f-lux);font-weight:900;font-size:clamp(1.55rem,6.4vw,2.6rem);line-height:1.25;color:#fff;text-shadow:0 2px 18px rgb(0 0 0 / .65),0 0 30px rgb(56 182 255 / .35)}
+.hero-txt h1{font-size:clamp(1.25rem,4.6vw,2rem)}
+.money input::placeholder{font-size:clamp(.95rem,3.6vw,1.2rem);font-family:var(--f-body);font-weight:600;letter-spacing:normal}
+.money input:placeholder-shown{direction:rtl;text-align:right}
+@media (max-width:480px){ .money input::placeholder{font-size:.88rem} }
 </style>
 
 </head>
@@ -519,15 +528,16 @@ html[data-theme="light"] .proof div{background:#f4f8fd}
 
   <main class="wrap" id="top">
     <section class="hero" id="hero">
-      <div class="hero-bg" id="heroBg" aria-hidden="true"><img id="heroImg" alt=""></div>
+      <div class="hero-bg" id="heroBg" aria-hidden="true"><img class="hs" alt=""><img class="hs" alt=""></div>
       <div class="hero-txt">
+        <p class="blessing">והבוטח בה׳ חסד יסובבנו<br>בשם ה׳ נעשה ונצליח</p>
         <h1>מצאו את הרכב הבא שלכם</h1>
         <div class="eyebrow" id="heroSub">רכבים יד שנייה, מלאי שמתעדכן כל יום</div>
         <button class="hero-cap" id="heroCap" type="button" hidden></button>
       </div>
       <div class="search">
         <label for="budget">התקציב שלכם</label>
-        <div class="money"><span>₪</span><input id="budget" inputmode="numeric" placeholder="לדוגמה 60,000" autocomplete="off"></div>
+        <div class="money"><span>₪</span><input id="budget" inputmode="numeric" placeholder="הקלידו כאן את המחיר או התקציב שלכם" autocomplete="off"></div>
         <button class="quizlink" id="quizOpen" type="button">לא בטוחים מה מתאים לכם? 3 שאלות ונמצא לכם רכב</button>
         <div class="quick" id="quick" role="group" aria-label="תקציב מהיר">
           <button type="button" data-v="30000">עד 30 אלף</button><button type="button" data-v="50000">עד 50 אלף</button><button type="button" data-v="80000">עד 80 אלף</button><button type="button" data-v="120000">עד 120 אלף</button><button type="button" data-v="">הכל</button>
@@ -1264,7 +1274,26 @@ html[data-theme="light"] .proof div{background:#f4f8fd}
   $('#thmBtn').addEventListener('click', themeToggle); $('#thmFoot').addEventListener('click', themeToggle);
   /* photo hero: a car from the lot */
   function setHero(){
-    const img = $('#heroImg'); img.onload = () => $('#heroBg').classList.add('on'); img.src = 'hero.jpg'; img.alt = '';
+    const pool = data.cars.filter(c => c.photos && c.photos[0]);
+    if(!pool.length) return;
+    const order = [...pool.filter(c => c.prevPrice || c.belowList), ...pool.filter(c => !(c.prevPrice || c.belowList)).sort((a, b) => String(b.arrived || '').localeCompare(String(a.arrived || '')))].slice(0, 12);
+    const layers = [...document.querySelectorAll('#heroBg .hs')], cap = $('#heroCap');
+    let i = 0, front = 0, timer = null;
+    const show = idx => {
+      const c = order[idx], next = layers[1 - front], img = new Image();
+      img.onload = () => {
+        next.src = img.src; next.classList.add('on'); layers[front].classList.remove('on'); front = 1 - front;
+        cap.textContent = name(c) + (c.year ? ' ' + c.year : '') + ' · ' + money(c.price); cap.hidden = false; cap.onclick = () => openCar(c.id);
+        const n = order[(idx + 1) % order.length]; if(n) (new Image()).src = n.photos[0];
+      };
+      img.src = c.photos[0];
+    };
+    $('#heroBg').classList.add('on');
+    show(0);
+    if(order.length > 1){
+      const tick = () => { if(document.hidden) return; i = (i + 1) % order.length; show(i); };
+      timer = setInterval(tick, 3000);
+    }
     $('#heroSub').textContent = data.cars.length + ' רכבים יד שנייה זמינים עכשיו, המלאי מתעדכן כל יום';
   }
 
