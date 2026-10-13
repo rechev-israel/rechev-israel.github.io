@@ -483,6 +483,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
 .dr-sep{letter-spacing:normal;font-size:.85rem}
 .nophoto img{width:30%!important;max-width:130px;height:auto!important;aspect-ratio:1;flex:none;object-fit:cover}
 .nophoto span{letter-spacing:normal}
+.hero-bg img{object-position:34% 62%}
 </style>
 
 </head>
@@ -1087,10 +1088,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
   $('#thmBtn').addEventListener('click', themeToggle); $('#thmFoot').addEventListener('click', themeToggle);
   /* photo hero: a car from the lot */
   function setHero(){
-    const withPh = data.cars.filter(c => c.photos && c.photos[0]); if(!withPh.length) return;
-    const pick = withPh.find(c => c.prevPrice) || withPh.find(c => c.belowList) || withPh.slice().sort((a,b) => String(b.arrived || '').localeCompare(String(a.arrived || '')))[0];
-    const img = $('#heroImg'); img.onload = () => $('#heroBg').classList.add('on'); img.src = pick.photos[0]; img.alt = '';
-    const cap = $('#heroCap'); cap.textContent = 'בתמונה: ' + name(pick) + (pick.year ? ' ' + pick.year : '') + ' · ' + money(pick.price); cap.hidden = false; cap.onclick = () => openCar(pick.id);
+    const img = $('#heroImg'); img.onload = () => $('#heroBg').classList.add('on'); img.src = 'hero.jpg'; img.alt = '';
     $('#heroSub').textContent = data.cars.length + ' רכבים יד שנייה זמינים עכשיו, המלאי מתעדכן כל יום';
   }
 
