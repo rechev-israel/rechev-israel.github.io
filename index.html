@@ -484,6 +484,26 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
 .nophoto img{width:30%!important;max-width:130px;height:auto!important;aspect-ratio:1;flex:none;object-fit:cover}
 .nophoto span{letter-spacing:normal}
 .hero-bg img{object-position:34% 62%}
+
+.quizlink{display:block;margin:4px auto 2px;background:none;border:0;color:var(--sky);font:inherit;font-weight:700;font-size:.95rem;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.strip{margin:6px 0 18px}
+.strip .mini{position:relative}
+.strip .mini .stag{position:absolute;top:8px;inset-inline-end:8px;background:rgb(127 211 255 / .92);color:#04203f;border-radius:999px;font-size:.72rem;font-weight:800;padding:1px 8px}
+.strip .mini .stag.fav{background:#ff5a7a;color:#fff}
+.strip .mini .stag.drop{background:var(--gold);color:#3a2600}
+.proof{display:flex;flex-direction:column;gap:6px;margin:4px 0 2px}
+.proof div{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--ink);background:rgb(127 211 255 / .08);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+#dAlert[aria-pressed="true"]{color:var(--ok);border-color:var(--ok)}
+.qz{padding:16px 18px 20px;display:flex;flex-direction:column;gap:12px}
+.qz h3{margin:0;font-size:1.25rem;color:var(--ink)}
+.qz-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qz-opts button{min-height:56px;border-radius:16px;border:1px solid var(--line-2);background:rgb(255 255 255 / .04);color:var(--ink);font:inherit;font-weight:700;cursor:pointer;padding:8px}
+.qz-opts button:hover,.qz-opts button:focus-visible{background:rgb(127 211 255 / .14)}
+.qz-bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.qz-bar i{display:block;height:100%;background:var(--metal);transition:width .3s}
+.qz-res{display:flex;flex-direction:column;gap:8px}
+html[data-theme="light"] .qz-opts button{background:#fff}
+html[data-theme="light"] .proof div{background:#f4f8fd}
 </style>
 
 </head>
@@ -508,10 +528,20 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
       <div class="search">
         <label for="budget">התקציב שלכם</label>
         <div class="money"><span>₪</span><input id="budget" inputmode="numeric" placeholder="לדוגמה 60,000" autocomplete="off"></div>
+        <button class="quizlink" id="quizOpen" type="button">לא בטוחים מה מתאים לכם? 3 שאלות ונמצא לכם רכב</button>
         <div class="quick" id="quick" role="group" aria-label="תקציב מהיר">
           <button type="button" data-v="30000">עד 30 אלף</button><button type="button" data-v="50000">עד 50 אלף</button><button type="button" data-v="80000">עד 80 אלף</button><button type="button" data-v="120000">עד 120 אלף</button><button type="button" data-v="">הכל</button>
         </div>
       </div>
+    </section>
+
+    <section class="strip" id="backSec" hidden aria-label="ברוכים השבים">
+      <div class="sec-h"><h2 id="backT">ברוכים השבים!</h2><small id="backS"></small></div>
+      <div class="hscroll" id="backList"></div>
+    </section>
+    <section class="strip" id="forSec" hidden aria-label="בשבילך">
+      <div class="sec-h"><h2>בשבילך</h2><small>לפי הרכבים שצפיתם בהם</small></div>
+      <div class="hscroll" id="forList"></div>
     </section>
 
     <div class="bar">
@@ -583,6 +613,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
       <button class="dr-item" id="mRecent" type="button" aria-expanded="false"><span class="dr-ic">◷</span><span class="dr-t"><b>צפיתם לאחרונה</b><small>חזרה לרכבים שפתחתם</small></span><span class="dr-badge" id="mRecentN">0</span></button>
       <div class="dr-sub" id="recent" hidden><div class="hscroll" id="recentList"></div><button class="linkbtn" id="recentClear" type="button">ניקוי הרשימה</button></div>
       <div class="dr-sep">כלים</div>
+      <button class="dr-item" id="mQuiz" type="button"><span class="dr-ic">?</span><span class="dr-t"><b>איזה רכב מתאים לי?</b><small>3 שאלות קצרות ונמצא לכם התאמה</small></span></button>
       <button class="dr-item" id="calcOpen" type="button"><span class="dr-ic">₪</span><span class="dr-t"><b>מחשבון מימון</b><small>כמה תשלמו לחודש, ועל איזה רכב אתם יכולים</small></span></button>
       <button class="dr-item" id="tiOpen" type="button"><span class="dr-ic">⟳</span><span class="dr-t"><b>מכירה או החלפה של הרכב שלכם</b><small>קבלו הצעה על הרכב שלכם</small></span></button>
       <a class="dr-item" id="mDrive" target="_blank" rel="noopener" href="#"><span class="dr-ic">⚑</span><span class="dr-t"><b>תיאום נסיעת מבחן</b><small>בכל רכב יש גם כפתור תיאום</small></span></a>
@@ -758,7 +789,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     return `<div class="car" role="button" tabindex="0" data-id="${esc(c.id)}" aria-label="${esc(name(c))} ${c.year || ''}, ${money(c.price)}">
       <div class="ph">
         <button class="fav ${favs.has(c.id) ? 'on' : ''}" type="button" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}" aria-label="שמירה למועדפים"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.3C1.4 7.8 3.6 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.6 3.3 4.3 6.7-1.8 4.7-9.3 9.3-9.3 9.3z"/></svg></button>${c.photos[0] ? `<img src="${esc(c.photos[0])}" alt="" loading="lazy" decoding="async">` : NOPHOTO}
-        <div class="tags">${c.prevPrice ? '<span class="tag drop">ירד במחיר!</span>' : c.belowList ? '<span class="tag deal">מתחת למחירון</span>' : isNew ? '<span class="tag new">חדש במגרש</span>' : ''}</div>
+        <div class="tags">${c.prevPrice ? '<span class="tag drop">ירד במחיר!</span>' : c.belowList ? `<span class="tag deal">${c.belowBy ? money(c.belowBy) + ' מתחת למחירון' : 'מתחת למחירון'}</span>` : isNew ? '<span class="tag new">חדש במגרש</span>' : ''}</div>
         ${c.photos.length > 1 ? `<span class="cnt">${c.photos.length} תמונות</span>` : ''}
         <span class="pchip">${money(c.price)}</span>
       </div>
@@ -890,7 +921,8 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
       </div>
       <div class="info">
         <div><h2 id="dTitle">${esc(name(c))}</h2><div class="sub">${[c.year, c.region].filter(Boolean).map(esc).join(' · ')}</div></div>
-        <div class="bigprice"><div>${c.prevPrice ? `<div class="was">${money(c.prevPrice)}</div>` : ''}<div class="price">${money(c.price)}</div></div><div class="chips">${c.prevPrice ? `<span class="tag drop">ירד ב-${money(c.prevPrice - c.price)}</span>` : ''}${c.belowList ? '<span class="tag deal">מתחת למחירון לוי יצחק</span>' : ''}</div></div>
+        <div class="bigprice"><div>${c.prevPrice ? `<div class="was">${money(c.prevPrice)}</div>` : ''}<div class="price">${money(c.price)}</div></div><div class="chips">${c.prevPrice ? `<span class="tag drop">ירד ב-${money(c.prevPrice - c.price)}</span>` : ''}${c.belowList ? `<span class="tag deal">${c.belowBy ? money(c.belowBy) + ' מתחת למחירון לוי יצחק' : 'מתחת למחירון לוי יצחק'}</span>` : ''}</div></div>
+        ${proofLines(c)}
         <div class="tbl">
           ${row('שנתון', c.year)}${row('קילומטראז\'', c.km != null ? nf.format(c.km) + ' ק"מ' : '')}${row('יד', c.hand)}${row('תיבת הילוכים', c.gear)}
           ${row('צבע', c.color)}${row('אזור', c.region)}${row('תאונות', c.accidents)}${row('היסטוריית טיפולים', c.service)}
@@ -907,6 +939,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
           <button class="btn ghost" type="button" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}" id="dFav">${favs.has(c.id) ? '♥ שמור במועדפים' : '♡ שמירה למועדפים'}</button>
           ${w ? `<a class="btn wa" target="_blank" rel="noopener" href="${w}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg>אני מעוניין, שלחו פרטים</a>` : ''}
           <button class="btn ghost" id="dShare" type="button">שיתוף הרכב</button>
+          <button class="btn ghost" id="dAlert" type="button" ${watchGet()[c.id] ? 'aria-pressed="true"' : ''}>${watchGet()[c.id] ? '✓ נעדכן אתכם אם המחיר יירד' : '🔔 עדכנו אותי אם המחיר יורד'}</button>
         </div>
         <div class="note" id="dNote">המחיר והזמינות נכונים לעדכון האחרון של המלאי.</div>
         ${w ? `<div class="td">
@@ -938,6 +971,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     calc();
     }
     $('#dFav').addEventListener('click', () => { toggleFav(c.id); $('#dFav').textContent = favs.has(c.id) ? '♥ שמור במועדפים' : '♡ שמירה למועדפים'; render(); });
+    $('#dAlert').addEventListener('click', () => priceAlert(c));
     $('#dShare').addEventListener('click', async () => {
       track('car_share', { car_id: c.id }); const url = location.href.split('#')[0] + '#' + c.id, text = `${name(c)} ${c.year || ''} · ${money(c.price)} · רכב ישראל`;
       if(navigator.share){ try { await navigator.share({ title: text, text, url }); return; } catch(e){ if(e && e.name === 'AbortError') return; } }
@@ -946,7 +980,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     });
     $('#dClose').focus();
   }
-  function closeCar(){ $('#sheet').hidden = true; document.body.style.overflow = ''; open = null; try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
+  function closeCar(){ $('#sheet').hidden = true; document.body.style.overflow = ''; open = null; try { renderForYou(); } catch(e){} try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
   $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeCar(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && open) closeCar(); });
 
@@ -1015,7 +1049,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
   function closeDrawer(){ if($('#drawer').hidden) return; $('#drawer').classList.remove('open'); $('#drawerBg').classList.remove('open'); $('#menuBtn').setAttribute('aria-expanded','false'); document.body.style.overflow = ''; setTimeout(() => { $('#drawer').hidden = true; $('#drawerBg').hidden = true; }, 260); }
   $('#menuBtn').addEventListener('click', openDrawer);
   /* ---- site registration + car requests (Tally forms) ---- */
-  const REG_FORM = 'XxVAy4', REQ_FORM = 'LZAxqG', USER_KEY = 'rv_user';
+  const REG_FORM = 'XxVAy4', REQ_FORM = 'LZAxqG', ALERT_FORM = 'WOGaWJ', USER_KEY = 'rv_user';
   function getUser(){ try { const u = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); return u && u.name && u.phone ? u : null; } catch(e){ return null; } }
   function setUser(u){ try { if(u) localStorage.setItem(USER_KEY, JSON.stringify(u)); else localStorage.removeItem(USER_KEY); } catch(e){} paintUser(); }
   const REQS_KEY = 'rv_reqs';
@@ -1034,7 +1068,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     $('#mRegS').textContent = u ? 'אתם מחוברים · לחצו לפרופיל שלכם' : 'השאירו שם וטלפון ונעדכן אתכם על רכבים חדשים';
   }
   let tfOpts = null, tfTimer = null;
-  const TF_META = { [REG_FORM]: ['הרשמה לאתר', 'נעדכן אתכם על רכבים חדשים שמגיעים'], [REQ_FORM]: ['בקשה לרכב', 'ספרו לנו מה אתם מחפשים'] };
+  const TF_META = { [REG_FORM]: ['הרשמה לאתר', 'נעדכן אתכם על רכבים חדשים שמגיעים'], [REQ_FORM]: ['בקשה לרכב', 'ספרו לנו מה אתם מחפשים'], [ALERT_FORM]: ['התראת ירידת מחיר', 'נעדכן אתכם בוואטסאפ'] };
   function tallyOpen(id, opts){
     tfOpts = Object.assign({ id }, opts || {});
     const [t, sub] = TF_META[id] || ['רכב ישראל', ''];
@@ -1079,6 +1113,148 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     $('#pfOut').onclick = () => { setUser(null); try { localStorage.removeItem(REQS_KEY); } catch(e){} tfClose(); toast('התנתקתם מהמכשיר'); };
   }
   $('#meBtn').addEventListener('click', openProfile);
+  /* ===== retention features (real data only) ===== */
+  const ls = { get(k, d){ try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch(e){ return d; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} } };
+  const miniHtml = (c, tag, cls) => '<button class="mini" type="button" data-open="' + esc(c.id) + '">' + (c.photos && c.photos[0] ? '<img src="' + esc(c.photos[0]) + '" alt="" loading="lazy">' : '<span class="noimg">' + NOPHOTO_MINI + '</span>') + (tag ? '<span class="stag ' + (cls || '') + '">' + tag + '</span>' : '') + '<div><b>' + esc(name(c)) + ' ' + (c.year || '') + '</b><span>' + money(c.price) + '</span></div></button>';
+  document.addEventListener('click', e => { const b = e.target.closest('.strip [data-open]'); if(b) openCar(b.dataset.open); });
+
+  function bandOf(p){ return p < 30000 ? 'a' : p < 60000 ? 'b' : p < 100000 ? 'c' : 'd'; }
+  function proofLines(c){
+    const out = [], sp = data.sellSpeed || {};
+    if((c.views7 || 0) >= 3) out.push('<div>👀 ' + nf.format(c.views7) + ' אנשים צפו ברכב הזה השבוע</div>');
+    const d = sp[bandOf(c.price || 0)] ?? sp.all;
+    if(d != null && d > 0) out.push('<div>⏱ רכבים בטווח המחיר הזה נמכרים אצלנו בממוצע תוך ' + nf.format(d) + ' ימים</div>');
+    return out.length ? '<div class="proof">' + out.join('') + '</div>' : '';
+  }
+
+  /* price-drop alerts */
+  const watchGet = () => ls.get('rv_watch', {});
+  let pendingAlert = null;
+  function priceAlert(c){
+    if(watchGet()[c.id]){ toast('כבר נעדכן אתכם אם המחיר של הרכב הזה יירד'); return; }
+    const go = () => {
+      const u = getUser(); if(!u) return;
+      const car = name(c) + (c.year ? ' ' + c.year : '');
+      closeCar();
+      tallyOpen(ALERT_FORM, { hiddenFields: { name: u.name, phone: u.phone, car, carId: c.id, price: String(c.price || '') },
+        onSubmit: () => { const w = watchGet(); w[c.id] = c.price; ls.set('rv_watch', w); } });
+    };
+    if(getUser()) go(); else { toast('קודם נרשמים, ואז נפעיל את ההתראה'); closeCar(); pendingAlert = go; openReg(false); }
+  }
+  function checkWatched(){
+    const w = watchGet(); let changed = false;
+    Object.keys(w).forEach(id => {
+      const c = data.cars.find(x => x.id === id); if(!c) return;
+      if(c.price < w[id]){ setTimeout(() => toast('🎉 המחיר של ' + name(c) + ' ירד ל-' + money(c.price) + '!'), 2400); w[id] = c.price; changed = true; }
+    });
+    if(changed) ls.set('rv_watch', w);
+  }
+
+  /* welcome back */
+  function welcomeBack(){
+    const lv = ls.get('rv_lv', null), seen = ls.get('rv_seen', []), now = Date.now();
+    const ids = data.cars.map(c => c.id);
+    if(lv && now - lv > 3 * 3600e3){
+      const seenSet = new Set(seen);
+      const fresh = seen.length ? data.cars.filter(c => !seenSet.has(c.id)) : [];
+      const drops = data.cars.filter(c => c.prevPrice && seenSet.has(c.id));
+      const favCars = data.cars.filter(c => favs.has(c.id) && !fresh.includes(c) && !drops.includes(c));
+      const items = [...fresh.map(c => miniHtml(c, 'חדש')), ...drops.map(c => miniHtml(c, 'ירד במחיר', 'drop')), ...favCars.map(c => miniHtml(c, '♥', 'fav'))];
+      if(items.length){
+        const u = getUser();
+        $('#backT').textContent = u ? 'ברוכים השבים, ' + u.name.split(' ')[0] + '!' : 'ברוכים השבים!';
+        $('#backS').textContent = fresh.length ? 'מאז הביקור הקודם ' + (fresh.length === 1 ? 'נכנס רכב חדש אחד' : 'נכנסו ' + fresh.length + ' רכבים חדשים') : drops.length ? 'יש רכבים שירדו במחיר' : 'הרכבים ששמרתם מחכים לכם';
+        $('#backList').innerHTML = items.slice(0, 12).join(''); $('#backSec').hidden = false;
+      }
+    }
+    ls.set('rv_lv', now); ls.set('rv_seen', ids);
+  }
+
+  /* for you */
+  const USE_RX = {
+    family: /(CX-5|טוסון|קשקאי|אאוטלנדר|קארוק|Q5|סופרב|נירו|סטיישן|2008|איירקרוס|קודיאק|ספורטאז|RAV|טיגואן|סורנטו)/i,
+    city: /(ספארק|208|יאריס|איביזה|ולוסטר|A3|פיקנטו|i10|i20|קליאו|פולו|ספיריט|C3|מיקרה|ג'אז)/i,
+    long: /(סופרב|S80|נירו|איוניק|מגאן|לאון|אקורד|קאמרי|פסאט|Q5|CX-5|קורולה|אוקטביה)/i,
+    work: /(סטיישן|ברלינגו|קאדי|קנגו|פרטנר|טרנזיט|אאוטלנדר|סופרב|דוקר)/i
+  };
+  function renderForYou(){
+    const seenIds = recent.filter(id => data.cars.some(c => c.id === id));
+    const sec = $('#forSec'); if(seenIds.length < 2){ sec.hidden = true; return; }
+    const viewed = seenIds.map(id => data.cars.find(c => c.id === id));
+    const avg = viewed.reduce((a, c) => a + (c.price || 0), 0) / viewed.length;
+    const makes = new Set(viewed.map(c => c.make));
+    const q = ls.get('rv_quiz', null);
+    const list = data.cars.filter(c => !seenIds.includes(c.id) && Math.abs((c.price || 0) - avg) <= Math.max(15000, avg * 0.3))
+      .map(c => ({ c, s: (makes.has(c.make) ? 3 : 0) + (q && USE_RX[q.use] && USE_RX[q.use].test(name(c)) ? 2 : 0) - Math.abs((c.price || 0) - avg) / Math.max(avg, 1) }))
+      .sort((a, b) => b.s - a.s).slice(0, 8).map(x => x.c);
+    if(!list.length){ sec.hidden = true; return; }
+    $('#forList').innerHTML = list.map(c => miniHtml(c)).join(''); sec.hidden = false;
+  }
+
+  /* quiz: which car fits me */
+  const QZ = [
+    { k: 'budget', q: 'מה התקציב שלכם?', o: [['30000', 'עד 30 אלף'], ['50000', 'עד 50 אלף'], ['80000', 'עד 80 אלף'], ['120000', 'עד 120 אלף'], ['0', 'לא משנה']] },
+    { k: 'use', q: 'בשביל מה הרכב בעיקר?', o: [['city', 'נסיעות בעיר'], ['family', 'משפחה וילדים'], ['long', 'נסיעות ארוכות'], ['work', 'עבודה והובלה']] },
+    { k: 'gear', q: 'איזו תיבת הילוכים?', o: [['אוטומט', 'אוטומט'], ['ידני', 'ידני'], ['', 'לא משנה']] }
+  ];
+  function openQuiz(){ tfOpts = null; quizStep({}, 0); track('quiz_start'); }
+  function quizStep(ans, i){
+    if(i >= QZ.length){ quizResult(ans); return; }
+    const st = QZ[i];
+    tfShow('איזה רכב מתאים לי?', 'שאלה ' + (i + 1) + ' מתוך ' + QZ.length, '<div class="qz"><div class="qz-bar"><i style="width:' + Math.round(i / QZ.length * 100) + '%"></i></div><h3>' + st.q + '</h3><div class="qz-opts">' + st.o.map(([v, t]) => '<button type="button" data-v="' + esc(v) + '">' + t + '</button>').join('') + '</div></div>');
+    $('#tfBody').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { ans[st.k] = b.dataset.v; quizStep(ans, i + 1); });
+  }
+  function quizResult(ans){
+    ls.set('rv_quiz', ans); track('quiz_complete', { use: ans.use, budget: ans.budget, gear: ans.gear });
+    const bud = Number(ans.budget) || 0, rx = USE_RX[ans.use];
+    const scored = data.cars.filter(c => !bud || (c.price || 0) <= bud * 1.05).map(c => {
+      let s = 0;
+      if(rx && rx.test(name(c))) s += 3;
+      if(ans.gear && c.gear === ans.gear) s += 2; else if(ans.gear && c.gear && c.gear !== ans.gear) s -= 3;
+      s += Math.max(0, (c.year || 2010) - 2010) * 0.15;
+      if(c.km != null) s -= c.km / 200000;
+      return { c, s };
+    }).sort((a, b) => b.s - a.s).slice(0, 6).map(x => x.c);
+    const rows = scored.map(c => '<button class="pf-mc" type="button" data-qopen="' + esc(c.id) + '">' + (c.photos[0] ? '<img src="' + esc(c.photos[0]) + '" alt="">' : '<span class="noimg"></span>') + '<span><b>' + esc(name(c)) + ' ' + (c.year || '') + '</b><em>' + money(c.price) + (c.km != null ? ' · ' + nf.format(c.km) + ' ק"מ' : '') + '</em></span></button>').join('');
+    tfShow('הרכבים שמתאימים לכם', scored.length ? 'לפי התשובות שלכם' : 'לא מצאנו התאמה מלאה', '<div class="qz"><div class="qz-bar"><i style="width:100%"></i></div>'
+      + (scored.length ? '<div class="qz-res">' + rows + '</div>' : '<p style="margin:0;color:var(--muted)">כרגע אין במלאי רכב שמתאים לכל מה שבחרתם. השאירו בקשה ונמצא בשבילכם.</p>')
+      + '<div class="pf-acts">' + (bud ? '<button class="btn" type="button" id="qzAll">כל הרכבים עד ' + money(bud) + '</button>' : '') + '<button class="btn ghost" type="button" data-req>לא מצאתם? השאירו בקשה</button><button class="pf-out" type="button" id="qzAgain">להתחיל מחדש</button></div></div>');
+    $('#tfBody').querySelectorAll('[data-qopen]').forEach(b => b.onclick = () => { const id = b.dataset.qopen; tfClose(); setTimeout(() => openCar(id), 320); });
+    if($('#qzAll')) $('#qzAll').onclick = () => { tfClose(); budget = bud; bIn.value = nf.format(bud); markQuick(); render(); setTimeout(() => $('#grid').scrollIntoView({ behavior: 'smooth' }), 330); };
+    $('#qzAgain').onclick = () => quizStep({}, 0);
+  }
+  $('#quizOpen').addEventListener('click', openQuiz);
+  $('#mQuiz').addEventListener('click', () => { closeDrawer(); openQuiz(); });
+
+  /* exit offer: at most once every 3 days, only after real engagement, never after the visitor already acted */
+  let exitShown = false, maxY = 0;
+  const t0 = Date.now();
+  function exitOk(){
+    if(exitShown || !$('#tf').hidden || !$('#sheet').hidden || Date.now() - t0 < 40000) return false;
+    try { if(sessionStorage.getItem('rv_acted')) return false; } catch(e){}
+    if(Date.now() - ls.get('rv_exit', 0) < 3 * 864e5) return false;
+    return recent.length >= 1 || maxY > 1200;
+  }
+  function exitOffer(){
+    if(!exitOk()) return;
+    exitShown = true; ls.set('rv_exit', Date.now()); track('exit_offer_shown'); tfOpts = null;
+    tfShow('רגע לפני שאתם הולכים', 'רכב ישראל', '<div class="qz"><h3>לא מצאתם בדיוק מה שחיפשתם?</h3><p style="margin:0;color:var(--muted)">ספרו לנו מה אתם מחפשים, ונשלח לכם הודעה ברגע שייכנס רכב שמתאים לתקציב שלכם. בלי התחייבות.</p><div class="pf-acts"><button class="btn" type="button" id="exYes">כן, עדכנו אותי</button><button class="pf-out" type="button" id="exNo">אולי אחר כך</button></div></div>');
+    $('#exYes').onclick = () => { track('exit_offer_accepted'); openReq(); };
+    $('#exNo').onclick = () => tfClose();
+  }
+  let exitArmed = false;
+  function exitArm(){
+    if(exitArmed) return; exitArmed = true;
+    document.addEventListener('mouseout', e => { if(!e.relatedTarget && e.clientY <= 0) exitOffer(); });
+    let lastY = window.scrollY, lastT = Date.now();
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, t = Date.now(); maxY = Math.max(maxY, y);
+      const v = (lastY - y) / Math.max(1, t - lastT);
+      if(maxY > 1200 && y < 400 && v > 2.5) exitOffer();
+      lastY = y; lastT = t;
+    }, { passive: true });
+  }
+
   /* theme (dark default, light optional) */
   const THEME_KEY = 'rv_theme';
   function themeApply(t){ if(t === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); const b = $('#thmBtn'); if(b){ b.textContent = t === 'light' ? '☾' : '☀'; } const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = t === 'light' ? '#eef4fb' : '#081733'; }
@@ -1157,8 +1333,8 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
     let m; try { m = JSON.parse(e.data); } catch(err){ return; }
     if(m.event === 'Tally.FormSubmitted' && tfOpts){
       const o = tfOpts; tfOpts = null;
-      $('#tfBody').innerHTML = '<div class="tf-done"><div class="ck">✓</div><b>' + (o.id === REG_FORM ? 'נרשמתם בהצלחה!' : 'הבקשה התקבלה!') + '</b><span>' + (o.id === REG_FORM ? 'נעדכן אתכם על רכבים חדשים' : 'נחזור אליכם כשנמצא רכב מתאים') + '</span></div>';
-      track(o.id === REG_FORM ? 'site_register' : 'car_request');
+      $('#tfBody').innerHTML = '<div class="tf-done"><div class="ck">✓</div><b>' + (o.id === REG_FORM ? 'נרשמתם בהצלחה!' : o.id === ALERT_FORM ? 'ההתראה הופעלה!' : 'הבקשה התקבלה!') + '</b><span>' + (o.id === REG_FORM ? 'נעדכן אתכם על רכבים חדשים' : o.id === ALERT_FORM ? 'נשלח לכם הודעה אם המחיר יירד' : 'נחזור אליכם כשנמצא רכב מתאים') + '</span></div>';
+      track(o.id === REG_FORM ? 'site_register' : o.id === ALERT_FORM ? 'price_alert' : 'car_request'); try { sessionStorage.setItem('rv_acted', '1'); } catch(e){}
       if(o.onSubmit) try { o.onSubmit(m.payload || {}); } catch(err){}
       tfTimer = setTimeout(tfClose, 2200);
     }
@@ -1178,6 +1354,7 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
       const u = { name: fieldVal(p && p.fields, 'שם'), phone: fieldVal(p && p.fields, 'טלפון') };
       if(u.name && u.phone){ u.at = new Date().toISOString(); setUser(u); }
       if(pendingReq){ pendingReq = false; setTimeout(() => openReq(), 2700); }
+      else if(pendingAlert){ const f = pendingAlert; pendingAlert = null; setTimeout(f, 2700); }
     }});
   }
   function openReq(){
@@ -1259,8 +1436,8 @@ html[data-theme="light"] .tf-body iframe{color-scheme:normal}
   })();
 
   fetch('cars.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
-    data = {cars: Array.isArray(d.cars) ? d.cars : [], business: d.business || {}, updatedAt: d.updatedAt, sold: Array.isArray(d.sold) ? d.sold : [], reqStatus: d.reqStatus || {}};
-    try { renderSold(); paintUser(); matchToast(); setHero(); } catch(e){}
+    data = {cars: Array.isArray(d.cars) ? d.cars : [], business: d.business || {}, updatedAt: d.updatedAt, sold: Array.isArray(d.sold) ? d.sold : [], reqStatus: d.reqStatus || {}, sellSpeed: d.sellSpeed || {}};
+    try { renderSold(); paintUser(); matchToast(); setHero(); welcomeBack(); renderForYou(); checkWatched(); exitArm(); } catch(e){}
     fillFilters(); setContact(); markQuick(); updateFavBar(); render(); renderRecent(); updateMenu();
     const h = location.hash.slice(1); if(h) openCar(h, true);
   }).catch(() => {
