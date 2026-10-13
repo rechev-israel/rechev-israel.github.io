@@ -803,6 +803,7 @@ textarea.inp{resize:vertical}
   function openCar(id, fromHash){
     const c = data.cars.find(x => x.id === id); if(!c) return;
     open = c;
+    track('car_view', { car_id: c.id, car: (name(c) + ' ' + (c.year || '')).trim(), price: c.price });
     const msg = `שלום, ראיתי באתר את ה${name(c)}${c.year ? ' ' + c.year : ''} במחיר ${money(c.price)}. אשמח לפרטים ולתאם נסיעת מבחן.`;
     const w = waLink(msg);
     const test = c.testUntil ? c.testUntil.split('-').reverse().join('/') : '';
@@ -863,7 +864,7 @@ textarea.inp{resize:vertical}
     }
     $('#dFav').addEventListener('click', () => { toggleFav(c.id); $('#dFav').textContent = favs.has(c.id) ? '♥ שמור במועדפים' : '♡ שמירה למועדפים'; render(); });
     $('#dShare').addEventListener('click', async () => {
-      const url = location.href.split('#')[0] + '#' + c.id, text = `${name(c)} ${c.year || ''} · ${money(c.price)} · רכב ישראל`;
+      track('car_share', { car_id: c.id }); const url = location.href.split('#')[0] + '#' + c.id, text = `${name(c)} ${c.year || ''} · ${money(c.price)} · רכב ישראל`;
       if(navigator.share){ try { await navigator.share({ title: text, text, url }); return; } catch(e){ if(e && e.name === 'AbortError') return; } }
       window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
       try{ await navigator.clipboard.writeText(text + '\n' + url); $('#dNote').textContent = 'הקישור לרכב הועתק. אפשר גם להדביק ולשלוח.'; }catch(e){}
@@ -1003,6 +1004,14 @@ textarea.inp{resize:vertical}
     $('#pfOut').onclick = () => { setUser(null); try { localStorage.removeItem(REQS_KEY); } catch(e){} tfClose(); toast('התנתקתם מהמכשיר'); };
   }
   $('#meBtn').addEventListener('click', openProfile);
+  /* analytics events (anonymous; no names or phones are sent) */
+  const track = (ev, props) => { try { window.posthog && posthog.capture && posthog.capture(ev, props || {}); } catch(e){} };
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href*="wa.me"]'); if(!a) return;
+    const where = a.closest('#panel') ? 'car_page' : a.closest('#drawer') ? 'menu' : a.id === 'fab' ? 'floating' : a.id === 'topWa' ? 'header' : 'other';
+    track('whatsapp_click', { where, car_id: open ? open.id : null, car: open ? (name(open) + ' ' + (open.year || '')).trim() : null });
+  }, true);
+
   function reqMatches(r){
     if(!data || !data.cars) return [];
     const words = String(r.want || '').toLowerCase().split(/[\s,\-–/]+/).filter(w => w.length > 1);
@@ -1061,6 +1070,7 @@ textarea.inp{resize:vertical}
     if(m.event === 'Tally.FormSubmitted' && tfOpts){
       const o = tfOpts; tfOpts = null;
       $('#tfBody').innerHTML = '<div class="tf-done"><div class="ck">✓</div><b>' + (o.id === REG_FORM ? 'נרשמתם בהצלחה!' : 'הבקשה התקבלה!') + '</b><span>' + (o.id === REG_FORM ? 'נעדכן אתכם על רכבים חדשים' : 'נחזור אליכם כשנמצא רכב מתאים') + '</span></div>';
+      track(o.id === REG_FORM ? 'site_register' : 'car_request');
       if(o.onSubmit) try { o.onSubmit(m.payload || {}); } catch(err){}
       tfTimer = setTimeout(tfClose, 2200);
     }
@@ -1172,6 +1182,10 @@ textarea.inp{resize:vertical}
 })();
 </script>
 
+<script>
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag onFeatureFlags".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('phc_vrE4mAyBNgwKwjHVx6GqsuG9U8XzBBoxNVHMQEQBnseN', { api_host: 'https://us.i.posthog.com', person_profiles: 'identified_only', disable_session_recording: true, capture_pageview: true, capture_pageleave: true });
+</script>
 <script async src="https://tally.so/widgets/embed.js"></script>
 </body>
 </html>
