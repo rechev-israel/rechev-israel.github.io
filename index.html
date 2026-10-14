@@ -20,6 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Assistant:wght@400;600;700;800&display=swap">
 <style>
+.car h3 a.clink{color:inherit;text-decoration:none}
 /* Public showroom for "רכב ישראל": one deliberate dark look from the brand logo — navy ground, metallic sky-blue type, glass cards. Hero = budget search; grid of cars; detail sheet with gallery + WhatsApp. */
 :root{
   --bg:#081733; --bg-2:#0b1d3a; --card:rgb(15 38 76 / .82); --card-solid:#0f2a52; --field:#06142e;
@@ -776,6 +777,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
   const DEFAULT_PHONE = '055-571-1239';
   const phone = () => data.business.phone || DEFAULT_PHONE;
   const waNum = p => { let d = String(p || '').replace(/\D/g,''); if(d.startsWith('0')) d = '972' + d.slice(1); return d; };
+  const carUrl = c => new URL('car/' + encodeURIComponent(c.id) + '/', location.origin + location.pathname.replace(/[^/]*$/, '')).href;
   const waLink = text => { const n = waNum(phone()); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : ''; };
 
   // favorites (kept on this visitor's device)
@@ -829,7 +831,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
         <span class="pchip">${money(c.price)}</span>
       </div>
       <div class="body">
-        <h3>${esc(name(c))} ${c.year ? `<span class="yr">${c.year}</span>` : ''}</h3>
+        <h3><a class="clink" href="car/${esc(c.id)}/">${esc(name(c))}</a> ${c.year ? `<span class="yr">${c.year}</span>` : ''}</h3>
         <div class="specs">
           ${c.km != null ? `<span><b>${nf.format(c.km)}</b> ק"מ</span>` : ''}
           ${c.hand ? `<span>יד <b>${esc(c.hand)}</b></span>` : ''}
@@ -920,6 +922,8 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
   $('#grid').addEventListener('click', e => {
     const k = e.target.closest('[data-cmp]'); if(k){ e.stopPropagation(); toggleCmp(k.dataset.cmp); return; }
     const f = e.target.closest('[data-fav]'); if(f){ e.stopPropagation(); toggleFav(f.dataset.fav); return; }
+    const l = e.target.closest('a.clink'); if(l && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return;
+    if(l) e.preventDefault();
     const b = e.target.closest('.car'); if(b) openCar(b.dataset.id);
   });
   $('#grid').addEventListener('keydown', e => { if((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('car')){ e.preventDefault(); openCar(e.target.dataset.id); } });
@@ -945,7 +949,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     const c = data.cars.find(x => x.id === id); if(!c) return;
     open = c;
     track('car_view', { car_id: c.id, car: (name(c) + ' ' + (c.year || '')).trim(), price: c.price });
-    const msg = `שלום, ראיתי באתר את ה${name(c)}${c.year ? ' ' + c.year : ''} במחיר ${money(c.price)}. אשמח לפרטים ולתאם נסיעת מבחן.`;
+    const msg = `שלום, ראיתי באתר את ה${name(c)}${c.year ? ' ' + c.year : ''} במחיר ${money(c.price)}. אשמח לפרטים ולתאם נסיעת מבחן.\n${carUrl(c)}`;
     const w = waLink(msg);
     const test = c.testUntil ? c.testUntil.split('-').reverse().join('/') : '';
     $('#panel').innerHTML = `
@@ -1008,7 +1012,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     $('#dFav').addEventListener('click', () => { toggleFav(c.id); $('#dFav').textContent = favs.has(c.id) ? '♥ שמור במועדפים' : '♡ שמירה למועדפים'; render(); });
     $('#dAlert').addEventListener('click', () => priceAlert(c));
     $('#dShare').addEventListener('click', async () => {
-      track('car_share', { car_id: c.id }); const url = location.href.split('#')[0] + '#' + c.id, text = `${name(c)} ${c.year || ''} · ${money(c.price)} · רכב ישראל`;
+      track('car_share', { car_id: c.id }); const url = carUrl(c), text = `${name(c)} ${c.year || ''} · ${money(c.price)} · רכב ישראל`;
       if(navigator.share){ try { await navigator.share({ title: text, text, url }); return; } catch(e){ if(e && e.name === 'AbortError') return; } }
       window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
       try{ await navigator.clipboard.writeText(text + '\n' + url); $('#dNote').textContent = 'הקישור לרכב הועתק. אפשר גם להדביק ולשלוח.'; }catch(e){}
