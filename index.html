@@ -543,6 +543,17 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
 .dr-sub{align-items:stretch;min-width:0;width:100%;box-sizing:border-box}
 .dr-sub .hscroll{min-width:0;width:100%;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x}
 .dr-sub .linkbtn{align-self:flex-start}
+.nudge{position:fixed;z-index:85;bottom:calc(92px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 28px));display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;background:linear-gradient(165deg,#173c6e,#0b1f40);border:1px solid rgb(255 210 122 / .45);border-radius:20px;box-shadow:0 18px 44px rgb(0 0 0 / .55),0 0 0 1px rgb(255 210 122 / .08)}
+.nudge.show{animation:nudgeIn .45s cubic-bezier(.2,1.1,.3,1) both}
+.nudge.out{animation:nudgeOut .25s ease both}
+@keyframes nudgeIn{from{opacity:0;transform:translate(-50%,24px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes nudgeOut{to{opacity:0;transform:translate(-50%,16px) scale(.97)}}
+.nudge-t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;text-align:start}
+.nudge-t b{font-size:.98rem;color:#fff}
+.nudge-t span{font-size:.84rem;color:var(--muted);line-height:1.35}
+.nudge-go{flex:none;border:0;border-radius:999px;padding:9px 16px;font-weight:800;font-size:.92rem;cursor:pointer;color:#2b1c00;background:linear-gradient(100deg,#ffe3a3,#ffc14d 50%,#ff9f1c)}
+.nudge-x{flex:none;order:3;width:30px;height:30px;border-radius:50%;border:1px solid var(--line-2);background:rgb(255 255 255 / .06);color:var(--ink);cursor:pointer;font-size:.8rem;line-height:1}
+html[data-theme="light"] .nudge{background:#0b2347}
 </style>
 
 </head>
@@ -673,6 +684,11 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     <div class="tf-body" id="tfBody"></div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="nudge" id="nudge" role="status" aria-live="polite" hidden>
+    <button class="nudge-x" id="nudgeX" type="button" aria-label="סגירה">✕</button>
+    <div class="nudge-t"><b>היי 👋 עוד לא נרשמתם לאתר</b><span>הירשמו ונעדכן אתכם על רכבים חדשים וירידות מחיר</span></div>
+    <button class="nudge-go" id="nudgeGo" type="button">להרשמה</button>
+  </div>
 
   <div class="sheet" id="filtSheet" hidden role="dialog" aria-modal="true" aria-labelledby="filtT">
     <div class="panel pad">
@@ -1023,7 +1039,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     });
     $('#dClose').focus();
   }
-  function closeCar(){ $('#sheet').hidden = true; document.body.style.overflow = ''; open = null; try { renderForYou(); } catch(e){} try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
+  function closeCar(){ const wasOpen = open; $('#sheet').hidden = true; document.body.style.overflow = ''; open = null; if(wasOpen) try { nudgeMaybe(); } catch(e){} try { renderForYou(); } catch(e){} try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
   $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeCar(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && open) closeCar(); });
 
@@ -1419,6 +1435,29 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     return String(a == null ? '' : a).trim();
   }
   let pendingReq = false;
+  /* soft sign-up bubble after leaving a car (not registered only; limited so it never nags) */
+  const NUDGE_KEY = 'rv_nudge';
+  let nudgeT = 0, nudgeHide = 0;
+  function nudgeState(){ try { return JSON.parse(localStorage.getItem(NUDGE_KEY) || '{}') || {}; } catch(e){ return {}; } }
+  function nudgeSave(o){ try { localStorage.setItem(NUDGE_KEY, JSON.stringify(o)); } catch(e){} }
+  function nudgeClose(){ const n = $('#nudge'); clearTimeout(nudgeHide); if(n.hidden) return; n.classList.remove('show'); n.classList.add('out'); setTimeout(() => { n.hidden = true; n.classList.remove('out'); }, 260); }
+  function nudgeMaybe(){
+    if(getUser()) return;
+    const st = nudgeState(); let seenNow = false;
+    try { seenNow = sessionStorage.getItem('rv_nudge_s') === '1'; } catch(e){}
+    if(seenNow || (st.n || 0) >= 3 || (st.t && Date.now() - st.t < 6 * 3600e3)) return;
+    clearTimeout(nudgeT);
+    nudgeT = setTimeout(() => {
+      if(getUser() || open || !$('#tf').hidden || !$('#drawer').hidden) return;
+      const n = $('#nudge'); n.hidden = false; n.classList.remove('out', 'show'); void n.offsetWidth; n.classList.add('show');
+      try { sessionStorage.setItem('rv_nudge_s', '1'); } catch(e){}
+      nudgeSave({ n: (st.n || 0) + 1, t: Date.now() });
+      track('nudge_shown', {});
+      clearTimeout(nudgeHide); nudgeHide = setTimeout(nudgeClose, 14000);
+    }, 800);
+  }
+  $('#nudgeX').addEventListener('click', () => { track('nudge_dismiss', {}); nudgeClose(); });
+  $('#nudgeGo').addEventListener('click', () => { track('nudge_click', {}); nudgeClose(); openReg(); });
   function openReg(thenReq){
     pendingReq = !!thenReq;
     tallyOpen(REG_FORM, { onSubmit: p => {
