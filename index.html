@@ -514,6 +514,29 @@ html[data-theme="light"] .proof div{background:#f4f8fd}
 .money input::placeholder{font-size:clamp(.95rem,3.6vw,1.2rem);font-family:var(--f-body);font-weight:600;letter-spacing:normal}
 .money input:placeholder-shown{direction:rtl;text-align:right}
 @media (max-width:480px){ .money input::placeholder{font-size:.88rem} }
+/* ===== premium motion (fx) ===== */
+.hero-txt h1.fxh{background:none;-webkit-text-fill-color:currentColor;color:#fff;text-shadow:0 2px 24px rgb(0 0 0 / .55)}
+.fxh .w{display:inline-block;white-space:pre}
+.fxh .hl{background:linear-gradient(100deg,#ffe3a3 0%,#ffc14d 45%,#ff9f1c 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 14px rgb(0 0 0 / .55))}
+.fx-h .fxh .w{opacity:0;transform:translateY(.45em) scale(.96);filter:blur(10px);animation:fxWord .9s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(.25s + var(--i) * .12s)}
+.fx-h .fxh .hl.w{filter:blur(10px) drop-shadow(0 2px 14px rgb(0 0 0 / .55))}
+@keyframes fxWord{to{opacity:1;transform:none;filter:blur(0)}}
+.fx-h .fxh .hl.w{animation-name:fxWordHl}
+@keyframes fxWordHl{to{opacity:1;transform:none;filter:blur(0) drop-shadow(0 2px 14px rgb(0 0 0 / .55))}}
+.fx-h .blessing{animation:fxFade 1s ease both}
+.fx-h #heroSub{animation:fxFade .9s ease both;animation-delay:1s}
+@keyframes fxFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#fxDots{position:absolute;top:0;left:50%;width:100vw;margin-left:-50vw;height:var(--hero-h);z-index:0;pointer-events:none;opacity:0;transition:opacity 1.2s ease}
+#fxDots.on{opacity:1}
+.sec-h h2,.tradein h2{font-size:clamp(1.5rem,4.8vw,2.1rem);letter-spacing:-.01em;line-height:1.15;position:relative;padding-bottom:8px}
+.sec-h h2::after{content:"";position:absolute;bottom:0;inset-inline-start:0;height:3px;width:46px;border-radius:3px;background:linear-gradient(90deg,#ffc14d,#ff9f1c);transform-origin:right;transition:transform .8s cubic-bezier(.2,.7,.2,1) .15s}
+.rv{opacity:0;transform:translateY(22px);transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+.sec-h.rv h2::after{transform:scaleX(0)}
+.sec-h.rv.in h2::after{transform:scaleX(1)}
+html[data-theme="light"] .hero-txt h1.fxh{color:#fff;-webkit-text-fill-color:currentColor}
+html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
+@media (prefers-reduced-motion:reduce){ .rv{opacity:1;transform:none} .fxh .w{opacity:1;transform:none;filter:none} #fxDots{display:none} }
 </style>
 
 </head>
@@ -1482,5 +1505,96 @@ html[data-theme="light"] .proof div{background:#f4f8fd}
 posthog.init('phc_vrE4mAyBNgwKwjHVx6GqsuG9U8XzBBoxNVHMQEQBnseN', { api_host: 'https://us.i.posthog.com', person_profiles: 'identified_only', disable_session_recording: true, capture_pageview: true, capture_pageleave: true });
 </script>
 <script async src="https://tally.so/widgets/embed.js"></script>
+<script>
+/* premium motion: headline reveal, scroll reveal, light particles (desktop only) */
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var h1 = document.querySelector('.hero-txt h1');
+  if (h1 && !h1.classList.contains('fxh')) {
+    var words = ['מצאו','את','הרכב','הבא','שלכם'];
+    if (h1.textContent.trim() === words.join(' ')) {
+      h1.setAttribute('aria-label', h1.textContent.trim());
+      h1.innerHTML = words.map(function(w, i){
+        return '<span class="w' + (i >= 3 ? ' hl' : '') + '" aria-hidden="true" style="--i:' + i + '">' + w + (i < words.length - 1 ? ' ' : '') + '</span>';
+      }).join('');
+    }
+    h1.classList.add('fxh');
+  }
+  if (reduce) return;
+  document.documentElement.classList.add('fx-on');
+  (function(){ var b = document.body, de = document.documentElement;
+    function ready(){ return !b.classList.contains('intro-on') && !b.classList.contains('intro-play'); }
+    if (ready()) de.classList.add('fx-h');
+    else { var mo = new MutationObserver(function(){ if (ready()) { mo.disconnect(); de.classList.add('fx-h'); } }); mo.observe(b, {attributes: true, attributeFilter: ['class']}); setTimeout(function(){ mo.disconnect(); de.classList.add('fx-h'); }, 8000); }
+  })();
+
+  /* scroll reveal */
+  if ('IntersectionObserver' in window) {
+    var t0 = Date.now();
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, {rootMargin: '0px 0px 40px 0px', threshold: 0});
+    var SEL = '.sec-h, .car, .strip .mini, #reqBox, .tradein, .reviews, footer';
+    var batch = 0, batchTimer = null;
+    function prep(el){
+      if (el.__fx) return; el.__fx = 1;
+      var r = el.getBoundingClientRect();
+      var inView = r.top < innerHeight && r.bottom > 0;
+      if (inView && Date.now() - t0 > 1800) return; /* re-renders while filtering: no flicker */
+      el.style.setProperty('--d', (Math.min(batch++, 8) * 0.06) + 's');
+      clearTimeout(batchTimer); batchTimer = setTimeout(function(){ batch = 0; }, 120);
+      el.classList.add('rv'); io.observe(el);
+    }
+    function scan(root){
+      if (!root || root.nodeType !== 1) return;
+      if (root.matches && root.matches(SEL)) prep(root);
+      if (root.querySelectorAll) root.querySelectorAll(SEL).forEach(prep);
+    }
+    scan(document.body);
+    new MutationObserver(function(ms){
+      ms.forEach(function(m){ m.addedNodes.forEach(scan); });
+    }).observe(document.body, {childList: true, subtree: true});
+    /* safety: never leave anything hidden */
+    setTimeout(function(){ document.querySelectorAll('.rv:not(.in)').forEach(function(el){
+      var r = el.getBoundingClientRect(); if (r.top < innerHeight && r.bottom > 0) el.classList.add('in'); }); }, 2500);
+  }
+
+  /* light particles behind the headline: desktop with a mouse only */
+  var hero = document.getElementById('hero');
+  if (!hero || !matchMedia('(min-width: 900px) and (pointer: fine)').matches) return;
+  var cv = document.createElement('canvas'); cv.id = 'fxDots'; cv.setAttribute('aria-hidden', 'true');
+  var bg = document.getElementById('heroBg'); bg.parentNode.insertBefore(cv, bg.nextSibling);
+  var ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 1.5), W = 0, H = 0, P = [], run = false, raf = 0, mx = -1e4, my = -1e4;
+  function size(){
+    W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var n = Math.round(Math.min(90, W * H / 9000)); P = [];
+    for (var i = 0; i < n; i++) P.push({x: Math.random() * W, y: Math.random() * H, r: Math.random() * 2 + .7,
+      vx: (Math.random() - .5) * .15, vy: -(Math.random() * .25 + .05), a: Math.random() * Math.PI * 2, g: Math.random() < .55});
+  }
+  cv.closest('section').addEventListener('mousemove', function(e){ var b = cv.getBoundingClientRect(); mx = e.clientX - b.left; my = e.clientY - b.top; });
+  cv.closest('section').addEventListener('mouseleave', function(){ mx = my = -1e4; });
+  function step(){
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i]; p.a += .02; p.x += p.vx; p.y += p.vy;
+      var dx = p.x - mx, dy = p.y - my, d2 = dx * dx + dy * dy;
+      if (d2 < 14000) { var f = (14000 - d2) / 14000 * .9; p.x += dx / 60 * f; p.y += dy / 60 * f; }
+      if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; } if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10;
+      var al = .35 + Math.sin(p.a) * .3;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3.2, 0, 6.283);
+      ctx.fillStyle = p.g ? 'rgba(255,193,77,' + (al * .22) + ')' : 'rgba(127,211,255,' + (al * .2) + ')'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283);
+      ctx.fillStyle = p.g ? 'rgba(255,214,140,' + al + ')' : 'rgba(170,225,255,' + al + ')'; ctx.fill();
+    }
+    raf = requestAnimationFrame(step);
+  }
+  function go(on){ if (on && !run) { run = true; raf = requestAnimationFrame(step); } else if (!on && run) { run = false; cancelAnimationFrame(raf); } }
+  size(); addEventListener('resize', function(){ clearTimeout(size.t); size.t = setTimeout(size, 200); });
+  var vis = true;
+  new IntersectionObserver(function(es){ vis = es[0].isIntersecting; go(vis && !document.hidden); }).observe(cv);
+  document.addEventListener('visibilitychange', function(){ go(vis && !document.hidden); });
+  setTimeout(function(){ cv.classList.add('on'); }, 300);
+})();
+</script>
 </body>
 </html>
