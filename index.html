@@ -537,6 +537,7 @@ html[data-theme="light"] .proof div{background:#f4f8fd}
 html[data-theme="light"] .hero-txt h1.fxh{color:#fff;-webkit-text-fill-color:currentColor}
 html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
 @media (prefers-reduced-motion:reduce){ .rv{opacity:1;transform:none} .fxh .w{opacity:1;transform:none;filter:none} #fxDots{display:none} }
+.hero-cap{transition:opacity .18s ease}.hero-cap.swap{opacity:0}
 </style>
 
 </head>
@@ -1302,20 +1303,29 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
     if(!pool.length) return;
     const order = [...pool.filter(c => c.prevPrice || c.belowList), ...pool.filter(c => !(c.prevPrice || c.belowList)).sort((a, b) => String(b.arrived || '').localeCompare(String(a.arrived || '')))].slice(0, 12);
     const layers = [...document.querySelectorAll('#heroBg .hs')], cap = $('#heroCap');
-    let i = 0, front = 0, timer = null;
+    let i = 0, front = 0, timer = null, seq = 0;
+    const cache = {};
+    const load = c => cache[c.id] || (cache[c.id] = new Promise(res => { const im = new Image(); im.onload = () => (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im.src)); im.onerror = () => res(null); im.src = c.photos[0]; }));
+    /* photo and caption change in the same instant, only once the photo is fully ready */
     const show = idx => {
-      const c = order[idx], next = layers[1 - front], img = new Image();
-      img.onload = () => {
-        next.src = img.src; next.classList.add('on'); layers[front].classList.remove('on'); front = 1 - front;
-        cap.textContent = name(c) + (c.year ? ' ' + c.year : '') + ' · ' + money(c.price); cap.hidden = false; cap.onclick = () => openCar(c.id);
-        const n = order[(idx + 1) % order.length]; if(n) (new Image()).src = n.photos[0];
-      };
-      img.src = c.photos[0];
+      const c = order[idx], my = ++seq;
+      load(c).then(src => {
+        if(my !== seq || !src) return;
+        const next = layers[1 - front];
+        next.src = src; next.classList.add('on'); layers[front].classList.remove('on'); front = 1 - front;
+        cap.classList.add('swap');
+        setTimeout(() => {
+          if(my !== seq) return;
+          cap.textContent = name(c) + (c.year ? ' ' + c.year : '') + ' · ' + money(c.price); cap.hidden = false; cap.onclick = () => openCar(c.id);
+          cap.classList.remove('swap');
+        }, cap.hidden ? 0 : 180);
+        const n = order[(idx + 1) % order.length]; if(n) load(n);
+      });
     };
     $('#heroBg').classList.add('on');
     show(0);
     if(order.length > 1){
-      const tick = () => { if(document.hidden) return; i = (i + 1) % order.length; show(i); };
+      const tick = () => { if(document.hidden) return; const n = (i + 1) % order.length; load(order[n]).then(src => { if(!src) return; i = n; show(i); }); };
       timer = setInterval(tick, 3000);
     }
     $('#heroSub').textContent = data.cars.length + ' רכבים יד שנייה זמינים עכשיו, המלאי מתעדכן כל יום';
