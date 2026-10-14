@@ -1489,7 +1489,7 @@ html[data-theme="light"] .fxh .hl{-webkit-text-fill-color:transparent}
   })();
 
   fetch('cars.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
-    data = {cars: Array.isArray(d.cars) ? d.cars : [], business: d.business || {}, updatedAt: d.updatedAt, sold: Array.isArray(d.sold) ? d.sold : [], reqStatus: d.reqStatus || {}, sellSpeed: d.sellSpeed || {}};
+    data = {cars: (Array.isArray(d.cars) ? d.cars : []).map(c => Object.assign({}, c, {belowList: false, belowBy: null})) /* no below-list-price labels */, business: d.business || {}, updatedAt: d.updatedAt, sold: Array.isArray(d.sold) ? d.sold : [], reqStatus: d.reqStatus || {}, sellSpeed: d.sellSpeed || {}};
     try { renderSold(); paintUser(); matchToast(); setHero(); welcomeBack(); renderForYou(); checkWatched(); exitArm(); } catch(e){}
     fillFilters(); setContact(); markQuick(); updateFavBar(); render(); renderRecent(); updateMenu();
     const h = location.hash.slice(1); if(h) openCar(h, true);
