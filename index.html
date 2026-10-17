@@ -817,6 +817,19 @@ html[data-theme="light"] .nudge{background:#0b2347}
   // budget
   const bIn = $('#budget');
   bIn.addEventListener('input', () => { const d = bIn.value.replace(/\D/g,''); bIn.value = d ? nf.format(Number(d)) : ''; budget = num(d); markQuick(); render(); });
+  // חיפוש אוטומטי: כשמסיימים להקליד סכום, סוגרים את המקלדת וגוללים לרכבים שמתאימים
+  let bTimer = null, bLast = null;
+  function budgetGo(){
+    clearTimeout(bTimer);
+    if(!budget || budget === bLast) return;
+    bLast = budget;
+    try{ bIn.blur(); }catch(e){}
+    try{ track('budget_search', {budget}); }catch(e){}
+    setTimeout(() => { const t = $('#count'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); }, 120);
+  }
+  bIn.addEventListener('input', () => { clearTimeout(bTimer); bTimer = setTimeout(budgetGo, 1200); });
+  bIn.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); budgetGo(); } });
+  bIn.addEventListener('change', budgetGo);
   function markQuick(){ document.querySelectorAll('#quick button').forEach(b => b.setAttribute('aria-pressed', String((num(b.dataset.v) || null) === budget && (b.dataset.v !== '' || budget == null)))); }
   $('#quick').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; budget = num(b.dataset.v); bIn.value = budget ? nf.format(budget) : ''; markQuick(); render(); $('#count').scrollIntoView({behavior:'smooth', block:'start'}); });
   ['#fMake','#fYear','#fGear','#fRegion','#fSort'].forEach(s => $(s).addEventListener('change', render));
