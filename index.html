@@ -1095,7 +1095,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
   const paintStars = () => $('#rvStars').querySelectorAll('button').forEach(b => { b.classList.toggle('on', Number(b.dataset.s) <= stars); b.setAttribute('aria-checked', String(Number(b.dataset.s) === stars)); });
   $('#rvStars').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if(b){ stars = Number(b.dataset.s); paintStars(); } });
   paintStars();
-  $('#rvOpen').addEventListener('click', () => { $('#rvErr').textContent = ''; openSheet('#rvSheet'); setTimeout(() => $('#rName').focus(), 50); });
+  $('#rvOpen').addEventListener('click', () => { if(typeof closeDrawer === 'function') closeDrawer(); setTimeout(() => tallyOpen('2j8GQM'), 120); });
   $('#rvForm').addEventListener('submit', e => {
     e.preventDefault();
     const nm = $('#rName').value.trim(), tx = $('#rText').value.trim();
@@ -1145,7 +1145,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
     $('#mRegS').textContent = u ? 'אתם מחוברים · לחצו לפרופיל שלכם' : 'השאירו שם וטלפון ונעדכן אתכם על רכבים חדשים';
   }
   let tfOpts = null, tfTimer = null;
-  const TF_META = { [REG_FORM]: ['הרשמה לאתר', 'נעדכן אתכם על רכבים חדשים שמגיעים'], [REQ_FORM]: ['בקשה לרכב', 'ספרו לנו מה אתם מחפשים'], [ALERT_FORM]: ['התראת ירידת מחיר', 'נעדכן אתכם בוואטסאפ'] };
+  const TF_META = { [REG_FORM]: ['הרשמה לאתר', 'נעדכן אתכם על רכבים חדשים שמגיעים'], [REQ_FORM]: ['בקשה לרכב', 'ספרו לנו מה אתם מחפשים'], [ALERT_FORM]: ['התראת ירידת מחיר', 'נעדכן אתכם בוואטסאפ'], '2j8GQM': ['השאירו ביקורת', 'הביקורת תופיע באתר אוטומטית'] };
   function tallyOpen(id, opts){
     tfOpts = Object.assign({ id }, opts || {});
     const [t, sub] = TF_META[id] || ['רכב ישראל', ''];
@@ -1440,8 +1440,8 @@ html[data-theme="light"] .nudge{background:#0b2347}
     let m; try { m = JSON.parse(e.data); } catch(err){ return; }
     if(m.event === 'Tally.FormSubmitted' && tfOpts){
       const o = tfOpts; tfOpts = null;
-      $('#tfBody').innerHTML = '<div class="tf-done"><div class="ck">✓</div><b>' + (o.id === REG_FORM ? 'נרשמתם בהצלחה!' : o.id === ALERT_FORM ? 'ההתראה הופעלה!' : 'הבקשה התקבלה!') + '</b><span>' + (o.id === REG_FORM ? 'נעדכן אתכם על רכבים חדשים' : o.id === ALERT_FORM ? 'נשלח לכם הודעה אם המחיר יירד' : 'נחזור אליכם כשנמצא רכב מתאים') + '</span></div>';
-      track(o.id === REG_FORM ? 'site_register' : o.id === ALERT_FORM ? 'price_alert' : 'car_request'); try { sessionStorage.setItem('rv_acted', '1'); } catch(e){}
+      $('#tfBody').innerHTML = '<div class="tf-done"><div class="ck">✓</div><b>' + (o.id === REG_FORM ? 'נרשמתם בהצלחה!' : o.id === ALERT_FORM ? 'ההתראה הופעלה!' : o.id === '2j8GQM' ? 'תודה על הביקורת!' : 'הבקשה התקבלה!') + '</b><span>' + (o.id === REG_FORM ? 'נעדכן אתכם על רכבים חדשים' : o.id === ALERT_FORM ? 'נשלח לכם הודעה אם המחיר יירד' : 'נחזור אליכם כשנמצא רכב מתאים') + '</span></div>';
+      track(o.id === REG_FORM ? 'site_register' : o.id === ALERT_FORM ? 'price_alert' : o.id === '2j8GQM' ? 'review_submit' : 'car_request'); try { sessionStorage.setItem('rv_acted', '1'); } catch(e){}
       if(o.onSubmit) try { o.onSubmit(m.payload || {}); } catch(err){}
       tfTimer = setTimeout(tfClose, 2200);
     }
