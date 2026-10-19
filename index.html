@@ -581,6 +581,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
       <div class="search">
         <label for="budget">התקציב שלכם</label>
         <div class="money"><span>₪</span><input id="budget" inputmode="numeric" placeholder="הקלידו כאן את המחיר או התקציב שלכם" autocomplete="off"></div>
+        <div class="note" id="budHint" hidden style="margin-top:6px">הקלידו את הסכום המלא, למשל 45,000 ₪ (מינימום 5,000 ₪)</div>
         <button class="quizlink" id="quizOpen" type="button">לא בטוחים מה מתאים לכם? 3 שאלות ונמצא לכם רכב</button>
         <div class="quick" id="quick" role="group" aria-label="תקציב מהיר">
           <button type="button" data-v="30000">עד 30 אלף</button><button type="button" data-v="50000">עד 50 אלף</button><button type="button" data-v="80000">עד 80 אלף</button><button type="button" data-v="120000">עד 120 אלף</button><button type="button" data-v="">הכל</button>
@@ -819,7 +820,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
 
   // budget
   const bIn = $('#budget');
-  bIn.addEventListener('input', () => { const d = bIn.value.replace(/\D/g,''); bIn.value = d ? nf.format(Number(d)) : ''; budget = num(d); markQuick(); render(); });
+  bIn.addEventListener('input', () => { const d = bIn.value.replace(/\D/g,''); bIn.value = d ? nf.format(Number(d)) : ''; const n = num(d); budget = n && n >= 5000 ? n : null; const bh = $('#budHint'); if(bh) bh.hidden = !(d && !budget); markQuick(); render(); });
   // חיפוש אוטומטי: כשמסיימים להקליד סכום, סוגרים את המקלדת וגוללים לרכבים שמתאימים
   let bTimer = null, bLast = null;
   function budgetGo(){
@@ -1374,7 +1375,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
   }
 
   /* analytics events (anonymous; no names or phones are sent) */
-  const track = (ev, props) => { try { window.posthog && posthog.capture && posthog.capture(ev, props || {}); } catch(e){} };
+  const track = (ev, props) => { try { if(localStorage.getItem('rv_internal') === '1') return; window.posthog && posthog.capture && posthog.capture(ev, props || {}); } catch(e){} };
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href*="wa.me"]'); if(!a) return;
     const where = a.closest('#panel') ? 'car_page' : a.closest('#drawer') ? 'menu' : a.id === 'fab' ? 'floating' : a.id === 'topWa' ? 'header' : 'other';
@@ -1579,7 +1580,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
 
 <script>
 !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag onFeatureFlags".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-posthog.init('phc_vrE4mAyBNgwKwjHVx6GqsuG9U8XzBBoxNVHMQEQBnseN', { api_host: 'https://us.i.posthog.com', person_profiles: 'identified_only', disable_session_recording: true, capture_pageview: true, capture_pageleave: true });
+posthog.init('phc_vrE4mAyBNgwKwjHVx6GqsuG9U8XzBBoxNVHMQEQBnseN', { api_host: 'https://us.i.posthog.com', person_profiles: 'identified_only', disable_session_recording: true, capture_pageview: true, capture_pageleave: true, loaded: function(ph){ try{ if(/[?&]internal=1/.test(location.search)) localStorage.setItem('rv_internal','1'); if(/[?&]internal=0/.test(location.search)) localStorage.removeItem('rv_internal'); if(localStorage.getItem('rv_internal') === '1') ph.opt_out_capturing(); }catch(e){} } });
 </script>
 <script async src="https://tally.so/widgets/embed.js"></script>
 <script>
