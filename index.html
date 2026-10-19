@@ -214,6 +214,8 @@ h1{font-family:var(--f-lux);font-weight:900;font-size:clamp(2rem,6.4vw,3.4rem);l
 .note{font-size:.85rem;color:var(--muted)}
 footer{border-top:1px solid var(--line);padding-block:22px 34px;color:var(--muted);font-size:.9rem;text-align:center}
 footer b{color:var(--ink)}
+.fab.call{bottom:calc(86px + env(safe-area-inset-bottom,0px));background:linear-gradient(135deg,#2f7bff,#1b4fd1);color:#fff;box-shadow:0 10px 26px rgb(47 123 255 / .4)}
+.btn.tel{background:linear-gradient(135deg,#2f7bff,#1b4fd1);color:#fff}
 .fab{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));inset-inline-start:18px;z-index:30;width:56px;height:56px;border-radius:50%;background:var(--wa);color:var(--wa-ink);display:grid;place-items:center;box-shadow:0 10px 26px rgb(37 211 102 / .4)}
 .fab svg{width:28px;height:28px}
 /* favorites */
@@ -644,6 +646,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
     <div class="foot-links"><button type="button" id="thmFoot">מצב בהיר / כהה</button><a href="privacy.html">מדיניות פרטיות</a><a href="accessibility.html">הצהרת נגישות</a><button type="button" data-a11y>התאמות נגישות</button></div>
   </footer>
 
+  <a class="fab call" id="fabCall" aria-label="התקשרו אלינו" hidden><svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z"/></svg></a>
   <a class="fab" id="fab" target="_blank" rel="noopener" aria-label="שלחו לנו הודעה בוואטסאפ" hidden><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg></a>
 
   <!-- side menu -->
@@ -1010,6 +1013,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
         <div class="cta">
           <button class="btn ghost" type="button" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}" id="dFav">${favs.has(c.id) ? '♥ שמור במועדפים' : '♡ שמירה למועדפים'}</button>
           ${w ? `<a class="btn wa" target="_blank" rel="noopener" href="${w}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg>אני מעוניין, שלחו פרטים</a>` : ''}
+          <a class="btn tel" id="dCall" href="tel:+${waNum(phone())}">📞 התקשרו עכשיו</a>
           <button class="btn ghost" id="dShare" type="button">שיתוף הרכב</button>
           <button class="btn ghost" id="dAlert" type="button" ${watchGet()[c.id] ? 'aria-pressed="true"' : ''}>${watchGet()[c.id] ? '✓ נעדכן אתכם אם המחיר יירד' : '🔔 עדכנו אותי אם המחיר יורד'}</button>
         </div>
@@ -1064,6 +1068,7 @@ html[data-theme="light"] .nudge{background:#0b2347}
     const fw = waLink('שלום, אני מחפש רכב. התקציב שלי: ___ . מה שחשוב לי: ___');
     if(fw){ $('#findWa').href = fw; $('#mWa').href = w; $('#mDrive').href = waLink('שלום, אשמח לתאם נסיעת מבחן. הרכב שמעניין אותי: ___ . מתי נוח לי: ___'); }
     $('#mPhone').textContent = phone();
+    { const fc=$('#fabCall'); if(fc){ fc.href='tel:+'+waNum(phone()); fc.hidden=false; } }
     [$('#topWa'), $('#fab')].forEach(a => { if(w){ a.href = w; a.hidden = false; } else a.hidden = true; });
     if(data.updatedAt) $('#updated').textContent = 'המלאי עודכן לאחרונה: ' + new Date(data.updatedAt).toLocaleString('he-IL', {day:'numeric', month:'numeric', hour:'2-digit', minute:'2-digit'});
   }
@@ -1375,6 +1380,8 @@ html[data-theme="light"] .nudge{background:#0b2347}
     const where = a.closest('#panel') ? 'car_page' : a.closest('#drawer') ? 'menu' : a.id === 'fab' ? 'floating' : a.id === 'topWa' ? 'header' : 'other';
     track('whatsapp_click', { where, car_id: open ? open.id : null, car: open ? (name(open) + ' ' + (open.year || '')).trim() : null });
   }, true);
+
+  document.addEventListener('click', e => { const a = e.target.closest('a[href^="tel:"]'); if(!a) return; track('call_click', { where: a.closest('#panel') ? 'car_page' : 'floating', car_id: open ? open.id : null }); }, true);
 
   function reqMatches(r){
     if(!data || !data.cars) return [];
