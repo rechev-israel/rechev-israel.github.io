@@ -176,6 +176,7 @@ h1{font-family:var(--f-lux);font-weight:900;font-size:clamp(2rem,6.4vw,3.4rem);l
 .body h3 .yr{color:var(--muted);font-weight:600}
 .specs{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:.92rem}
 .specs b{color:var(--ink);font-family:var(--f-num);font-weight:500}
+.specs .sp-price{display:none;font-family:var(--f-num);font-weight:800;color:var(--ink);direction:ltr}
 .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto;padding-top:6px;border-top:1px solid var(--line)}
 .price{font-family:var(--f-num);font-weight:600;font-size:1.45rem;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;direction:ltr}
 .left{font-size:.82rem;color:var(--ok);font-weight:700}
@@ -445,7 +446,9 @@ textarea.inp{resize:vertical}
   .body h3{font-size:.98rem}
   .body h3 .yr{display:block;font-size:.85rem}
   .specs{font-size:.8rem;gap:2px 8px}
-  .specs span:nth-child(n+3){display:none}
+  .specs span:nth-child(n+4){display:none}
+  .specs .sp-km{display:none}
+  .specs .sp-price{display:inline;font-size:.95rem}
   .foot{display:none}
   .pchip{display:block}
   .tags .tag{font-size:.7rem;padding:2px 8px}
@@ -483,7 +486,7 @@ html[data-theme="light"] .hero-txt .eyebrow{color:#e8f4ff}
 html[data-theme="light"] .soldsec .mini div,html[data-theme="light"] .mini div{color:var(--ink)}
 html[data-theme="light"] .tf-body iframe{color-scheme:normal}
 .search label{letter-spacing:normal}
-@media (max-width:560px){ .car .foot{display:none} .car .ph .cnt{display:none} .car .specs span:nth-child(n+3){display:none} }
+@media (max-width:560px){ .car .foot{display:none} .car .ph .cnt{display:none} .car .specs span:nth-child(n+4){display:none} }
 .dr-sep{letter-spacing:normal;font-size:.85rem}
 .nophoto img{width:30%!important;max-width:130px;height:auto!important;aspect-ratio:1;flex:none;object-fit:cover}
 .nophoto span{letter-spacing:normal}
@@ -858,19 +861,18 @@ html[data-theme="light"] .nudge{background:#0b2347}
 
   function card(c){
     const left = budget ? budget - c.price : null;
-    const isNew = daysAgo(c.arrived) <= 3;
     const monthly = pmt(c.price * (1 - FIN.down), FIN.rate, FIN.months);
     return `<div class="car" role="button" tabindex="0" data-id="${esc(c.id)}" aria-label="${esc(name(c))} ${c.year || ''}, ${money(c.price)}">
       <div class="ph">
         <button class="fav ${favs.has(c.id) ? 'on' : ''}" type="button" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}" aria-label="שמירה למועדפים"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.3C1.4 7.8 3.6 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.6 3.3 4.3 6.7-1.8 4.7-9.3 9.3-9.3 9.3z"/></svg></button>${c.photos[0] ? `<img src="${esc(c.photos[0])}" alt="" loading="lazy" decoding="async">` : NOPHOTO}
-        <div class="tags">${c.prevPrice ? '<span class="tag drop">ירד במחיר!</span>' : c.belowList ? `<span class="tag deal">${c.belowBy ? money(c.belowBy) + ' מתחת למחירון' : 'מתחת למחירון'}</span>` : isNew ? '<span class="tag new">חדש במגרש</span>' : ''}</div>
+        <div class="tags">${c.prevPrice ? '<span class="tag drop">ירד במחיר!</span>' : c.belowList ? `<span class="tag deal">${c.belowBy ? money(c.belowBy) + ' מתחת למחירון' : 'מתחת למחירון'}</span>` : ''}</div>
         ${c.photos.length > 1 ? `<span class="cnt">${c.photos.length} תמונות</span>` : ''}
-        <span class="pchip">${money(c.price)}</span>
       </div>
       <div class="body">
         <h3><a class="clink" href="car/${esc(c.id)}/">${esc(name(c))}</a> ${c.year ? `<span class="yr">${c.year}</span>` : ''}</h3>
         <div class="specs">
-          ${c.km != null ? `<span><b>${nf.format(c.km)}</b> ק"מ</span>` : ''}
+          <span class="sp-price">${money(c.price)}</span>
+          ${c.km != null ? `<span class="sp-km"><b>${nf.format(c.km)}</b> ק"מ</span>` : ''}
           ${c.hand ? `<span>יד <b>${esc(c.hand)}</b></span>` : ''}
           ${c.gear ? `<span>${esc(c.gear)}</span>` : ''}
           ${c.color ? `<span>${esc(c.color)}</span>` : ''}
