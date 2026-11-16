@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --surface: #121214;
+  --surface-2: #1a1a1d;
+  --surface-3: #232327;
+  --border: #2a2a2f;
+  --text: #f2ede3;
+  --muted: #9d978b;
+  --gold: #c9a44c;
+  --gold-strong: #e2c478;
+  --gold-soft: rgba(201, 164, 76, 0.12);
+  --danger: #e0645c;
+  --success: #5fb98a;
+  --warning: #e0a84c;
+  --info: #6fa3d8;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --surface-2: #f1ede4;
+  --surface-3: #e8e2d6;
+  --border: #ddd6c7;
+  --text: #17140e;
+  --muted: #6c665a;
+  --gold: #9c7726;
+  --gold-strong: #7d5e18;
+  --gold-soft: rgba(156, 119, 38, 0.1);
+  --danger: #b8392f;
+  --success: #2f8a5b;
+  --warning: #a8701c;
+  --info: #2f6aa8;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-gold-soft: var(--gold-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --font-sans: var(--font-heebo), system-ui, sans-serif;
+  --font-display: var(--font-frank), var(--font-heebo), serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--gold);
+  color: #0a0a0b;
+}
+
+.gold-text {
+  background: linear-gradient(120deg, var(--gold-strong), var(--gold) 55%, #8f6f2a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-in { animation: fade-up 0.35s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation: none; }
+  * { transition: none !important; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .print-plain { border: none !important; box-shadow: none !important; background: #fff !important; }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
