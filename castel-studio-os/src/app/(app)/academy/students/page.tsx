@@ -17,7 +17,7 @@ export default async function StudentsPage() {
   });
   return (
     <>
-      <Link href="/academy" className="mb-3 inline-block text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
+      <Link href="/academy" className="mb-2 inline-flex min-h-9 items-center text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
       <PageHeader title={t.academy.students} actions={can(user.role, "academy.edit") && <Link href="/academy/students/new" className={buttonClass()}><Plus size={14} /> {t.academy.newStudent}</Link>} />
       <Card>
         {students.length ? (

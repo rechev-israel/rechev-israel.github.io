@@ -18,7 +18,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
   const edit = can(user.role, "academy.edit");
   return (
     <>
-      <Link href="/academy" className="mb-3 inline-block text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
+      <Link href="/academy" className="mb-2 inline-flex min-h-9 items-center text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
       <PageHeader title={`${t.academy.materials} — ${locale === "he" ? course.nameHe : course.nameEn}`} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

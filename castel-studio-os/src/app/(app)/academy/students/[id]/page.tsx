@@ -18,7 +18,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
   if (!s) notFound();
   return (
     <>
-      <Link href="/academy/students" className="mb-3 inline-block text-xs text-muted hover:text-gold">← {t.academy.students}</Link>
+      <Link href="/academy/students" className="mb-2 inline-flex min-h-9 items-center text-xs text-muted hover:text-gold">← {t.academy.students}</Link>
       <PageHeader title={fullName(s)} subtitle={[s.phone, s.email].filter(Boolean).map((v) => `\u2066${v}\u2069`).join(" · ")} actions={<Badge tone="gold">{t.studentStatus[s.status]}</Badge>} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>

@@ -31,7 +31,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <Link href="/crm" className="mb-3 inline-flex items-center gap-1 text-xs text-muted hover:text-gold"><ArrowRight size={12} className="ltr:rotate-180" /> {t.crm.title}</Link>
+      <Link href="/crm" className="mb-2 inline-flex min-h-9 items-center gap-1 text-xs text-muted hover:text-gold"><ArrowRight size={12} className="ltr:rotate-180" /> {t.crm.title}</Link>
       <PageHeader
         title={fullName(c)}
         subtitle={[c.phone, c.email].filter(Boolean).map((v) => `\u2066${v}\u2069`).join(" · ") || undefined}

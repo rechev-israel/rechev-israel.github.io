@@ -23,7 +23,9 @@ Legend: ✅ implemented & tested · 🟡 partial · 🔑 implemented, needs API 
 | Tests | ✅ | 33 Vitest tests: domain logic, RBAC, AI routing, CSV adapter, validation + PostgreSQL integration tests (capacity under concurrency, tenant isolation, payments → transactions, certificates, double-booking) |
 | Vercel deployment config | ✅ | `vercel.json` + `scripts/vercel-build.mjs` (generate → non-destructive `migrate deploy` via direct URL → build), Neon env-var fallbacks, build deps in `dependencies`; verified with a production-mode clean install on an empty DB. Not deployed yet — see DEPLOY.md |
 | First-run setup `/setup` | ✅ | Creates owner + academy courses on a fresh DB; requires `SETUP_TOKEN`; auto-locks once any user exists |
-| iPhone / Safari | ✅ | Safe-area (notch) insets, 16px inputs (no focus zoom), `dvh` heights, phone-number auto-link off, home-screen icon + manifest; all pages verified at iPhone width with no horizontal overflow |
+| Responsive layouts | ✅ | One app, three navigation modes: full sidebar ≥1024px (desktop, tablet landscape), icon rail 768–1023px (tablet portrait), bottom tab bar + "More" drawer <768px (phones). Calendar/kanban/stat grids adapt per breakpoint; CRM list becomes cards on phones; 44px+ touch targets. Automated audit: 8 pages × 4 viewports (390/768/1024/1440) × Hebrew RTL & English LTR — no horizontal overflow |
+| iPhone / Safari | ✅ | Safe-area (notch) insets, 16px inputs (no focus zoom), `dvh` heights, phone-number auto-link off, home-screen icon |
+| PWA (installable) | ✅ | Web manifest (192/512/maskable icons, shortcuts), service worker that caches only static assets + offline page (never business data/HTML/API), install button on Chrome/Edge/Android; Chrome installability check: 0 errors |
 | Background jobs | 🟡 | `npm run jobs` (session purge, segment recompute) for cron. Durable queue in Phase 3 |
 
 ## Modules

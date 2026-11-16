@@ -78,7 +78,7 @@ export default async function DashboardPage() {
 
       <section className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card>
-          <CardTitle action={<Link href="/bookings" className="text-xs text-gold hover:underline">{t.common.view}</Link>}>{t.dashboard.upcoming}</CardTitle>
+          <CardTitle action={<Link href="/bookings" className="-my-2 inline-flex min-h-9 items-center px-2 text-xs text-gold hover:underline">{t.common.view}</Link>}>{t.dashboard.upcoming}</CardTitle>
           {m.upcoming.length ? (
             <ul className="divide-y divide-border">
               {m.upcoming.map((ap) => (
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardTitle action={<Link href="/tasks" className="text-xs text-gold hover:underline">{t.common.view}</Link>}>{t.dashboard.tasks}</CardTitle>
+          <CardTitle action={<Link href="/tasks" className="-my-2 inline-flex min-h-9 items-center px-2 text-xs text-gold hover:underline">{t.common.view}</Link>}>{t.dashboard.tasks}</CardTitle>
           {m.openTasks.length ? (
             <ul className="space-y-2">
               {m.openTasks.map((task) => (

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Edge pre-check only: cookie presence. Real validation (DB session, role) happens server-side.
-const PUBLIC = [/^\/login/, /^\/setup/, /^\/join(\/|$)/, /^\/api\/public\//, /^\/api\/health/, /^\/_next\//, /^\/favicon/, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/];
+const PUBLIC = [/^\/login/, /^\/setup/, /^\/join(\/|$)/, /^\/api\/public\//, /^\/api\/health/, /^\/_next\//, /^\/favicon/, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/, /^\/icons\//, /^\/sw\.js$/, /^\/offline\.html$/];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -16,4 +16,4 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest).*)"] };
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|icons/|apple-icon|manifest.webmanifest|sw.js|offline.html).*)"] };

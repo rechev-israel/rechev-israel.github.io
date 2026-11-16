@@ -74,7 +74,10 @@ From now on, every push to that branch redeploys automatically.
    - Tap **יצירת חשבון בעלים**.
 3. You're signed in. Setup **locks itself** as soon as an owner exists.
    You can then delete `SETUP_TOKEN` from Vercel if you want.
-4. **Add to Home Screen:** Safari **Share** button → **Add to Home Screen**. It opens full-screen with the CASTEL icon.
+4. **Install it as an app (PWA):**
+   - **iPhone/iPad (Safari):** **Share** → **Add to Home Screen**.
+   - **Android / desktop Chrome or Edge:** tap the gold **Install** button in the app's top bar, or use the install icon in the address bar.
+   It opens full-screen with the CASTEL icon. The same URL works in any browser, on desktop, tablet and phone.
 
 Public academy page to share on Instagram: `https://<your-project>.vercel.app/join`
 Health check: `https://<your-project>.vercel.app/api/health` should show `{"ok":true,"db":"up"}`.

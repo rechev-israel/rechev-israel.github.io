@@ -49,7 +49,7 @@ export function Field({ label, error, hint, children, className }: { label: stri
 
 // ── Surfaces ──────────────────────────────────────────────
 export function Card({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-2xl border border-border bg-surface p-5", className)} {...p} />;
+  return <div className={cn("min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5", className)} {...p} />;
 }
 export function CardTitle({ className, children, action }: { className?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -62,12 +62,12 @@ export function CardTitle({ className, children, action }: { className?: string;
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="mb-5 flex min-w-0 flex-col gap-3 md:mb-6 md:flex-row md:items-end md:justify-between md:gap-4">
       <div>
-        <h1 className="font-display text-2xl font-bold md:text-3xl">{title}</h1>
+        <h1 className="font-display text-2xl font-bold [overflow-wrap:anywhere] md:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>*]:shrink-0">{actions}</div>}
     </div>
   );
 }

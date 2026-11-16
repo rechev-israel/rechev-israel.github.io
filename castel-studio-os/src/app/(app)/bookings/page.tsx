@@ -49,7 +49,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label={t.bookings.analytics} value={analytics.total} />
         <Stat label={t.bookings.completed} value={analytics.completed} />
         <Stat label={t.bookings.cancellationRate} value={analytics.cancellationRate === null ? "—" : `${analytics.cancellationRate}%`} />
@@ -66,7 +66,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             <Link className={buttonClass("secondary", "sm")} href={`/bookings?week=${toLocalInput(addDays(weekStart, 7), false)}`}>{t.bookings.nextWeek} <ChevronLeft size={14} className="ltr:rotate-180" /></Link>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-7">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
           {days.map((d, i) => {
             const key = toLocalInput(d, false);
             const list = appts.filter((a) => toLocalInput(a.startsAt, false) === key);
@@ -85,18 +85,18 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         <span className="tabular-nums font-semibold" dir="ltr">{toLocalInput(a.startsAt).slice(11)}</span>
                         <Badge tone={tone[a.status]}>{t.apptStatus[a.status]}</Badge>
                       </div>
-                      <p className="mt-1 truncate">{a.customer ? <Link className="hover:text-gold" href={`/crm/${a.customer.id}`}>{fullName(a.customer)}</Link> : t.bookings.walkIn}</p>
+                      <p className="mt-1 truncate">{a.customer ? <Link className="-my-1.5 inline-block py-1.5 hover:text-gold" href={`/crm/${a.customer.id}`}>{fullName(a.customer)}</Link> : t.bookings.walkIn}</p>
                       <p className="truncate text-[11px] text-muted">{a.service ? (locale === "he" ? a.service.nameHe : a.service.nameEn) : ""}{a.staff ? ` · ${a.staff.name}` : ""}</p>
                       {edit && (a.status === "SCHEDULED" || a.status === "CONFIRMED") && (
                         <div className="mt-1.5 flex flex-wrap gap-1">
-                          {a.status === "SCHEDULED" && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CONFIRMED" }} className="h-6 px-1.5 text-[10px]">{t.bookings.confirm}</InlineAction>}
-                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "COMPLETED" }} className="h-6 px-1.5 text-[10px] text-success">{t.bookings.markCompleted}</InlineAction>
-                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "NO_SHOW" }} className="h-6 px-1.5 text-[10px] text-danger">{t.bookings.markNoShow}</InlineAction>
-                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CANCELLED" }} confirm={t.bookings.markCancelled + "?"} className="h-6 px-1.5 text-[10px]">{t.bookings.markCancelled}</InlineAction>
+                          {a.status === "SCHEDULED" && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CONFIRMED" }} className="h-9 px-2.5 text-xs sm:h-7 sm:px-1.5 sm:text-[10px]">{t.bookings.confirm}</InlineAction>}
+                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "COMPLETED" }} className="h-9 px-2.5 text-xs sm:h-7 sm:px-1.5 sm:text-[10px] text-success">{t.bookings.markCompleted}</InlineAction>
+                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "NO_SHOW" }} className="h-9 px-2.5 text-xs sm:h-7 sm:px-1.5 sm:text-[10px] text-danger">{t.bookings.markNoShow}</InlineAction>
+                          <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CANCELLED" }} confirm={t.bookings.markCancelled + "?"} className="h-9 px-2.5 text-xs sm:h-7 sm:px-1.5 sm:text-[10px]">{t.bookings.markCancelled}</InlineAction>
                         </div>
                       )}
                       {edit && (a.status === "CANCELLED" || a.status === "NO_SHOW" || a.status === "COMPLETED") && (
-                        <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "SCHEDULED" }} className="mt-1 h-6 px-1.5 text-[10px]">↺</InlineAction>
+                        <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "SCHEDULED" }} className="mt-1 h-9 px-2.5 text-xs sm:h-7 sm:px-1.5 sm:text-[10px]">↺</InlineAction>
                       )}
                     </li>
                   ))}

@@ -18,10 +18,10 @@ export default async function LeadsPage() {
   const edit = can(user.role, "academy.edit");
   return (
     <>
-      <Link href="/academy" className="mb-3 inline-block text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
+      <Link href="/academy" className="mb-2 inline-flex min-h-9 items-center text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
       <PageHeader title={t.academy.pipeline} subtitle={`${t.academy.landing}: /join`} />
       {leads.length === 0 ? <EmptyState title={t.common.empty} /> : (
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           {COLS.map((col) => {
             const list = leads.filter((l) => l.status === col);
             return (

@@ -37,7 +37,7 @@ export default async function CohortPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <Link href="/academy" className="mb-3 inline-block text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
+      <Link href="/academy" className="mb-2 inline-flex min-h-9 items-center text-xs text-muted hover:text-gold">← {t.academy.title}</Link>
       <PageHeader
         title={cohort.name}
         subtitle={`${locale === "he" ? cohort.course.nameHe : cohort.course.nameEn} · ${formatILS(cohort.course.price, locale)} · ${totalInstructionalHours(cohort.course.lessonDurations)} ${t.common.hours}`}

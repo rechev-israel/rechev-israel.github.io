@@ -71,6 +71,30 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         {items.length === 0 ? (
           <EmptyState title={t.common.empty} />
         ) : (
+          <>
+          {/* Phone: card list */}
+          <ul className="space-y-2 md:hidden">
+            {items.map((c) => (
+              <li key={c.id}>
+                <Link href={`/crm/${c.id}`} className="block rounded-xl border border-border bg-surface-2 p-3 active:bg-surface-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{fullName(c)}</p>
+                      <p className="text-xs text-muted" dir="ltr">{c.phone ?? "—"}</p>
+                    </div>
+                    <Badge tone={segmentTone(c.status)}>{t.segments[c.status]}</Badge>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted">
+                    <span>{t.crm.visits}: <b className="text-text">{c.visitCount}</b></span>
+                    <span>{formatILS(c.totalSpent, locale)}</span>
+                    <span className="text-end">{formatDate(c.lastVisitAt, locale)}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {/* Tablet & desktop: sortable table */}
+          <div className="hidden md:block">
           <Table>
             <thead>
               <tr>
@@ -98,6 +122,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
               ))}
             </tbody>
           </Table>
+          </div>
+          </>
         )}
         {pages > 1 && (
           <div className="mt-4 flex items-center justify-between text-xs text-muted">
