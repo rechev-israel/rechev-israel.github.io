@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getI18n } from "@/i18n";
+import { db } from "@/lib/db";
 import { getSessionUser } from "@/server/auth/session";
 import { loginAction } from "@/server/actions/auth";
 import { ActionForm, SubmitButton } from "@/components/forms";
@@ -12,10 +13,12 @@ export const metadata = { title: "Login" };
 export default async function LoginPage() {
   if (await getSessionUser()) redirect("/dashboard");
   const { t, locale } = await getI18n();
+  // Fresh install with no users yet → first-time setup.
+  if ((await db.user.count()) === 0) redirect("/setup");
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,164,76,0.14),transparent_60%)]" />
-      <div className="absolute end-4 top-4"><PreferenceToggles locale={locale} t={t} /></div>
+      <div className="absolute end-4 top-[calc(env(safe-area-inset-top)+1rem)]"><PreferenceToggles locale={locale} t={t} /></div>
       <Card className="relative w-full max-w-sm p-8 animate-in">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <BrandMark size={52} />

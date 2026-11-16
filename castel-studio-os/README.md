@@ -3,6 +3,8 @@
 Business operating system for **CASTEL STUDIO**, a premium men's barbershop and barber academy in Ashkelon, Israel.
 Hebrew-first (RTL) with English (LTR), ILS currency, Asia/Jerusalem timezone.
 
+**Deploy from iPhone/Vercel: see [DEPLOY.md](./DEPLOY.md).**
+
 See **[BUILD_STATUS.md](./BUILD_STATUS.md)** for exactly what is implemented, partial, credential-gated and planned.
 
 ## Quick start (local)
@@ -16,7 +18,6 @@ npm install
 # 1. Configure
 cp .env.example .env
 #   - set DATABASE_URL to your Postgres
-#   - set AUTH_SECRET:  openssl rand -hex 32
 #   - set SEED_OWNER_EMAIL / SEED_OWNER_PASSWORD (min 10 chars, letters+digits)
 #     (leave the password empty to have one generated and printed once)
 

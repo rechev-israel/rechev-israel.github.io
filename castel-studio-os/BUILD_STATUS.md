@@ -21,6 +21,9 @@ Legend: ✅ implemented & tested · 🟡 partial · 🔑 implemented, needs API 
 | Security headers, CSRF | ✅ | X-Frame-Options, nosniff, Referrer-Policy; Server Actions origin check + Origin check on cookie-auth API mutations |
 | Structured logging | ✅ | JSON logs (`src/lib/logger.ts`) |
 | Tests | ✅ | 33 Vitest tests: domain logic, RBAC, AI routing, CSV adapter, validation + PostgreSQL integration tests (capacity under concurrency, tenant isolation, payments → transactions, certificates, double-booking) |
+| Vercel deployment config | ✅ | `vercel.json` + `scripts/vercel-build.mjs` (generate → non-destructive `migrate deploy` via direct URL → build), Neon env-var fallbacks, build deps in `dependencies`; verified with a production-mode clean install on an empty DB. Not deployed yet — see DEPLOY.md |
+| First-run setup `/setup` | ✅ | Creates owner + academy courses on a fresh DB; requires `SETUP_TOKEN`; auto-locks once any user exists |
+| iPhone / Safari | ✅ | Safe-area (notch) insets, 16px inputs (no focus zoom), `dvh` heights, phone-number auto-link off, home-screen icon + manifest; all pages verified at iPhone width with no horizontal overflow |
 | Background jobs | 🟡 | `npm run jobs` (session purge, segment recompute) for cron. Durable queue in Phase 3 |
 
 ## Modules

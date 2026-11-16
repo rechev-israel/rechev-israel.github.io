@@ -42,7 +42,7 @@ export function AgentChat({ initial, conversationId: initialId, agents, labels, 
   }
 
   return (
-    <div className="flex h-[70vh] min-h-[480px] flex-col rounded-2xl border border-border bg-surface">
+    <div className="flex h-[70dvh] min-h-[420px] flex-col rounded-2xl border border-border bg-surface">
       <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
         {!configured && <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">{labels.notConfigured}</p>}
         {messages.map((m, i) =>

@@ -27,10 +27,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   })).filter((g) => g.items.length);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh safe-x">
       <Sidebar groups={groups} tagline={t.app.tagline} stateLabels={{ partial: locale === "he" ? "חלקי" : "Partial", planned: t.app.planned }} />
       <div className="lg:ps-64">
-        <header className="no-print sticky top-0 z-20 flex h-16 items-center justify-end gap-3 border-b border-border bg-bg/85 px-4 backdrop-blur md:px-8">
+        <header className="no-print safe-top sticky top-0 z-20 flex min-h-16 items-center justify-end gap-3 border-b border-border bg-bg/85 px-4 backdrop-blur md:px-8">
           <PreferenceToggles locale={locale} t={t} />
           <div className="hidden text-end sm:block">
             <p className="text-sm font-medium leading-tight">{user.name}</p>
@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </button>
           </form>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8 animate-in">{children}</main>
+        <main className="safe-bottom mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8 animate-in">{children}</main>
       </div>
     </div>
   );

@@ -2,28 +2,13 @@
 import { PrismaClient } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { COURSE_DEFINITIONS } from "../src/domain/academy";
+import { ensureBaseData } from "../src/server/services/bootstrap";
 
 const db = new PrismaClient();
 
 async function main() {
-  let business = await db.business.findFirst();
-  if (!business) {
-    business = await db.business.create({
-      data: {
-        name: "CASTEL STUDIO",
-        category: "Premium men's barbershop & barber education academy",
-        city: "Ashkelon",
-        country: "IL",
-        currency: "ILS",
-        timezone: "Asia/Jerusalem",
-        locale: "he",
-        instagram: "https://www.instagram.com/castel.cutzz",
-        branches: { create: { name: "CASTEL STUDIO — אשקלון" } },
-      },
-    });
-    console.log("✔ Business created");
-  }
+  const business = await ensureBaseData(db);
+  console.log("✔ Business, branch, academy courses (Group 5,500 ₪ / VIP 6,500 ₪), placeholder hours");
 
   const email = (process.env.SEED_OWNER_EMAIL || "owner@castel.studio").toLowerCase();
   if (!(await db.user.findUnique({ where: { email } }))) {
@@ -38,30 +23,6 @@ async function main() {
     });
     console.log(`✔ Owner user created: ${email}`);
     if (generated) console.log(`  Generated password (shown once — change it after first login): ${password}`);
-  }
-
-  for (const c of COURSE_DEFINITIONS) {
-    await db.course.upsert({
-      where: { businessId_code: { businessId: business.id, code: c.code } },
-      create: { businessId: business.id, ...c },
-      update: { ...c },
-    });
-  }
-  console.log("✔ Academy courses (Group 5,500 ₪ / VIP 6,500 ₪) upserted");
-
-  const branch = await db.branch.findFirst({ where: { businessId: business.id } });
-  if (branch && (await db.availabilityRule.count({ where: { branchId: branch.id } })) === 0) {
-    // Default opening hours — editable placeholder; owner should confirm actual hours.
-    const hours = [
-      { weekday: 0, startTime: "09:00", endTime: "20:00" },
-      { weekday: 1, startTime: "09:00", endTime: "20:00" },
-      { weekday: 2, startTime: "09:00", endTime: "20:00" },
-      { weekday: 3, startTime: "09:00", endTime: "20:00" },
-      { weekday: 4, startTime: "09:00", endTime: "21:00" },
-      { weekday: 5, startTime: "08:00", endTime: "14:00" },
-    ];
-    await db.availabilityRule.createMany({ data: hours.map((h) => ({ ...h, branchId: branch.id })) });
-    console.log("✔ Default opening hours (placeholder — confirm in Bookings)");
   }
 
   if (process.env.SEED_DEMO_DATA === "true") await seedDemo(business.id);

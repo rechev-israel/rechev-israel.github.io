@@ -17,6 +17,10 @@ export function Sidebar({ groups, tagline, stateLabels }: { groups: SidebarGroup
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   const nav = (
     <nav className="flex h-full flex-col">
@@ -64,15 +68,15 @@ export function Sidebar({ groups, tagline, stateLabels }: { groups: SidebarGroup
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="no-print fixed start-3 top-3 z-40 rounded-lg border border-border bg-surface p-2 lg:hidden" aria-label="Menu">
+      <button onClick={() => setOpen(true)} className="no-print fixed start-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-40 rounded-lg border border-border bg-surface p-2.5 lg:hidden" aria-label="Menu">
         <Menu size={18} />
       </button>
       <aside className="no-print fixed inset-y-0 start-0 z-30 hidden w-64 border-e border-border bg-surface lg:block">{nav}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 start-0 w-72 border-e border-border bg-surface animate-in">
-            <button onClick={() => setOpen(false)} className="absolute end-3 top-5 text-muted" aria-label="Close"><X size={18} /></button>
+          <aside className="safe-top safe-bottom absolute inset-y-0 start-0 w-[min(18rem,85vw)] border-e border-border bg-surface animate-in">
+            <button onClick={() => setOpen(false)} className="absolute end-2 top-[calc(env(safe-area-inset-top)+0.75rem)] p-2 text-muted" aria-label="Close"><X size={20} /></button>
             {nav}
           </aside>
         </div>

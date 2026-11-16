@@ -20,9 +20,9 @@ export default async function JoinPage() {
   const business = await db.business.findFirst({ orderBy: { createdAt: "asc" } });
   const courses = business ? await db.course.findMany({ where: { businessId: business.id, isActive: true }, orderBy: { price: "asc" } }) : [];
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgba(201,164,76,0.16),transparent_55%)]" />
-      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
+      <header className="safe-top relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
         <div className="flex items-center gap-3"><BrandMark /><Wordmark sub="ACADEMY · ASHKELON" /></div>
         <PreferenceToggles locale={locale} t={t} />
       </header>
@@ -64,7 +64,7 @@ export default async function JoinPage() {
           />
         </div>
       </section>
-      <footer className="relative border-t border-border py-6 text-center text-xs text-muted">
+      <footer className="safe-bottom relative border-t border-border py-6 text-center text-xs text-muted">
         CASTEL STUDIO · {locale === "he" ? "אשקלון" : "Ashkelon"} · <a className="text-gold" href="https://www.instagram.com/castel.cutzz" target="_blank" rel="noopener noreferrer">@castel.cutzz</a>
       </footer>
     </main>

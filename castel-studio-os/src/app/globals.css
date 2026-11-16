@@ -64,7 +64,14 @@ body {
   color: var(--text);
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -108,3 +115,20 @@ input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(0.6);
 }
+
+/* ── iOS Safari ─────────────────────────────────────────── */
+/* Safari zooms into any focused field under 16px; keep 16px on phones. */
+@media (max-width: 639px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+/* Native date/time pickers: consistent height and RTL-friendly alignment. */
+input[type="date"], input[type="time"], input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 2.5rem;
+  text-align: start;
+}
+input::-webkit-date-and-time-value { text-align: start; }
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-x { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }

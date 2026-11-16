@@ -20,7 +20,7 @@ export const COURSE_DEFINITIONS = [
     format: "PRIVATE_VIP" as const,
     nameHe: "קורס VIP פרטי",
     nameEn: "Private VIP Course",
-    descriptionHe: "6 מפגשים אישיים, פעמיים בשבוע. מפגשים 1–5 שעתיים, מפגש מסכם 3 שעות — 13 שעות הדרכה.",
+    descriptionHe: "6 מפגשים אישיים, פעמיים בשבוע. מפגשים 1 עד 5 בני שעתיים, מפגש מסכם בן 3 שעות — 13 שעות הדרכה.",
     descriptionEn: "6 one-on-one lessons, twice a week. Lessons 1–5 are 2 hours, final lesson 3 hours — 13 instructional hours.",
     lessonCount: 6,
     lessonsPerWeek: 2,

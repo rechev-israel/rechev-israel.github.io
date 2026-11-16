@@ -5,6 +5,9 @@ import { AGENT_IDS } from "@/server/ai/agents";
 import { rateLimit } from "@/lib/rate-limit";
 import { getLocale } from "@/i18n";
 
+// AI replies can take a while; allow up to 60s on Vercel.
+export const maxDuration = 60;
+
 const body = z.object({
   message: z.string().trim().min(1).max(8000),
   conversationId: z.string().max(40).nullish(),
