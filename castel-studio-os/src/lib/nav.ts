@@ -22,7 +22,7 @@ export const NAV: NavGroup[] = [
       { key: "analytics", href: "/analytics", icon: "LineChart", state: "partial", permission: "dashboard.view" },
       { key: "marketing", href: "/marketing", icon: "Megaphone", state: "live", permission: "marketing.view" },
       { key: "creative", href: "/creative", icon: "Palette", state: "live", permission: "creative.view" },
-      { key: "sites", href: "/sites", icon: "Globe", state: "partial" },
+      { key: "sites", href: "/sites", icon: "Globe", state: "live", permission: "marketing.view" },
       { key: "communications", href: "/communications", icon: "MessagesSquare", state: "live", permission: "comms.view" },
       { key: "automations", href: "/automations", icon: "Workflow", state: "live", permission: "automations.view" },
     ],
@@ -31,7 +31,7 @@ export const NAV: NavGroup[] = [
     key: "ai",
     items: [
       { key: "agents", href: "/agents", icon: "Bot", state: "live", permission: "ai.use" },
-      { key: "twin", href: "/twin", icon: "UserRound", state: "planned" },
+      { key: "twin", href: "/twin", icon: "UserRound", state: "live", permission: "marketing.view" },
       { key: "approvals", href: "/approvals", icon: "ShieldCheck", state: "live", permission: "approvals.view" },
     ],
   },

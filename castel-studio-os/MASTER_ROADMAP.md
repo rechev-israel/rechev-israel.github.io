@@ -11,9 +11,14 @@ Deployments are **frozen** until the owner approves going live (`vercel.json` �
 
 - **Package 3** — AI Creative Studio: built-in brand graphic designer, OpenAI/Replicate/ElevenLabs adapters (pending configuration), async jobs + cron polling, output persistence, asset library with approval, brand kit, AI prompt writer.
 
-## Next — Package 4: Website builder & Digital Twin
-- Block-based page builder (hero, services, academy, gallery, testimonials, CTA/lead form), SEO, preview → publish, custom domain readiness.
-- Digital Twin: explicit consent record, owner-approved knowledge base, avatar/voice provider adapters, approval before publishing.
+- **Package 4** — Website builder (blocks, live data, approved images, SEO, draft/preview/owner publish, public `/s/<slug>`, lead capture) and Digital Twin (explicit consent with scopes & revoke, approved knowledge, grounded chat, scripts, consent-gated owner voice & avatar video).
+
+## Next — Package 5: Hardening & go-live readiness
+1. External error monitoring (e.g. Sentry) + uptime alert on `/api/health`.
+2. Blob storage adapter (Vercel Blob / S3) for large video/3D assets instead of temporary provider links.
+3. Streaming AI replies; per-agent tool permissions UI.
+4. Staff-facing mobile polish pass on every new screen; accessibility audit (keyboard, contrast, screen readers).
+5. Go-live checklist: set `CRON_SECRET`, `ANTHROPIC_API_KEY`, remove deploy freeze, custom domain, publish the home page, verify Cali sync status.
 
 ## Phase 3
 - Ads integrations: Meta Marketing API & Google Ads (read-only reporting first, then approval-gated spend), Instagram Graph publishing via approvals, TikTok content API.

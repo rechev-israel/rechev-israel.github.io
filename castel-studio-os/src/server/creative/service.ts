@@ -40,13 +40,13 @@ async function finish(id: string, outputUrl: string | null | undefined, dataUrl:
 }
 
 /** Create a generation job. Without a configured provider the job is stored as pending_config (never faked). */
-export async function createGenerationJob(actor: { id: string; businessId: string }, input: { kind: CreativeKind; title: string; prompt: string; imageUrl?: string | null; extraInput?: Record<string, unknown> }) {
+export async function createGenerationJob(actor: { id: string; businessId: string }, input: { kind: CreativeKind; title: string; prompt: string; imageUrl?: string | null; extraInput?: Record<string, unknown>; voiceId?: string; tags?: string[] }) {
   const provider = providerFor(input.kind);
   const asset = await db.creativeAsset.create({
     data: {
       businessId: actor.businessId, kind: input.kind, title: input.title, prompt: input.prompt, provider: provider ?? "none",
       status: provider ? "processing" : "pending_config", createdById: actor.id,
-      meta: { imageUrl: input.imageUrl ?? null, extraInput: input.extraInput ?? null } as object,
+      meta: { imageUrl: input.imageUrl ?? null, extraInput: input.extraInput ?? null, tags: input.tags ?? [] } as object,
     },
   });
   await audit({ businessId: actor.businessId, userId: actor.id, action: "creative.job_create", entityType: "CreativeAsset", entityId: asset.id, metadata: { kind: input.kind, provider } });

@@ -60,6 +60,8 @@ model Business {
   syncLogs         SyncLog[]
   brandKit         BrandKit?
   creativeAssets   CreativeAsset[]
+  sitePages        SitePage[]
+  twinProfile      TwinProfile?
 }
 
 model Branch {
@@ -941,4 +943,44 @@ model CreativeAsset {
 
   @@index([businessId, kind, createdAt])
   @@index([status])
+}
+
+/// Website / landing page built from blocks. Draft edits never affect the live page until published.
+model SitePage {
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  slug            String
+  title           String
+  seoTitle        String?
+  seoDescription  String?
+  blocks          Json
+  publishedBlocks Json?
+  publishedTitle  String?
+  status          String    @default("draft") // draft | published | unpublished
+  publishedAt     DateTime?
+  publishedById   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([businessId, slug])
+}
+
+/// Owner AI Digital Twin. Nothing in the twin works without explicit, recorded consent.
+model TwinProfile {
+  id            String    @id @default(cuid())
+  businessId    String    @unique
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  ownerName     String
+  persona       String?
+  consentGiven  Boolean   @default(false)
+  consentText   String?
+  consentAt     DateTime?
+  consentById   String?
+  /// Scopes the owner consented to: chat, voice, avatar
+  consentScopes String[]
+  /// Public https URL of an owner-approved portrait used for avatar video (only with "avatar" consent).
+  portraitUrl   String?
+  revokedAt     DateTime?
+  updatedAt     DateTime  @updatedAt
 }

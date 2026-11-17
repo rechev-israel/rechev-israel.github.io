@@ -9,7 +9,7 @@
  * Replicate model slugs are chosen by the owner (e.g. "owner/model" or "owner/model:version"); input keys
  * differ between models, so we send `prompt` (+ `image` when given) and allow extra JSON input per job.
  */
-export type CreativeKind = "image" | "image_edit" | "video" | "animation" | "model3d" | "voiceover";
+export type CreativeKind = "image" | "image_edit" | "video" | "animation" | "model3d" | "voiceover" | "avatar";
 
 export type StartResult =
   | { state: "done"; outputUrl?: string; dataUrl?: string; mimeType?: string; model: string }
@@ -22,7 +22,7 @@ const env = (k: string) => process.env[k]?.trim() || "";
 const MAX_INLINE_BYTES = 4_000_000;
 
 export function replicateModelFor(kind: CreativeKind) {
-  const key = { image: "REPLICATE_MODEL_IMAGE", image_edit: "REPLICATE_MODEL_IMAGE_EDIT", video: "REPLICATE_MODEL_VIDEO", animation: "REPLICATE_MODEL_ANIMATION", model3d: "REPLICATE_MODEL_3D", voiceover: "" }[kind];
+  const key = { image: "REPLICATE_MODEL_IMAGE", image_edit: "REPLICATE_MODEL_IMAGE_EDIT", video: "REPLICATE_MODEL_VIDEO", animation: "REPLICATE_MODEL_ANIMATION", model3d: "REPLICATE_MODEL_3D", avatar: "REPLICATE_MODEL_AVATAR", voiceover: "" }[kind];
   return key ? env(key) : "";
 }
 
@@ -36,7 +36,7 @@ export function providerFor(kind: CreativeKind): "openai" | "replicate" | "eleve
 
 export function requiredEnvFor(kind: CreativeKind) {
   if (kind === "voiceover") return ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"];
-  const rep = ["REPLICATE_API_TOKEN", { image: "REPLICATE_MODEL_IMAGE", image_edit: "REPLICATE_MODEL_IMAGE_EDIT", video: "REPLICATE_MODEL_VIDEO", animation: "REPLICATE_MODEL_ANIMATION", model3d: "REPLICATE_MODEL_3D" }[kind]];
+  const rep = ["REPLICATE_API_TOKEN", { image: "REPLICATE_MODEL_IMAGE", image_edit: "REPLICATE_MODEL_IMAGE_EDIT", video: "REPLICATE_MODEL_VIDEO", animation: "REPLICATE_MODEL_ANIMATION", model3d: "REPLICATE_MODEL_3D", avatar: "REPLICATE_MODEL_AVATAR" }[kind]];
   return kind === "image" ? [...rep, "— or — OPENAI_API_KEY"] : rep;
 }
 
@@ -101,9 +101,9 @@ export async function replicatePoll(jobId: string): Promise<PollResult> {
   return { state: "running" };
 }
 
-async function elevenlabsTts(text: string): Promise<StartResult> {
+async function elevenlabsTts(text: string, voiceId?: string): Promise<StartResult> {
   const model = env("ELEVENLABS_MODEL") || "eleven_multilingual_v2";
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(env("ELEVENLABS_VOICE_ID"))}`, {
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId || env("ELEVENLABS_VOICE_ID"))}`, {
     method: "POST",
     headers: { "xi-api-key": env("ELEVENLABS_API_KEY"), "Content-Type": "application/json", Accept: "audio/mpeg" },
     body: JSON.stringify({ text, model_id: model }),
@@ -114,10 +114,10 @@ async function elevenlabsTts(text: string): Promise<StartResult> {
   return { state: "done", dataUrl: `data:audio/mpeg;base64,${buf.toString("base64")}`, mimeType: "audio/mpeg", model };
 }
 
-export async function startGeneration(kind: CreativeKind, opts: { prompt: string; imageUrl?: string | null; extraInput?: Record<string, unknown> }): Promise<StartResult> {
+export async function startGeneration(kind: CreativeKind, opts: { prompt: string; imageUrl?: string | null; extraInput?: Record<string, unknown>; voiceId?: string }): Promise<StartResult> {
   const provider = providerFor(kind);
   try {
-    if (provider === "elevenlabs") return await elevenlabsTts(opts.prompt);
+    if (provider === "elevenlabs") return await elevenlabsTts(opts.prompt, opts.voiceId);
     if (provider === "openai") return await openaiImage(opts.prompt);
     if (provider === "replicate") return await replicateStart(kind, { prompt: opts.prompt, ...(opts.imageUrl ? { image: opts.imageUrl } : {}), ...(opts.extraInput ?? {}) });
     return { state: "failed", error: "provider_not_configured" };

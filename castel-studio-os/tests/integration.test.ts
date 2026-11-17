@@ -275,3 +275,16 @@ d("creative studio (PostgreSQL)", () => {
     expect(await db.auditLog.count({ where: { businessId: b.id, action: "creative.job_create" } })).toBe(1);
   });
 });
+
+d("sites (PostgreSQL)", () => {
+  it("publishing refuses unapproved images; approved ones pass", async () => {
+    process.env.DATABASE_URL = url;
+    const { db } = await import("@/lib/db");
+    const b = await db.business.create({ data: { name: "Site", category: "x", city: "Ashkelon" } });
+    const draft = await db.creativeAsset.create({ data: { businessId: b.id, kind: "graphic", title: "g", provider: "builtin", status: "succeeded", dataUrl: "data:image/png;base64,AAAA", approval: "draft" } });
+    const ok = await db.creativeAsset.create({ data: { businessId: b.id, kind: "graphic", title: "g2", provider: "builtin", status: "succeeded", dataUrl: "data:image/png;base64,AAAA", approval: "approved" } });
+    const count = (ids: string[]) => db.creativeAsset.count({ where: { businessId: b.id, id: { in: ids }, approval: "approved", dataUrl: { not: null } } });
+    expect(await count([draft.id])).toBe(0);
+    expect(await count([ok.id])).toBe(1);
+  });
+});

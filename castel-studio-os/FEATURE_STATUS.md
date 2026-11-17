@@ -1,6 +1,6 @@
 # CASTEL STUDIO AI Business OS — Feature Status
 
-_Last updated: 2026-11-18 · Packages 2 & 3 complete · **Deployments frozen** (owner decision — `vercel.json` `git.deploymentEnabled: false`); live site still runs the Phase 2 batch 1 build_
+_Last updated: 2026-11-18 · Packages 2, 3 & 4 complete · **Deployments frozen** (owner decision — `vercel.json` `git.deploymentEnabled: false`); live site still runs the Phase 2 batch 1 build_
 
 Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to activate · 📋 planned
 
@@ -18,8 +18,8 @@ Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to
 | 10 | **Security & reliability** | ✅ | bcrypt + hashed DB sessions, lockout, RBAC on every action/page/API (new: automations, comms approve, marketing), Zod validation, CSRF/origin checks, audit log, secrets only in env, additive-only migrations applied at build, structured logs, error records for AI/automation, 47 automated tests | External error monitoring service (e.g. Sentry) |
 | — | **Cali booking sync** | ✅ / 🔑 | Signed HMAC webhook endpoint (idempotent upserts, cancellations, customer matching by id/phone, revenue once per completed appointment, sync log, replay protection), duplicate-free CSV import (Hebrew/English headers), sync history UI, integration status | Cali has no public API — needs the vendor to push events + `CALI_WEBHOOK_SECRET`; availability not exposed by Cali. See CALI_INTEGRATION.md |
 | — | **AI Creative Studio** | ✅ / 🔑 | **Built-in graphic designer** (works without providers): 4 templates (promo, academy, quote, announcement) × post/story/landscape, brand-kit colours, own background photo, correct Hebrew RTL, PNG download, save to library. **AI generation** via real adapters: OpenAI Images (image), Replicate (image, image edit, video, animation image→video, 3D — model chosen per type), ElevenLabs (voice-over); async job polling (page + daily cron), small outputs persisted (provider links are temporary), large ones flagged. **Asset library** with filters, preview (image/video/audio/3D download), approval flow (submit → owner approves/rejects; approved assets can't be deleted). **Brand kit**. **AI prompt writer** (Creative agent) 🔑 | Provider keys/models (`OPENAI_API_KEY`, `REPLICATE_API_TOKEN` + `REPLICATE_MODEL_*`, `ELEVENLABS_*`); external blob storage for large video/3D files |
-| — | Digital Twin | 📋 | — | Consent flow, approved knowledge base, avatar/voice provider |
-| — | Website builder | 🟡 | Academy landing page `/join` | Block editor, SEO, custom domains |
+| — | **Digital Twin** | ✅ / 🔑 | Owner-only **explicit consent** (versioned text, scopes chat/voice/avatar, timestamp, audit, one-click revoke that stops everything), **approved knowledge base** (any edit → re-approval), twin chat grounded only in approved knowledge and always transparent it is AI, first-person **script generator**, **voice-over in the owner's own voice** and **avatar video** from an owner-supplied portrait — both consent-gated and sent to the asset library for approval | `ANTHROPIC_API_KEY`; `ELEVENLABS_TWIN_VOICE_ID` (owner-created voice); `REPLICATE_MODEL_AVATAR` |
+| — | **Website builder** | ✅ | Block editor (hero, live services & prices, live academy courses, gallery of **approved** assets only, text, testimonials, CTA, lead form → lead pipeline with `site:<slug>` source, contact), reorder/add/remove, SEO title/description + Open Graph, **draft → staff preview → owner publish/unpublish**, public pages `/s/<slug>` (drafts never public), link safety (no javascript:/http:), approved-only public image route, academy `/join` page | Custom domain is configured in Vercel → Domains when going live |
 
 ## Environment variables (Vercel → Settings → Environment Variables)
 

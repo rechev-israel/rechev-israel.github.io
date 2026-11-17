@@ -100,6 +100,8 @@ export const leadPublicSchema = z.object({
   phone: phoneField,
   email: emailField,
   courseCode: z.string().max(20).optional(),
+  kind: z.enum(["barbershop", "academy"]).optional(),
+  source: z.string().regex(/^[\w\-:/]{1,80}$/).optional(),
   message: optionalText(1000),
   consent: z.literal(true),
   // honeypot — must be empty

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   if (!business) return Response.json({ error: "unavailable" }, { status: 503 });
   const course = d.courseCode ? await db.course.findFirst({ where: { businessId: business.id, code: d.courseCode } }) : null;
   const lead = await db.lead.create({
-    data: { businessId: business.id, courseId: course?.id, name: d.name, phone: d.phone ?? null, email: d.email ?? null, message: d.message ?? null, consent: true, source: "landing:/join" },
+    data: { businessId: business.id, courseId: course?.id, name: d.name, phone: d.phone ?? null, email: d.email ?? null, message: d.message ?? null, consent: true, source: d.source ?? "landing:/join", kind: d.kind ?? (course || !d.source ? "academy" : "barbershop") },
   });
   logger.info("lead.created", { leadId: lead.id, course: d.courseCode ?? null });
   await emitEvent(business.id, "lead.created", {
