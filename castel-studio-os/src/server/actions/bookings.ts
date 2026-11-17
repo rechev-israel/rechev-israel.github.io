@@ -6,10 +6,9 @@ import { requireUser } from "@/server/auth/session";
 import { audit } from "@/server/audit";
 import { appointmentSchema, formToObject, serviceSchema, type ActionState } from "@/lib/validation";
 import { createAppointment, setAppointmentStatus } from "@/server/services/bookings";
-import { recomputeCustomerStats } from "@/server/services/crm";
-import { parseBookingCsv } from "@/server/integrations/external-booking";
-import { normalizeIsraeliPhone } from "@/domain/crm";
-import { getI18n, fmt } from "@/i18n";
+import { csvToCaliEvents } from "@/server/integrations/cali/csv";
+import { applyCaliEvents } from "@/server/integrations/cali/sync";
+import { getI18n } from "@/i18n";
 import { runAction } from "./util";
 import type { AppointmentStatus } from "@prisma/client";
 
@@ -56,39 +55,19 @@ export async function importBookingCsvAction(_: ActionState, fd: FormData): Prom
     const user = await requireUser("bookings.edit");
     const { t } = await getI18n();
     const file = fd.get("file");
-    if (!(file instanceof File) || file.size === 0) return { error: t.errors.validation };
-    if (file.size > 2_000_000) return { error: t.errors.validation };
-    const { rows, errors } = parseBookingCsv(await file.text());
-    let imported = 0;
-    let skipped = errors.length;
-    const services = await db.service.findMany({ where: { businessId: user.businessId } });
-    for (const r of rows) {
-      const externalRef = `csv:${r.startsAt.toISOString()}:${r.phone ?? r.name}`;
-      if (await db.appointment.findFirst({ where: { businessId: user.businessId, externalRef } })) { skipped++; continue; }
-      const phone = normalizeIsraeliPhone(r.phone);
-      let customer = phone ? await db.customer.findFirst({ where: { businessId: user.businessId, phone } }) : null;
-      if (!customer && r.name) {
-        const [firstName, ...rest] = r.name.split(/\s+/);
-        customer = await db.customer.create({ data: { businessId: user.businessId, firstName, lastName: rest.join(" ") || null, phone, source: "booking-app" } });
-      }
-      const service = r.service ? services.find((s) => s.nameHe === r.service || s.nameEn.toLowerCase() === r.service!.toLowerCase()) : undefined;
-      const duration = service?.durationMin ?? 30;
-      const appt = await db.appointment.create({
-        data: {
-          businessId: user.businessId, customerId: customer?.id, serviceId: service?.id, startsAt: r.startsAt, endsAt: new Date(r.startsAt.getTime() + duration * 60000),
-          status: r.status, price: r.price ?? service?.price ?? null, source: "external-import", externalRef,
-        },
-      });
-      if (appt.status === "COMPLETED" && appt.price && Number(appt.price) > 0) {
-        await db.transaction.create({
-          data: { businessId: user.businessId, type: "INCOME", kind: "ACTUAL", category: "services", amount: appt.price, occurredAt: appt.startsAt, description: `appointment:${appt.id}`, customerId: appt.customerId },
-        });
-      }
-      imported++;
-    }
-    if (imported) await recomputeCustomerStats(user.businessId);
-    await audit({ businessId: user.businessId, userId: user.id, action: "bookings.import_csv", entityType: "Appointment", metadata: { imported, skipped } });
+    if (!(file instanceof File) || file.size === 0 || file.size > 5_000_000) return { error: t.errors.validation };
+    const { events, errors } = csvToCaliEvents(await file.text());
+    if (!events.length) return { error: `${t.errors.validation}${errors.length ? ` — ${errors.slice(0, 3).join("; ")}` : ""}` };
+    const r = await applyCaliEvents(user.businessId, events, "csv");
+    await audit({ businessId: user.businessId, userId: user.id, action: "bookings.import_csv", entityType: "Appointment", metadata: { created: r.created, updated: r.updated, unchanged: r.unchanged, failed: r.failed + errors.length } });
     revalidatePath("/bookings");
-    return { ok: true, message: fmt(t.external.imported, { n: imported, s: skipped }) + (errors.length ? ` — ${errors.slice(0, 3).join("; ")}` : "") };
+    revalidatePath("/bookings/import");
+    const he = t.common.save === "שמירה";
+    return {
+      ok: true,
+      message: he
+        ? `נקלטו ${r.received} שורות: ${r.created} חדשים, ${r.updated} עודכנו, ${r.unchanged} ללא שינוי (ללא כפילויות), ${r.failed + errors.length} שגויות.`
+        : `Processed ${r.received} rows: ${r.created} new, ${r.updated} updated, ${r.unchanged} unchanged (no duplicates), ${r.failed + errors.length} invalid.`,
+    };
   });
 }

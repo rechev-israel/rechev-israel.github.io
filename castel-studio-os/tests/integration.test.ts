@@ -166,3 +166,59 @@ d("automation engine (PostgreSQL)", () => {
     expect(final.attempt).toBe(2);
   });
 });
+
+d("Cali sync (PostgreSQL)", () => {
+  let db: typeof import("@/lib/db").db;
+  let sync: typeof import("@/server/integrations/cali/sync");
+  let bizId: string;
+  const appt = (over: Record<string, unknown> = {}) => ({
+    type: "appointment.upsert" as const,
+    data: { id: "cali-1", startsAt: "2026-11-10T08:00:00Z", status: "completed", price: 120, service: { name: "Cut" }, customer: { id: "c-9", name: "Yossi Levi", phone: "050-7777777" }, ...over },
+  });
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = url;
+    ({ db } = await import("@/lib/db"));
+    sync = await import("@/server/integrations/cali/sync");
+    const b = await db.business.create({ data: { name: "CaliBiz", category: "x", city: "Ashkelon", branches: { create: { name: "main" } } } });
+    bizId = b.id;
+    await db.customer.create({ data: { businessId: bizId, firstName: "Yossi", phone: "+972507777777" } }); // pre-existing customer
+  });
+
+  it("first sync creates; replays and re-imports never duplicate", async () => {
+    const r1 = await sync.applyCaliEvents(bizId, [appt()], "webhook");
+    expect(r1.created).toBe(1);
+    const r2 = await sync.applyCaliEvents(bizId, [appt(), appt()], "csv");
+    expect(r2.created).toBe(0);
+    expect(r2.unchanged).toBe(2);
+    expect(await db.appointment.count({ where: { businessId: bizId, source: "cali" } })).toBe(1);
+    expect(await db.customer.count({ where: { businessId: bizId } })).toBe(1); // matched by phone, not duplicated
+    const c = await db.customer.findFirstOrThrow({ where: { businessId: bizId } });
+    expect(c.externalRef).toBe("cali:c-9");
+    expect(c.visitCount).toBe(1);
+  });
+
+  it("completed appointment books revenue exactly once; price change updates it", async () => {
+    const a = await db.appointment.findFirstOrThrow({ where: { businessId: bizId, externalRef: "cali-1" } });
+    expect(await db.transaction.count({ where: { description: `appointment:${a.id}` } })).toBe(1);
+    await sync.applyCaliEvents(bizId, [appt({ price: 150 })], "webhook");
+    const tx = await db.transaction.findFirstOrThrow({ where: { description: `appointment:${a.id}` } });
+    expect(Number(tx.amount)).toBe(150);
+  });
+
+  it("cancellation updates status and removes revenue; unknown cancellation is harmless", async () => {
+    const r = await sync.applyCaliEvents(bizId, [{ type: "appointment.cancelled", data: { id: "cali-1", reason: "client" } }, { type: "appointment.cancelled", data: { id: "does-not-exist" } }], "webhook");
+    expect(r.updated).toBe(1);
+    expect(r.failed).toBe(0);
+    const a = await db.appointment.findFirstOrThrow({ where: { businessId: bizId, externalRef: "cali-1" } });
+    expect(a.status).toBe("CANCELLED");
+    expect(await db.transaction.count({ where: { description: `appointment:${a.id}` } })).toBe(0);
+    expect(await db.syncLog.count({ where: { businessId: bizId } })).toBe(4);
+  });
+
+  it("one bad event does not block the batch", async () => {
+    const r = await sync.applyCaliEvents(bizId, [appt({ id: "cali-2", customer: { name: "  " } as never }), appt({ id: "cali-3" })], "webhook");
+    expect(r.created).toBe(1);
+    expect(r.failed).toBe(1);
+  });
+});

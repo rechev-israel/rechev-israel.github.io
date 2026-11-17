@@ -32,10 +32,15 @@ export const INTEGRATIONS: IntegrationDef[] = [
     status: envStatus("ANTHROPIC_API_KEY"),
   },
   {
-    provider: "external-booking", name: "CASTEL booking app (cali-b5f0e.web.app)", category: "booking", envVars: [], phase: 1,
-    docsHe: "לא ידוע על API ציבורי. נתמך ייבוא CSV ידני בלבד (תורים ← ייבוא). חיבור ישיר ידרוש ממשק רשמי מספק האפליקציה.",
-    docsEn: "No public API known. Manual CSV import only (Bookings → Import). A direct link requires an official interface from the app vendor.",
-    status: async () => ({ status: "REQUIRES_AUTHORIZATION", detail: "CSV import only" }),
+    provider: "external-booking", name: "Cali booking app (cali-b5f0e.web.app)", category: "booking", envVars: ["CALI_WEBHOOK_SECRET"], phase: 2,
+    docsHe: "לקאלי אין API ציבורי מתועד. מוכן אצלנו: נקודת קליטה חתומה (HMAC) /api/integrations/cali/webhook לסנכרון חי — דורש שספק Cali ישלח אליה אירועים — וייבוא CSV ללא כפילויות. ראו CALI_INTEGRATION.md.",
+    docsEn: "Cali has no documented public API. Ready on our side: a signed (HMAC) endpoint /api/integrations/cali/webhook for live sync — requires the Cali vendor to push events — and duplicate-free CSV import. See CALI_INTEGRATION.md.",
+    status: async () => {
+      const last = await db.syncLog.findFirst({ where: { source: "cali", channel: "webhook" }, orderBy: { createdAt: "desc" } });
+      if (!hasEnv("CALI_WEBHOOK_SECRET")) return { status: "REQUIRES_AUTHORIZATION", detail: "Waiting for vendor access — CSV import available" };
+      if (!last) return { status: "REQUIRES_AUTHORIZATION", detail: "Endpoint ready — no events received from Cali yet" };
+      return { status: last.failed && last.failed === last.received ? "ERROR" : "CONNECTED", detail: `Last sync ${last.createdAt.toISOString()}` };
+    },
   },
   {
     provider: "instagram", name: "Instagram (@castel.cutzz)", category: "social", envVars: ["META_ADS_ACCESS_TOKEN"], phase: 4,

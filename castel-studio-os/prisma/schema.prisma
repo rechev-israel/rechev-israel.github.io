@@ -57,6 +57,7 @@ model Business {
   outboundMessages OutboundMessage[]
   contentItems     ContentItem[]
   automationRuns   AutomationRun[]
+  syncLogs         SyncLog[]
 }
 
 model Branch {
@@ -188,6 +189,7 @@ model Customer {
   student          Student?
 
   @@unique([businessId, phone])
+  @@index([businessId, externalRef])
   @@index([businessId, status])
   @@index([businessId, lastVisitAt])
 }
@@ -246,6 +248,7 @@ model Service {
   price       Decimal  @db.Decimal(10, 2)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
+  externalRef String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -261,29 +264,32 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id           String            @id @default(cuid())
-  businessId   String
-  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  branchId     String?
-  branch       Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  customerId   String?
-  customer     Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  serviceId    String?
-  service      Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  staffId      String?
-  staff        User?             @relation("StaffAppointments", fields: [staffId], references: [id], onDelete: SetNull)
-  startsAt     DateTime
-  endsAt       DateTime
-  status       AppointmentStatus @default(SCHEDULED)
-  price        Decimal?          @db.Decimal(10, 2)
-  source       String            @default("manual") // manual | external-import
-  externalRef  String?
-  notes        String?
-  cancelledAt  DateTime?
-  cancelReason String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id               String            @id @default(cuid())
+  businessId       String
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branchId         String?
+  branch           Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  customerId       String?
+  customer         Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  serviceId        String?
+  service          Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  staffId          String?
+  staff            User?             @relation("StaffAppointments", fields: [staffId], references: [id], onDelete: SetNull)
+  startsAt         DateTime
+  endsAt           DateTime
+  status           AppointmentStatus @default(SCHEDULED)
+  price            Decimal?          @db.Decimal(10, 2)
+  source           String            @default("manual") // manual | external-import
+  externalRef      String?
+  notes            String?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  /// Last time an external system (e.g. Cali) changed this record.
+  externalSyncedAt DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
+  @@unique([businessId, source, externalRef])
   @@index([businessId, startsAt])
   @@index([customerId])
 }
@@ -860,4 +866,22 @@ model ContentItem {
   updatedAt    DateTime  @updatedAt
 
   @@index([businessId, scheduledFor])
+}
+
+/// One record per sync batch from an external booking system (webhook, CSV or calendar).
+model SyncLog {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  source     String // cali
+  channel    String // webhook | csv | calendar
+  received   Int      @default(0)
+  created    Int      @default(0)
+  updated    Int      @default(0)
+  unchanged  Int      @default(0)
+  failed     Int      @default(0)
+  errors     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
 }

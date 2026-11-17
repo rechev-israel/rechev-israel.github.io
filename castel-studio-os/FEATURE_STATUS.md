@@ -16,6 +16,7 @@ Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to
 | 8 | **Communication center** | ✅ / 🔑 | Unified queue: drafts → owner approval → real provider send → status (sent/failed/blocked/cancelled), bulk approve/cancel, compose, WhatsApp & Email templates (he/en, editable), consent enforcement (marketing requires opt-in; opt-out & blocked respected), communication history on send | WhatsApp Cloud API (`WHATSAPP_CLOUD_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`) and SMTP (`SMTP_URL`, `SMTP_FROM`) 🔑; WhatsApp delivery-receipt webhook |
 | 9 | **Responsive premium UI** | ✅ | Sidebar / tablet rail / phone tab bar, he RTL + en LTR, dark/light, PWA, verified at 390/768/1024/1440 | — |
 | 10 | **Security & reliability** | ✅ | bcrypt + hashed DB sessions, lockout, RBAC on every action/page/API (new: automations, comms approve, marketing), Zod validation, CSRF/origin checks, audit log, secrets only in env, additive-only migrations applied at build, structured logs, error records for AI/automation, 47 automated tests | External error monitoring service (e.g. Sentry) |
+| — | **Cali booking sync** | ✅ / 🔑 | Signed HMAC webhook endpoint (idempotent upserts, cancellations, customer matching by id/phone, revenue once per completed appointment, sync log, replay protection), duplicate-free CSV import (Hebrew/English headers), sync history UI, integration status | Cali has no public API — needs the vendor to push events + `CALI_WEBHOOK_SECRET`; availability not exposed by Cali. See CALI_INTEGRATION.md |
 | — | Creative Studio (image/video/voice) | 📋 | Creative agent writes prompts/concepts 🔑 | Media provider adapters |
 | — | Digital Twin | 📋 | — | Consent flow, approved knowledge base, avatar/voice provider |
 | — | Website builder | 🟡 | Academy landing page `/join` | Block editor, SEO, custom domains |
@@ -30,4 +31,5 @@ Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to
 | `ANTHROPIC_API_KEY` (+ optional `ANTHROPIC_MODEL`) | AI agents, insights, marketing generators | ❌ add when ready |
 | `WHATSAPP_CLOUD_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Sending approved WhatsApp messages | ❌ requires Meta WhatsApp Business setup |
 | `SMTP_URL`, `SMTP_FROM` | Sending approved emails | ❌ any SMTP provider |
+| `CALI_WEBHOOK_SECRET` | Live sync from Cali | ❌ set together with the Cali developer (see CALI_INTEGRATION.md) |
 | `META_ADS_ACCESS_TOKEN`, `GOOGLE_ADS_DEVELOPER_TOKEN` | Future ads reporting | 📋 adapters not built yet |
