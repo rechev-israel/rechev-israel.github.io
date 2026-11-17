@@ -392,21 +392,25 @@ enum StudentStatus {
 }
 
 model Student {
-  id         String        @id @default(cuid())
-  businessId String
-  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customerId String?       @unique
-  customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  firstName  String
-  lastName   String?
-  phone      String?
-  email      String?
-  idNumber   String? // optional Israeli ID for certificates — sensitive, never exported by default
-  experience String?
-  goals      String?
-  status     StudentStatus @default(ENROLLED)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id               String            @id @default(cuid())
+  businessId       String
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId       String?           @unique
+  customer         Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  firstName        String
+  lastName         String?
+  phone            String?
+  email            String?
+  idNumber         String? // optional Israeli ID for certificates — sensitive, never exported by default
+  experience       String?
+  goals            String?
+  status           StudentStatus     @default(ENROLLED)
+  /// SHA-256 of the personal portal token (the raw token is shown to the owner once).
+  portalTokenHash  String?           @unique
+  portalTokenAt    DateTime?
+  outboundMessages OutboundMessage[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   enrollments Enrollment[]
 
@@ -773,6 +777,8 @@ model OutboundMessage {
   customer          Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   leadId            String?
   lead              Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  studentId         String?
+  student           Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
   recipientName     String?
   toAddress         String?
   subject           String?

@@ -43,6 +43,16 @@ export const DEFAULT_TEMPLATES: TemplateDef[] = [
     },
   },
   {
+    key: "academy_payment",
+    purpose: "transactional",
+    name: { he: "תזכורת תשלום — אקדמיה", en: "Academy payment reminder" },
+    subject: { he: "CASTEL STUDIO ACADEMY — יתרת תשלום", en: "CASTEL STUDIO ACADEMY — balance due" },
+    body: {
+      he: "היי {{name}}, תזכורת ידידותית: נותרה יתרה של {{balance}} עבור {{course}}. לכל שאלה על אמצעי התשלום — אנחנו כאן 🙏",
+      en: "Hi {{name}}, a friendly reminder: a balance of {{balance}} remains for {{course}}. Any questions about payment — we're here 🙏",
+    },
+  },
+  {
     key: "birthday",
     purpose: "marketing",
     name: { he: "יום הולדת", en: "Birthday" },

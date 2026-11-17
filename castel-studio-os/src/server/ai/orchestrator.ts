@@ -36,6 +36,15 @@ const CREATE_CONTENT_TOOL: Anthropic.Beta.BetaTool = {
   },
 };
 
+/** Monthly AI spend cap (USD, estimated from list prices). Unset = no cap. */
+export async function aiBudgetStatus(businessId: string) {
+  const cap = Number(process.env.AI_MONTHLY_BUDGET_USD ?? "");
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const agg = await db.aiMessage.aggregate({ where: { conversation: { businessId }, createdAt: { gte: monthStart } }, _sum: { costUsd: true } });
+  const spent = Number(agg._sum.costUsd ?? 0);
+  return { cap: Number.isFinite(cap) && cap > 0 ? cap : null, spent, exceeded: Number.isFinite(cap) && cap > 0 && spent >= cap };
+}
+
 function systemPrompt(agent: AgentId, locale: string, context: unknown) {
   const a = AGENTS[agent];
   return [
@@ -87,6 +96,12 @@ export async function handleAiMessage(opts: {
   const provider = getAiProvider();
   if (!provider) {
     return { conversationId: convo.id, agent, matched, configured: false as const, reply: null };
+  }
+  const budget = await aiBudgetStatus(user.businessId);
+  if (budget.exceeded) {
+    const reply = opts.locale === "en" ? `Monthly AI budget reached ($${budget.spent.toFixed(2)} of $${budget.cap}). Raise AI_MONTHLY_BUDGET_USD to continue.` : `תקציב ה-AI החודשי נוצל ($${budget.spent.toFixed(2)} מתוך $${budget.cap}). העלו את AI_MONTHLY_BUDGET_USD כדי להמשיך.`;
+    await db.aiMessage.create({ data: { conversationId: convo.id, role: "assistant", content: reply, agent } });
+    return { conversationId: convo.id, agent, matched, configured: true as const, reply };
   }
 
   const history = await db.aiMessage.findMany({
@@ -163,6 +178,8 @@ export async function handleAiMessage(opts: {
 export async function generateWithAgent(opts: { user: SessionUser; agent: AgentId; task: string; locale: string; title: string }) {
   const provider = getAiProvider();
   if (!provider) return { configured: false as const, text: null };
+  const budget = await aiBudgetStatus(opts.user.businessId);
+  if (budget.exceeded) return { configured: true as const, text: opts.locale === "en" ? `Monthly AI budget reached ($${budget.spent.toFixed(2)} / $${budget.cap}).` : `תקציב ה-AI החודשי נוצל ($${budget.spent.toFixed(2)} / $${budget.cap}).` };
   const context = await buildAiContext(opts.user.businessId, AGENTS[opts.agent].scopes, can(opts.user.role, "ai.financeData"));
   const convo = await db.aiConversation.create({ data: { businessId: opts.user.businessId, userId: opts.user.id, agent: opts.agent, title: opts.title.slice(0, 80) } });
   await db.aiMessage.create({ data: { conversationId: convo.id, role: "user", content: opts.task, agent: opts.agent } });

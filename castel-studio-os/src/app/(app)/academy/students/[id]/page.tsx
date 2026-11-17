@@ -6,6 +6,9 @@ import { formatDate, formatILS, fullName } from "@/lib/utils";
 import { enrollmentSummary } from "@/server/services/academy";
 import { Badge, Card, CardTitle, EmptyState, PageHeader } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
+import { can } from "@/server/auth/rbac";
+import { generatePortalLinkAction } from "@/server/actions/academy";
+import { PortalLinkButton } from "@/components/academy/portal-link";
 
 export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, t, locale, allowed } = await pageGuard("academy.view");
@@ -22,6 +25,12 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
       <PageHeader title={fullName(s)} subtitle={[s.phone, s.email].filter(Boolean).map((v) => `\u2066${v}\u2069`).join(" · ")} actions={<Badge tone="gold">{t.studentStatus[s.status]}</Badge>} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
+          {can(user.role, "academy.edit") && (
+            <div className="mb-4 rounded-xl border border-border bg-surface-2 p-3">
+              <p className="mb-2 text-xs text-muted">{locale === "he" ? "פורטל תלמיד: לוח מפגשים, נוכחות, התקדמות, תשלומים, חומרים ותעודה." : "Student portal: schedule, attendance, progress, payments, materials and certificate."}{s.portalTokenAt ? ` · ${locale === "he" ? "קישור פעיל מ-" : "link active since "}${formatDate(s.portalTokenAt, locale)}` : ""}</p>
+              <PortalLinkButton action={generatePortalLinkAction.bind(null, s.id)} hasLink={Boolean(s.portalTokenHash)} label={{ create: locale === "he" ? "יצירת קישור פורטל" : "Create portal link", rotate: locale === "he" ? "קישור חדש (מבטל את הקודם)" : "New link (revokes old)", copy: locale === "he" ? "העתקה" : "Copy" }} />
+            </div>
+          )}
           <CardTitle>{t.academy.experience}</CardTitle>
           <p className="whitespace-pre-wrap text-sm text-muted">{s.experience || "—"}</p>
           <CardTitle className="mt-4">{t.academy.goals}</CardTitle>

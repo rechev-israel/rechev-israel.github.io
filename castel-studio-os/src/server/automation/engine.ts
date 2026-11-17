@@ -13,6 +13,8 @@ export type RunContext = Record<string, unknown> & {
   lead?: { id: string } & Record<string, unknown>;
   appointment?: { id: string } & Record<string, unknown>;
   campaign?: { id: string } & Record<string, unknown>;
+  student?: { id: string } & Record<string, unknown>;
+  enrollment?: { id: string } & Record<string, unknown>;
 };
 
 type StepLog = { action: string; ok: boolean; detail?: string };
@@ -21,7 +23,7 @@ async function executeAction(a: Action, automation: Automation, ctx: RunContext,
   const businessId = automation.businessId;
   switch (a.type) {
     case "message.draft": {
-      if (!ctx.customer && !ctx.lead) return { action: a.type, ok: true, detail: "skipped: no recipient in context" };
+      if (!ctx.customer && !ctx.lead && !ctx.student) return { action: a.type, ok: true, detail: "skipped: no recipient in context" };
       const appt = ctx.appointment as Record<string, unknown> | undefined;
       const m = await draftMessage({
         businessId,
@@ -29,11 +31,13 @@ async function executeAction(a: Action, automation: Automation, ctx: RunContext,
         templateKey: a.templateKey,
         customerId: ctx.customer?.id ?? null,
         leadId: ctx.customer ? null : ctx.lead?.id ?? null,
+        studentId: ctx.customer || ctx.lead ? null : ctx.student?.id ?? null,
         vars: {
           date: appt?.startsAt ? toLocalInput(appt.startsAt as Date, false).split("-").reverse().join("/") : "",
           time: appt?.startsAt ? toLocalInput(appt.startsAt as Date).slice(11) : "",
           service: (appt?.serviceName as string) ?? "",
-          course: (ctx.lead?.courseName as string) ?? "CASTEL STUDIO ACADEMY",
+          course: (ctx.lead?.courseName as string) ?? (ctx.enrollment?.courseName as string) ?? "CASTEL STUDIO ACADEMY",
+          balance: ctx.enrollment?.balance !== undefined ? formatILS(Number(ctx.enrollment.balance)) : "",
         },
         scheduledFor: a.delayHours ? new Date(Date.now() + a.delayHours * 3600_000) : null,
         automationRunId: runId,
@@ -41,8 +45,8 @@ async function executeAction(a: Action, automation: Automation, ctx: RunContext,
       return { action: a.type, ok: true, detail: `message ${m.id} → ${m.status}${m.error ? ` (${m.error})` : ""}` };
     }
     case "task.create": {
-      const who = (ctx.customer?.name as string) ?? (ctx.lead?.name as string) ?? "";
-      const link = ctx.customer ? `/crm/${ctx.customer.id}` : ctx.lead ? "/academy/leads" : null;
+      const who = (ctx.customer?.name as string) ?? (ctx.lead?.name as string) ?? (ctx.student?.name as string) ?? "";
+      const link = ctx.customer ? `/crm/${ctx.customer.id}` : ctx.lead ? "/crm/leads" : ctx.student ? `/academy/students/${ctx.student.id}` : null;
       const t = await db.task.create({
         data: {
           businessId,
@@ -223,6 +227,27 @@ export async function runScheduled(now = new Date(), opts: { businessId?: string
       for (const l of leads) {
         const r = await runAutomation(a, { lead: { id: l.id, name: l.name, status: l.status, kind: l.kind, source: l.source, courseName: l.course?.nameHe ?? null } }, `followup:${l.id}:${dayKey}`);
         if (r) count++;
+      }
+    } else if (a.trigger === "schedule.academy_payment") {
+      // Weekly (Sunday): enrollments with an open balance whose cohort starts within 7 days or is running.
+      if (p.weekday === 0) {
+        const enrollments = await db.enrollment.findMany({
+          where: { status: { in: ["PENDING", "CONFIRMED"] }, cohort: { course: { businessId: a.businessId }, status: { notIn: ["CANCELLED", "COMPLETED"] }, startDate: { lte: addDays(today, 7) } } },
+          include: { payments: { select: { amount: true } }, student: true, cohort: { include: { course: true } } },
+        });
+        for (const e of enrollments) {
+          const balance = toNumber(e.agreedPrice) - e.payments.reduce((s, x) => s + toNumber(x.amount), 0);
+          if (balance <= 0) continue;
+          const r = await runAutomation(
+            a,
+            {
+              student: { id: e.student.id, name: [e.student.firstName, e.student.lastName].filter(Boolean).join(" "), phone: e.student.phone, status: e.student.status },
+              enrollment: { id: e.id, balance, courseName: e.cohort.course.nameHe, cohort: e.cohort.name },
+            },
+            `pay:${e.id}:${dayKey}`,
+          );
+          if (r) count++;
+        }
       }
     } else if (a.trigger === "schedule.weekly_report") {
       if (p.weekday === 0) {

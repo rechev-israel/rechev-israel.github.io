@@ -8,6 +8,9 @@ import { audit } from "@/server/audit";
 import { cohortSchema, formToObject, paymentSchema, studentSchema, type ActionState } from "@/lib/validation";
 import { addPayment, convertLeadToStudent, createCohort, createStudent, enrollStudent, issueCertificate, recordAttendance, setProgress } from "@/server/services/academy";
 import { runAction } from "./util";
+import { headers } from "next/headers";
+import { newPortalToken } from "@/server/academy/portal";
+import { getI18n } from "@/i18n";
 
 export async function createCohortAction(_: ActionState, fd: FormData): Promise<ActionState> {
   let id = "";
@@ -137,4 +140,22 @@ export async function deleteMaterialAction(fd: FormData) {
   if (!m) return;
   await db.courseMaterial.delete({ where: { id: m.id } });
   revalidatePath(`/academy/courses/${m.courseId}`);
+}
+
+/** Create (or rotate) a student's private portal link. The raw link is returned once; only its hash is stored. */
+export async function generatePortalLinkAction(studentId: string, _: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("academy.edit");
+    const { locale } = await getI18n();
+    const st = await db.student.findFirst({ where: { id: studentId, businessId: user.businessId } });
+    if (!st) throw new Error("not found");
+    const { token, hash } = newPortalToken();
+    await db.student.update({ where: { id: st.id }, data: { portalTokenHash: hash, portalTokenAt: new Date() } });
+    await audit({ businessId: user.businessId, userId: user.id, action: "student.portal_link", entityType: "Student", entityId: st.id });
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+    const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    const url = `${proto}://${host}/portal/${token}`;
+    return { ok: true, message: (locale === "he" ? "הקישור האישי (מוצג פעם אחת — העתיקו ושלחו לתלמיד; יצירת קישור חדש מבטלת את הקודם):\n" : "Personal link (shown once — copy and send to the student; generating a new one revokes the old):\n") + url };
+  });
 }

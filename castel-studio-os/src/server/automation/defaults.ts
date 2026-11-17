@@ -90,6 +90,35 @@ export const BUILTIN_AUTOMATIONS: Builtin[] = [
     definition: { conditions: [], actions: [{ type: "message.draft", channel: "WHATSAPP", templateKey: "birthday" }] },
   },
   {
+    key: "academy_payment",
+    name: "תזכורת תשלום — אקדמיה",
+    description: "כל יום ראשון: טיוטת תזכורת לתלמידים עם יתרה פתוחה (מחזור שמתחיל השבוע או רץ), ומשימת מעקב תשלום.",
+    trigger: "schedule.academy_payment",
+    isActive: true,
+    definition: {
+      conditions: [],
+      actions: [
+        { type: "message.draft", channel: "WHATSAPP", templateKey: "academy_payment" },
+        { type: "task.create", title: "מעקב תשלום אקדמיה", dueInDays: 1, priority: 1 },
+      ],
+    },
+  },
+  {
+    key: "loyalty_milestone",
+    name: "אבן דרך נאמנות",
+    description: "כשלקוח משלים ביקור מספר 5/10/20/30/50: תיוג, משימה להכנת הפתעה קטנה והתראה.",
+    trigger: "appointment.completed",
+    isActive: true,
+    definition: {
+      conditions: [{ field: "customer.visitCount", op: "in", value: ["5", "10", "20", "30", "50", "75", "100"] }],
+      actions: [
+        { type: "customer.tag", tag: "milestone" },
+        { type: "task.create", title: "אבן דרך — להכין הפתעה ללקוח", dueInDays: 0, priority: 2 },
+        { type: "notify", title: "לקוח הגיע לאבן דרך בביקורים", level: "success" },
+      ],
+    },
+  },
+  {
     key: "weekly_report",
     name: "דוח ביצועים שבועי",
     description: "כל יום ראשון: סיכום הכנסות, הוצאות, תורים, לקוחות ולידים של השבוע כהתראה.",

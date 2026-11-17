@@ -12,6 +12,7 @@ export const TRIGGERS = {
   "schedule.appointment_reminder": { kind: "schedule", he: "יומי: תורים של מחר", en: "Daily: tomorrow's appointments", subject: "appointment" },
   "schedule.birthday": { kind: "schedule", he: "יומי: ימי הולדת היום", en: "Daily: today's birthdays", subject: "customer" },
   "schedule.lead_followup": { kind: "schedule", he: "יומי: לידים שהגיע מועד המעקב", en: "Daily: leads due for follow-up", subject: "lead" },
+  "schedule.academy_payment": { kind: "schedule", he: "שבועי (ראשון): יתרות תשלום באקדמיה", en: "Weekly (Sunday): academy balances due", subject: "enrollment" },
   "schedule.weekly_report": { kind: "schedule", he: "שבועי (ראשון): דוח ביצועים", en: "Weekly (Sunday): performance report", subject: "business" },
 } as const;
 export type TriggerKey = keyof typeof TRIGGERS;

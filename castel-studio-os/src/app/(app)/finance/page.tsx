@@ -5,7 +5,7 @@ import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
 import { addMonths, startOfMonth, toLocalInput } from "@/lib/dates";
 import { formatDate, formatILS, toNumber } from "@/lib/utils";
-import { byCategory, margin, monthlySeries, naiveForecast, priceScenario, summarize } from "@/domain/finance";
+import { byCategory, margin, monthlySeries, naiveForecast, priceScenario, profitAndLoss, summarize } from "@/domain/finance";
 import { getTransactions, lastMonths } from "@/server/services/metrics";
 import { createTransactionAction, deleteTransactionAction } from "@/server/actions/finance";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/validation";
@@ -51,6 +51,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         actions={
           <>
             <Link href={`/finance/report?month=${mKey}`} className={buttonClass("secondary")}><FileText size={14} /> {t.finance.printReport}</Link>
+            <a href="/api/finance/pnl" className={buttonClass("secondary")}><Download size={14} /> {locale === "he" ? "דוח רווח והפסד 12 ח׳ (CSV)" : "12-month P&L (CSV)"}</a>
             <a href={`/api/finance/export?from=${mKey}-01&to=${toLocalInput(addMonths(monthStart, 1), false)}`} className={buttonClass("secondary")}><Download size={14} /> {t.common.exportCsv}</a>
           </>
         }
@@ -97,6 +98,30 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           <p className="text-sm">{t.finance.projected}: <span className="font-semibold text-gold">{formatILS(priceScenario({ baseRevenue, priceChangePct: priceChange, volumeChangePct: volumeChange }), locale)}</span> <Badge tone="info">{t.finance.estimate}</Badge></p>
         </Card>
       </div>
+
+      {(() => {
+        const months12 = lastMonths(12, now);
+        const pnl = profitAndLoss(txs12, months12);
+        const lbl = (x: string) => x === "TOTAL_INCOME" ? (locale === "he" ? "סה״כ הכנסות" : "Total income") : x === "TOTAL_EXPENSE" ? (locale === "he" ? "סה״כ הוצאות" : "Total expenses") : x === "NET" ? t.finance.net : catLabel(x);
+        return (
+          <Card className="mb-4 p-4">
+            <CardTitle action={<Badge tone="gold">{t.dashboard.actualOnly}</Badge>}>{locale === "he" ? "דוח רווח והפסד — 12 חודשים" : "Profit & loss — 12 months"}</CardTitle>
+            <Table>
+              <thead><tr><Th className="sticky start-0 bg-surface-2">{t.common.category}</Th>{months12.map((m) => <Th key={m} className="text-end tabular-nums">{m.slice(2)}</Th>)}<Th className="text-end">{t.common.total}</Th></tr></thead>
+              <tbody>
+                {pnl.rows.map((r) => (
+                  <tr key={r.group + r.label} className={r.group === "total" ? "bg-surface-2/60 font-semibold" : ""}>
+                    <Td className="sticky start-0 whitespace-nowrap bg-surface">{lbl(r.label)}</Td>
+                    {r.values.map((v, i) => <Td key={i} className={`text-end tabular-nums text-xs ${r.label === "NET" && v < 0 ? "text-danger" : ""}`}>{v ? Math.round(v).toLocaleString(locale === "he" ? "he-IL" : "en-IL") : "—"}</Td>)}
+                    <Td className={`text-end tabular-nums ${r.label === "NET" && r.total < 0 ? "text-danger" : ""}`}>{formatILS(r.total, locale)}</Td>
+                  </tr>
+                ))}
+                <tr><Td className="sticky start-0 bg-surface text-xs text-muted">{t.dashboard.margin}</Td>{pnl.marginPct.map((m, i) => <Td key={i} className="text-end text-xs text-muted">{m === null ? "—" : `${m}%`}</Td>)}<Td /></tr>
+              </tbody>
+            </Table>
+          </Card>
+        );
+      })()}
 
       <div className="mb-4 grid gap-4 md:grid-cols-2">
         <Card><CardTitle>{t.finance.income} · {t.finance.byCategory}</CardTitle>{incomeCats.length ? <CategoryBars data={incomeCats} locale={locale} /> : <EmptyState title={t.common.empty} />}</Card>

@@ -222,3 +222,40 @@ d("Cali sync (PostgreSQL)", () => {
     expect(r.failed).toBe(1);
   });
 });
+
+d("package 2 (PostgreSQL)", () => {
+  let db: typeof import("@/lib/db").db;
+  let engine: typeof import("@/server/automation/engine");
+  let bizId: string;
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = url;
+    ({ db } = await import("@/lib/db"));
+    engine = await import("@/server/automation/engine");
+    const b = await db.business.create({ data: { name: "P2", category: "x", city: "Ashkelon", branches: { create: { name: "main" } } } });
+    bizId = b.id;
+    const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
+    await ensureBuiltinAutomations(db, bizId);
+  });
+
+  it("weekly academy payment reminder drafts a service message to students with a balance (Sundays only, deduped)", async () => {
+    const { COURSE_DEFINITIONS } = await import("@/domain/academy");
+    const course = await db.course.create({ data: { businessId: bizId, ...COURSE_DEFINITIONS[0] } });
+    const cohort = await db.cohort.create({ data: { courseId: course.id, name: "C", startDate: new Date(), status: "IN_PROGRESS" } });
+    const paidUp = await db.student.create({ data: { businessId: bizId, firstName: "Paid", phone: "+972501000001" } });
+    const owes = await db.student.create({ data: { businessId: bizId, firstName: "Owes", phone: "+972501000002" } });
+    const e1 = await db.enrollment.create({ data: { cohortId: cohort.id, studentId: paidUp.id, agreedPrice: 5500, status: "CONFIRMED" } });
+    await db.payment.create({ data: { enrollmentId: e1.id, amount: 5500, method: "BIT" } });
+    await db.enrollment.create({ data: { cohortId: cohort.id, studentId: owes.id, agreedPrice: 5500, status: "CONFIRMED" } });
+    const sunday = new Date("2026-11-22T08:00:00Z"); // a Sunday in Israel
+    await engine.runScheduled(sunday, { businessId: bizId });
+    await engine.runScheduled(sunday, { businessId: bizId });
+    const msgs = await db.outboundMessage.findMany({ where: { businessId: bizId, templateKey: "academy_payment" } });
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].studentId).toBe(owes.id);
+    expect(msgs[0].status).toBe("PENDING_APPROVAL");
+    expect(msgs[0].body).toContain("5,500");
+    await engine.runScheduled(new Date("2026-11-23T08:00:00Z"), { businessId: bizId }); // Monday: nothing new
+    expect(await db.outboundMessage.count({ where: { businessId: bizId, templateKey: "academy_payment" } })).toBe(1);
+  });
+});

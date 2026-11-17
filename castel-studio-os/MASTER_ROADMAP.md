@@ -4,12 +4,21 @@
 - **Phase 1** — foundation: auth/RBAC/audit, CRM, bookings (+CSV import), academy, finance, approvals, integrations status, AI orchestrator, responsive UI, PWA, Vercel + Neon deployment.
 - **Phase 2 · batch 1** — automation engine (+9 built-in workflows, builder, cron, retries), communication center (approval queue, WhatsApp/SMTP adapters, templates, consent), marketing control center (campaigns, content calendar, funnel, AI generators), AI command center (8 agents, tools, usage/cost), customisable dashboard, notifications.
 
-## Next — Phase 2 · batch 2
-1. **Bookings**: availability editor (opening hours, barbers, breaks), customer self-booking link with slot picking, reschedule/cancel links.
-2. **CRM**: general lead pipeline (barbershop leads), loyalty tiers & visit milestones, customer timeline merging appointments/messages/payments.
-3. **Communications**: WhatsApp delivery-status webhook (`/api/webhooks/whatsapp`), Meta-approved template mapping, inbound inbox, SMS adapter.
-4. **AI**: streaming responses, per-agent tool permissions UI, monthly AI budget limit with alerts.
-5. **Academy**: student portal (progress, schedule, materials, certificate download), payment reminders via automation.
+- **Package 2** — CRM lead pipeline + unified timeline + loyalty tiers/milestones, academy student portal + payment reminders + analytics, 12-month P&L (+CSV), AI monthly budget cap, WhatsApp kill switch, Cali signed sync endpoint + duplicate-free import, deployment freeze.
+
+## Deployment policy
+Deployments are **frozen** until the owner approves going live (`vercel.json` → `git.deploymentEnabled: false`). To go live: set it to `true` (or remove the `git` block) and push; migrations are additive and apply automatically.
+
+## Next — Package 3: AI Creative Studio
+1. Provider-agnostic media adapters (image, video, voice/TTS) with "pending configuration" status; real calls only when keys exist.
+2. Creative jobs: prompt → job record → provider call → asset storage → owner approval before any use.
+3. Brand kit (colours, fonts, logo, voice) applied to prompts and templates.
+4. Promotional graphics templates (posts/stories) rendered server-side from brand kit (works without external providers).
+5. Asset library with tags, approval status, and links to content calendar items.
+
+## Package 4: Website builder & Digital Twin
+- Block-based page builder (hero, services, academy, gallery, testimonials, CTA/lead form), SEO, preview → publish, custom domain readiness.
+- Digital Twin: explicit consent record, owner-approved knowledge base, avatar/voice provider adapters, approval before publishing.
 
 ## Phase 3
 - Ads integrations: Meta Marketing API & Google Ads (read-only reporting first, then approval-gated spend), Instagram Graph publishing via approvals, TikTok content API.
@@ -22,4 +31,4 @@
 - Multi-branch & staff scheduling UI, payroll inputs, inventory.
 
 ## Continuation prompt
-> Continue CASTEL STUDIO AI BUSINESS OS from FEATURE_STATUS.md and MASTER_ROADMAP.md on branch `claude/castel-studio-ai-os-976xw1`. Implement **Phase 2 · batch 2** items 1–5 in order, with additive migrations only, tests, a production build, and a push (auto-deploys to Vercel). Update both documents when done.
+> Continue CASTEL STUDIO AI BUSINESS OS from FEATURE_STATUS.md and MASTER_ROADMAP.md on branch `claude/castel-studio-ai-os-976xw1`. Deployments stay frozen. Implement the next incomplete package in order, with additive migrations only, tests, TypeScript check, production build, and a push (no deploy). Update both documents when done.

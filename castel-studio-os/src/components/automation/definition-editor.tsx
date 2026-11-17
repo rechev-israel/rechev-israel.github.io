@@ -7,7 +7,7 @@ type Cond = { field: string; op: string; value?: string };
 type Act = Record<string, string | number | undefined> & { type: string };
 
 const OPS = ["eq", "neq", "gt", "gte", "lt", "lte", "exists", "not_exists", "contains", "in"];
-const FIELDS = ["customer.status", "customer.visitCount", "customer.source", "customer.tags", "customer.consentWhatsapp", "customer.phone", "customer.email", "appointment.price", "appointment.serviceName", "lead.kind", "lead.source", "lead.status", "campaign.channel", "campaign.budget"];
+const FIELDS = ["student.status", "enrollment.balance", "customer.status", "customer.visitCount", "customer.source", "customer.tags", "customer.consentWhatsapp", "customer.phone", "customer.email", "appointment.price", "appointment.serviceName", "lead.kind", "lead.source", "lead.status", "campaign.channel", "campaign.budget"];
 
 export function DefinitionEditor({ initial, labels, templates, isHe }: {
   initial: { conditions: Cond[]; actions: Act[] };

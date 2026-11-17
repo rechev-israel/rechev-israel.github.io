@@ -14,6 +14,7 @@ export type DraftInput = {
   purpose?: "transactional" | "marketing";
   customerId?: string | null;
   leadId?: string | null;
+  studentId?: string | null;
   vars?: Record<string, string | number | null | undefined>;
   scheduledFor?: Date | null;
   automationRunId?: string | null;
@@ -27,9 +28,10 @@ export function contactDecision(input: {
   purpose: string;
   customer?: { phone: string | null; email: string | null; status: string; marketingConsentSms: string; marketingConsentEmail: string; marketingConsentWhatsapp: string } | null;
   lead?: { phone: string | null; email: string | null; consent: boolean; status: string } | null;
+  student?: { phone: string | null; email: string | null; status: string } | null;
 }): { ok: true; to: string } | { ok: false; reason: string } {
-  const { channel, purpose, customer, lead } = input;
-  const to = channel === "EMAIL" ? customer?.email ?? lead?.email : customer?.phone ?? lead?.phone;
+  const { channel, purpose, customer, lead, student } = input;
+  const to = channel === "EMAIL" ? customer?.email ?? lead?.email ?? student?.email : customer?.phone ?? lead?.phone ?? student?.phone;
   if (!to) return { ok: false, reason: "no_contact" };
   if (customer) {
     if (customer.status === "BLOCKED") return { ok: false, reason: "blocked" };
@@ -40,6 +42,11 @@ export function contactDecision(input: {
     if (optedOut) return { ok: false, reason: "opted_out" };
     // Marketing requires explicit opt-in (Israeli Communications Law, Amendment 40).
     if (purpose === "marketing" && !canMarketTo(customer, channel as "SMS" | "EMAIL" | "WHATSAPP")) return { ok: false, reason: "no_marketing_consent" };
+  }
+  if (student && !customer && !lead) {
+    // Enrolled students get service messages about their own course only; never marketing.
+    if (student.status === "DROPPED") return { ok: false, reason: "student_dropped" };
+    if (purpose === "marketing") return { ok: false, reason: "no_marketing_consent" };
   }
   if (lead && !customer) {
     if (!lead.consent) return { ok: false, reason: "no_consent" };
@@ -65,11 +72,12 @@ export async function draftMessage(input: DraftInput) {
   const purpose = input.purpose ?? tpl?.purpose ?? "transactional";
   const customer = input.customerId ? await db.customer.findFirst({ where: { id: input.customerId, businessId: input.businessId } }) : null;
   const lead = input.leadId ? await db.lead.findFirst({ where: { id: input.leadId, businessId: input.businessId } }) : null;
-  const name = customer?.firstName ?? lead?.name?.split(/\s+/)[0] ?? "";
+  const student = input.studentId ? await db.student.findFirst({ where: { id: input.studentId, businessId: input.businessId } }) : null;
+  const name = customer?.firstName ?? lead?.name?.split(/\s+/)[0] ?? student?.firstName ?? "";
   const vars = { business: "CASTEL STUDIO", name, ...input.vars };
   const body = renderTemplate(input.body ?? tpl?.body ?? "", vars);
   if (!body) throw new Error("empty message body");
-  const decision = contactDecision({ channel: input.channel, purpose, customer, lead });
+  const decision = contactDecision({ channel: input.channel, purpose, customer, lead, student });
   const status: MessageStatus = decision.ok ? "PENDING_APPROVAL" : "BLOCKED_NO_CONSENT";
   return db.outboundMessage.create({
     data: {
@@ -78,7 +86,8 @@ export async function draftMessage(input: DraftInput) {
       purpose,
       customerId: customer?.id ?? null,
       leadId: lead?.id ?? null,
-      recipientName: customer ? [customer.firstName, customer.lastName].filter(Boolean).join(" ") : lead?.name ?? null,
+      studentId: student?.id ?? null,
+      recipientName: customer ? [customer.firstName, customer.lastName].filter(Boolean).join(" ") : lead?.name ?? (student ? [student.firstName, student.lastName].filter(Boolean).join(" ") : null),
       toAddress: decision.ok ? decision.to : null,
       subject: input.subject ?? (tpl?.subject ? renderTemplate(tpl.subject, vars) : null),
       body,

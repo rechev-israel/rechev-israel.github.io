@@ -36,6 +36,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         actions={
           <>
             {can(user.role, "crm.edit") && <InlineAction action={recomputeSegmentsAction} variant="secondary" size="md"><RefreshCw size={14} /> {t.crm.recompute}</InlineAction>}
+            <Link href="/crm/leads" className={buttonClass("secondary")}>{locale === "he" ? "צינור לידים" : "Lead pipeline"}</Link>
             <Link href="/crm/birthdays" className={buttonClass("secondary")}><Cake size={14} /> {t.crm.birthdayCampaign}</Link>
             <a href="/api/crm/export" className={buttonClass("secondary")}><Download size={14} /> {t.common.exportCsv}</a>
             {can(user.role, "crm.edit") && <Link href="/crm/new" className={buttonClass("primary")}><Plus size={14} /> {t.crm.new}</Link>}

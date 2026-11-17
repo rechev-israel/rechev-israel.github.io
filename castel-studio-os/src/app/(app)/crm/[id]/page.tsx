@@ -10,6 +10,7 @@ import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, EmptyState, Label, PageHeader, Select, Stat, Table, Td, Textarea, Th, buttonClass } from "@/components/ui";
 import { CustomerFields, segmentTone } from "@/components/crm/customer-fields";
 import { Forbidden } from "@/components/forbidden";
+import { loyaltyTier, nextMilestone } from "@/domain/loyalty";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, t, locale, allowed } = await pageGuard("crm.view");
@@ -21,9 +22,23 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       notes: { orderBy: [{ pinned: "desc" }, { createdAt: "desc" }], include: { author: { select: { name: true } } } },
       appointments: { orderBy: { startsAt: "desc" }, take: 50, include: { service: true, staff: { select: { name: true } } } },
       interactions: { orderBy: { occurredAt: "desc" }, take: 50 },
+      outboundMessages: { orderBy: { createdAt: "desc" }, take: 50 },
+      transactions: { orderBy: { occurredAt: "desc" }, take: 50 },
     },
   });
   if (!c) notFound();
+  const L = (he: string, en: string) => (locale === "he" ? he : en);
+  const tier = loyaltyTier(c.visitCount, Number(c.totalSpent));
+  const next = nextMilestone(c.visitCount);
+  const tierLabel = { NEW: L("חדש", "New"), SILVER: L("כסף", "Silver"), GOLD: L("זהב", "Gold"), PLATINUM: L("פלטינום", "Platinum") }[tier];
+  type Ev = { at: Date; kind: string; title: string; detail?: string; tone: "gold" | "success" | "danger" | "neutral" | "info" | "warning" };
+  const timeline: Ev[] = [
+    ...c.appointments.map((a): Ev => ({ at: a.startsAt, kind: L("תור", "Appointment"), title: `${a.service ? (locale === "he" ? a.service.nameHe : a.service.nameEn) : "—"} · ${t.apptStatus[a.status]}`, detail: a.source === "cali" ? "Cali" : undefined, tone: a.status === "COMPLETED" ? "success" : a.status === "NO_SHOW" ? "danger" : a.status === "CANCELLED" ? "neutral" : "info" })),
+    ...c.interactions.map((i): Ev => ({ at: i.occurredAt, kind: t.channels[i.channel], title: i.summary.slice(0, 140), detail: t.directions[i.direction], tone: "neutral" })),
+    ...c.outboundMessages.map((m): Ev => ({ at: m.sentAt ?? m.createdAt, kind: L("הודעה", "Message"), title: m.body.slice(0, 140), detail: m.status, tone: m.status === "SENT" ? "success" : m.status === "FAILED" || m.status === "BLOCKED_NO_CONSENT" ? "warning" : "gold" })),
+    ...c.transactions.map((x): Ev => ({ at: x.occurredAt, kind: x.type === "INCOME" ? L("תשלום", "Payment") : L("הוצאה", "Expense"), title: formatILS(x.amount, locale), detail: x.kind === "ESTIMATE" ? L("הערכה", "Estimate") : undefined, tone: "gold" })),
+    ...c.notes.map((n): Ev => ({ at: n.createdAt, kind: L("הערה", "Note"), title: n.body.slice(0, 140), detail: n.author?.name, tone: "neutral" })),
+  ].sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 60);
   const edit = can(user.role, "crm.edit");
   const noShows = c.appointments.filter((a) => a.status === "NO_SHOW").length;
   const cancels = c.appointments.filter((a) => a.status === "CANCELLED").length;
@@ -46,7 +61,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       />
       {c.archivedAt && <Badge tone="warning" className="mb-4">{t.crm.archived}</Badge>}
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <Stat label={L("דרגת נאמנות", "Loyalty tier")} value={<span className="gold-text">{tierLabel}</span>} hint={next ? L(`עוד ${next.remaining} ביקורים לאבן דרך ${next.at}`, `${next.remaining} visits to milestone ${next.at}`) : undefined} />
         <Stat label={t.crm.visits} value={c.visitCount} />
         <Stat label={t.crm.spent} value={formatILS(c.totalSpent, locale)} />
         <Stat label={t.crm.lastVisit} value={<span className="text-lg">{formatDate(c.lastVisitAt, locale)}</span>} />
@@ -55,6 +71,20 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <CardTitle>{L("ציר זמן מאוחד", "Unified timeline")}</CardTitle>
+            {timeline.length ? (
+              <ol className="relative space-y-3 border-s border-border ps-4">
+                {timeline.map((e, i) => (
+                  <li key={i} className="relative">
+                    <span className="absolute -start-[21px] top-1.5 h-2.5 w-2.5 rounded-full border border-gold/60 bg-bg" />
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]"><Badge tone={e.tone}>{e.kind}</Badge><span className="tabular-nums text-muted">{formatDateTime(e.at, locale)}</span>{e.detail && <span className="text-muted">· {e.detail}</span>}</div>
+                    <p className="mt-0.5 text-sm">{e.title}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : <EmptyState title={t.common.empty} />}
+          </Card>
           <Card>
             <CardTitle>{t.crm.history}</CardTitle>
             {c.appointments.length ? (

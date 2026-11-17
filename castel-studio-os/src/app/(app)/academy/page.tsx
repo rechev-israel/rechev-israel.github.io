@@ -24,6 +24,16 @@ export default async function AcademyPage() {
     db.lead.count({ where: { businessId: user.businessId, status: { in: ["NEW", "CONTACTED", "QUALIFIED"] } } }),
     db.enrollment.findMany({ where: { cohort: { course: { businessId: user.businessId } }, status: { not: "CANCELLED" } }, select: { agreedPrice: true, payments: { select: { amount: true } } } }),
   ]);
+  const [attendance, leadStats, revenueByCourse] = await Promise.all([
+    db.attendance.groupBy({ by: ["status"], where: { enrollment: { cohort: { course: { businessId: user.businessId } } } }, _count: true }),
+    db.lead.groupBy({ by: ["status"], where: { businessId: user.businessId, kind: "academy" }, _count: true }),
+    db.payment.findMany({ where: { enrollment: { cohort: { course: { businessId: user.businessId } } } }, select: { amount: true, enrollment: { select: { cohort: { select: { course: { select: { code: true } } } } } } } }),
+  ]);
+  const attTotal = attendance.reduce((s, a) => s + a._count, 0);
+  const attended = attendance.filter((a) => a.status === "PRESENT" || a.status === "LATE").reduce((s, a) => s + a._count, 0);
+  const leadsTotal = leadStats.reduce((s, x) => s + x._count, 0);
+  const leadsWon = leadStats.find((x) => x.status === "ENROLLED")?._count ?? 0;
+  const byCourse = (code: string) => revenueByCourse.filter((p) => p.enrollment.cohort.course.code === code).reduce((s, p) => s + toNumber(p.amount), 0);
   const contracted = enrollments.reduce((s, e) => s + toNumber(e.agreedPrice), 0);
   const collected = enrollments.reduce((s, e) => s + e.payments.reduce((x, p) => x + toNumber(p.amount), 0), 0);
   const edit = can(user.role, "academy.edit");
@@ -50,6 +60,12 @@ export default async function AcademyPage() {
         <Stat label={t.academy.paid} value={formatILS(collected, locale)} hint={`${t.academy.balance}: ${formatILS(contracted - collected, locale)}`} />
       </div>
 
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat label={locale === "he" ? "שיעור נוכחות" : "Attendance rate"} value={attTotal ? `${Math.round((attended / attTotal) * 100)}%` : "—"} hint={`${attended}/${attTotal}`} />
+        <Stat label={locale === "he" ? "המרת לידים לאקדמיה" : "Academy lead conversion"} value={leadsTotal ? `${Math.round((leadsWon / leadsTotal) * 100)}%` : "—"} hint={`${leadsWon}/${leadsTotal}`} />
+        <Stat label={locale === "he" ? "הכנסות קבוצתי (בפועל)" : "Group revenue (actual)"} value={formatILS(byCourse("GROUP"), locale)} />
+        <Stat label={locale === "he" ? "הכנסות VIP (בפועל)" : "VIP revenue (actual)"} value={formatILS(byCourse("VIP"), locale)} />
+      </div>
       <div className="mb-4 grid gap-4 md:grid-cols-2">
         {courses.map((c) => (
           <Card key={c.id} className="relative overflow-hidden">
