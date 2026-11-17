@@ -132,6 +132,16 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
                 {manage && enc && editable.length > 0 && (
                   <ActionForm action={saveIntegrationAction} className="mt-3 space-y-2" resetOnSuccess>
                     <input type="hidden" name="provider" value={i.provider} />
+                    {i.provider === "smtp" && (
+                      <div className="rounded-lg border border-gold/30 p-3">
+                        <p className="mb-2 text-xs font-semibold text-gold">{L("חיבור מהיר עם Gmail", "Quick Gmail setup")}</p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div className="min-w-0"><Label htmlFor="gmail_address">{L("כתובת Gmail", "Gmail address")}</Label><Input id="gmail_address" name="gmail_address" type="email" dir="ltr" autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="name@gmail.com" /></div>
+                          <div className="min-w-0"><Label htmlFor="gmail_app_password">{L("סיסמת אפליקציה (16 אותיות)", "App Password (16 letters)")}</Label><Input id="gmail_app_password" name="gmail_app_password" type="password" dir="ltr" autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="abcd efgh ijkl mnop" /></div>
+                        </div>
+                        <p className="mt-2 text-[11px] text-muted">{L("או — לספק אחר — מלאו את השדות המתקדמים למטה.", "Or, for another provider, fill in the advanced fields below.")}</p>
+                      </div>
+                    )}
                     <div className="grid gap-2 sm:grid-cols-2">
                       {editable.map((f) => (
                         <div key={f.name} className="min-w-0">

@@ -11,7 +11,7 @@ import { runAction } from "./util";
 
 /** Save credentials (encrypted) for one provider, then immediately run its real connection test. Values never come back. */
 export async function saveIntegrationAction(_: ActionState, fd: FormData): Promise<ActionState> {
-  return runAction(async () => {
+  return runAction(async (): Promise<ActionState> => {
     const user = await requireUser("integrations.manage");
     const { locale } = await getI18n();
     const L = (he: string, en: string) => (locale === "he" ? he : en);
@@ -19,6 +19,18 @@ export async function saveIntegrationAction(_: ActionState, fd: FormData): Promi
     if (!def) return { error: "unknown provider" };
     if (!encryptionAvailable()) return { error: L("שמירה באפליקציה דורשת SECRETS_ENCRYPTION_KEY ב-Vercel. בינתיים אפשר להוסיף את המפתח ישירות ב-Vercel → Environment Variables.", "In-app storage needs SECRETS_ENCRYPTION_KEY in Vercel. Meanwhile add the key directly in Vercel → Environment Variables.") };
     const changed: string[] = [];
+    // Gmail quick setup: build SMTP_URL server-side so the owner never has to hand-encode a URL on a phone.
+    if (def.provider === "smtp") {
+      const addr = String(fd.get("gmail_address") ?? "").trim().toLowerCase();
+      const pass = String(fd.get("gmail_app_password") ?? "").replace(/\s+/g, "");
+      if (addr || pass) {
+        if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(addr)) return { error: L("כתובת Gmail לא תקינה", "Invalid Gmail address"), fieldErrors: { gmail_address: "✕" } };
+        if (!/^[a-z]{16}$/i.test(pass)) return { error: L("סיסמת אפליקציה היא 16 אותיות (בלי רווחים). זו לא הסיסמה הרגילה של Gmail.", "An App Password is 16 letters (no spaces) — not your normal Gmail password."), fieldErrors: { gmail_app_password: "✕" } };
+        await saveSecret(user.businessId, "SMTP_URL", `smtps://${encodeURIComponent(addr)}:${encodeURIComponent(pass)}@smtp.gmail.com:465`, user.id);
+        await saveSecret(user.businessId, "SMTP_FROM", `CASTEL STUDIO <${addr}>`, user.id);
+        changed.push("SMTP_URL", "SMTP_FROM");
+      }
+    }
     for (const f of def.fields) {
       if (f.envOnly || !isManagedSecret(f.name)) continue;
       const raw = fd.get(f.name);
