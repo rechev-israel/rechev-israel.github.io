@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo, Frank_Ruhl_Libre } from "next/font/google";
+// Fonts are bundled from npm (@fontsource) — no network access needed at build time.
+import "@fontsource/heebo/hebrew-400.css";
+import "@fontsource/heebo/hebrew-500.css";
+import "@fontsource/heebo/hebrew-600.css";
+import "@fontsource/heebo/hebrew-700.css";
+import "@fontsource/heebo/latin-400.css";
+import "@fontsource/heebo/latin-500.css";
+import "@fontsource/heebo/latin-600.css";
+import "@fontsource/heebo/latin-700.css";
+import "@fontsource/frank-ruhl-libre/hebrew-500.css";
+import "@fontsource/frank-ruhl-libre/hebrew-700.css";
+import "@fontsource/frank-ruhl-libre/hebrew-900.css";
+import "@fontsource/frank-ruhl-libre/latin-500.css";
+import "@fontsource/frank-ruhl-libre/latin-700.css";
+import "@fontsource/frank-ruhl-libre/latin-900.css";
 import { getI18n, getTheme } from "@/i18n";
 import "./globals.css";
 
-const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo", display: "swap" });
-const frank = Frank_Ruhl_Libre({ subsets: ["hebrew", "latin"], weight: ["500", "700", "900"], variable: "--font-frank", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "CASTEL STUDIO — AI Business OS", template: "%s · CASTEL STUDIO" },
@@ -23,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { locale, dir } = await getI18n();
   const theme = await getTheme();
   return (
-    <html lang={locale} dir={dir} data-theme={theme} className={`${heebo.variable} ${frank.variable}`}>
+    <html lang={locale} dir={dir} data-theme={theme}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

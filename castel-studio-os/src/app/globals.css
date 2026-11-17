@@ -54,8 +54,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
-  --font-sans: var(--font-heebo), system-ui, sans-serif;
-  --font-display: var(--font-frank), var(--font-heebo), serif;
+  --font-sans: "Heebo", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-display: "Frank Ruhl Libre", "Heebo", Georgia, serif;
 }
 
 html,
