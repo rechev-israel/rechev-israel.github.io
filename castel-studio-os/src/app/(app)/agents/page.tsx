@@ -8,6 +8,7 @@ import { aiConfigured } from "@/server/ai/provider";
 import { AgentChat } from "@/components/ai/chat";
 import { Badge, Card, CardTitle, Notice, PageHeader, buttonClass } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
+import { secret } from "@/server/secrets/store";
 
 export const metadata = { title: "AI Agents" };
 
@@ -47,7 +48,7 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
               <div><dt className="text-muted">{locale === "he" ? "טוקנים נכנסים" : "Input tokens"}</dt><dd className="tabular-nums">{(usage._sum.inputTokens ?? 0).toLocaleString()}</dd></div>
               <div><dt className="text-muted">{locale === "he" ? "טוקנים יוצאים" : "Output tokens"}</dt><dd className="tabular-nums">{(usage._sum.outputTokens ?? 0).toLocaleString()}</dd></div>
             </dl>
-            {process.env.AI_MONTHLY_BUDGET_USD && <p className="mt-2 text-xs">{locale === "he" ? "תקרה חודשית" : "Monthly cap"}: ${process.env.AI_MONTHLY_BUDGET_USD}</p>}
+            {secret("AI_MONTHLY_BUDGET_USD") && <p className="mt-2 text-xs">{locale === "he" ? "תקרה חודשית" : "Monthly cap"}: ${secret("AI_MONTHLY_BUDGET_USD")}</p>}
             <p className="mt-2 text-[10px] text-muted">{locale === "he" ? "הערכה לפי מחירון רשמי, לא חשבונית." : "Estimate from list prices, not an invoice."}{errors30 ? ` · ${errors30} ${locale === "he" ? "שגיאות ב-30 יום" : "errors in 30d"}` : ""}</p>
           </Card>
           <Notice tone="gold">{t.ai.approvalNote}</Notice>

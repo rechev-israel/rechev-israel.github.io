@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 import { can, ForbiddenError, type Permission } from "./rbac";
+import { hydrateSecrets } from "@/server/secrets/store";
 
 export const SESSION_COOKIE = "castel_session";
 
@@ -68,6 +69,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (Date.now() - session.lastSeenAt.getTime() > 5 * 60_000) {
     await db.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
   }
+  await hydrateSecrets();
   const u = session.user;
   return { id: u.id, name: u.name, email: u.email, role: u.role, businessId: u.businessId, locale: u.locale };
 }

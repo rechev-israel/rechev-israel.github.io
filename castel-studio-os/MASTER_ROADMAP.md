@@ -13,12 +13,14 @@ Deployments are **frozen** until the owner approves going live (`vercel.json` �
 
 - **Package 4** — Website builder (blocks, live data, approved images, SEO, draft/preview/owner publish, public `/s/<slug>`, lead capture) and Digital Twin (explicit consent with scopes & revoke, approved knowledge, grounded chat, scripts, consent-gated owner voice & avatar video).
 
+- **Integration Center** — "מרכז חיבורים": real per-provider connection tests (Anthropic first), Connected only after verification of current credentials, encrypted in-app credential storage (AES-256-GCM), Meta OAuth, cron-run recording, redaction of secrets from errors/logs.
+
 ## Next — Package 5: Hardening & go-live readiness
 1. External error monitoring (e.g. Sentry) + uptime alert on `/api/health`.
 2. Blob storage adapter (Vercel Blob / S3) for large video/3D assets instead of temporary provider links.
 3. Streaming AI replies; per-agent tool permissions UI.
 4. Staff-facing mobile polish pass on every new screen; accessibility audit (keyboard, contrast, screen readers).
-5. Go-live checklist: set `CRON_SECRET`, `ANTHROPIC_API_KEY`, remove deploy freeze, custom domain, publish the home page, verify Cali sync status.
+5. Go-live checklist: set `CRON_SECRET`, `SECRETS_ENCRYPTION_KEY`, `ANTHROPIC_API_KEY` (test it in מרכז חיבורים), remove deploy freeze, custom domain, publish the home page, verify Cali sync status.
 
 ## Phase 3
 - Ads integrations: Meta Marketing API & Google Ads (read-only reporting first, then approval-gated spend), Instagram Graph publishing via approvals, TikTok content API.

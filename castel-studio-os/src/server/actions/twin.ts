@@ -10,6 +10,7 @@ import { createGenerationJob } from "@/server/creative/service";
 import { getI18n } from "@/i18n";
 import type { ActionState } from "@/lib/validation";
 import { runAction } from "./util";
+import { secret } from "@/server/secrets/store";
 
 
 /** Owner-only explicit consent. Records exactly what was agreed, when, and by whom. */
@@ -106,7 +107,7 @@ export async function twinMediaAction(_: ActionState, fd: FormData): Promise<Act
     const profile = await db.twinProfile.findUnique({ where: { businessId: user.businessId } });
     if (!twinAllows(profile, kind)) return { error: L("אין הסכמה פעילה להרשאה זו.", "No active consent for this scope.") };
     if (kind === "voice") {
-      const voiceId = process.env.ELEVENLABS_TWIN_VOICE_ID?.trim();
+      const voiceId = secret("ELEVENLABS_TWIN_VOICE_ID");
       if (!voiceId) return { error: L("לא הוגדר קול אישי (ELEVENLABS_TWIN_VOICE_ID) — יש ליצור אותו ב-ElevenLabs מדגימות שלך, בהסכמתך.", "No personal voice configured (ELEVENLABS_TWIN_VOICE_ID) — create it in ElevenLabs from your own samples.") };
       const a = await createGenerationJob(user, { kind: "voiceover", title: L("קול התאום", "Twin voice"), prompt: script, voiceId, tags: ["twin"] });
       revalidatePath("/creative");

@@ -17,7 +17,7 @@ export const en: Dictionary = {
     dashboard: "Command Center", crm: "Customers (CRM)", bookings: "Bookings", academy: "Academy", finance: "Finance & BI",
     analytics: "Analytics", marketing: "Marketing Dept.", creative: "Creative Studio", sites: "Landing Page Builder",
     communications: "Communications", automations: "Automations", agents: "AI Agents", twin: "Digital Twin",
-    approvals: "Approvals", tasks: "Tasks", integrations: "Integrations", settings: "Settings", audit: "Audit Log",
+    approvals: "Approvals", tasks: "Tasks", integrations: "Integration Center", settings: "Settings", audit: "Audit Log",
   },
   auth: {
     title: "Owner & staff sign in", email: "Email", password: "Password", signIn: "Sign in",

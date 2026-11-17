@@ -5,6 +5,7 @@ import { importBookingCsvAction } from "@/server/actions/bookings";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, EmptyState, Input, Label, Notice, PageHeader, Table, Td, Th, buttonClass } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
+import { secret } from "@/server/secrets/store";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function ImportPage() {
     db.syncLog.findMany({ where: { businessId: user.businessId, source: "cali" }, orderBy: { createdAt: "desc" }, take: 20 }),
     db.appointment.count({ where: { businessId: user.businessId, source: "cali" } }),
   ]);
-  const webhookReady = Boolean(process.env.CALI_WEBHOOK_SECRET?.trim());
+  const webhookReady = Boolean(secret("CALI_WEBHOOK_SECRET"));
   return (
     <>
       <PageHeader title={L("סנכרון עם אפליקציית Cali", "Cali booking app sync")} subtitle={L(`${synced} תורים מסונכרנים מ-Cali`, `${synced} appointments synced from Cali`)} />

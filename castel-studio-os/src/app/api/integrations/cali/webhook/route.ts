@@ -1,3 +1,4 @@
+import { hydrateSecrets, secret as getSecret } from "@/server/secrets/store";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
@@ -14,7 +15,7 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (!rateLimit(`cali-webhook:${ip}`, 120, 60_000).ok) return Response.json({ error: "rate_limited" }, { status: 429 });
-  const secret = process.env.CALI_WEBHOOK_SECRET?.trim();
+  const secret = (await hydrateSecrets(), getSecret("CALI_WEBHOOK_SECRET"));
   if (!secret) return Response.json({ error: "integration_not_configured" }, { status: 503 });
   const raw = await req.text();
   if (raw.length > 2_000_000) return Response.json({ error: "too_large" }, { status: 413 });

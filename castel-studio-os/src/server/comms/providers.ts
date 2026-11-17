@@ -4,6 +4,7 @@
  * (waiting for a provider) — it is never reported as sent.
  */
 import { logger } from "@/lib/logger";
+import { secret } from "@/server/secrets/store";
 
 export type SendResult = { ok: true; providerMessageId: string | null } | { ok: false; error: string; retryable: boolean };
 
@@ -23,14 +24,14 @@ const whatsapp: ChannelProvider = {
   // (the business WhatsApp account currently has a restriction). Credentials alone never enable sending.
   configured: () =>
     process.env.WHATSAPP_SENDING_ENABLED === "true" &&
-    Boolean(process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()),
+    Boolean(secret("WHATSAPP_CLOUD_ACCESS_TOKEN") && secret("WHATSAPP_PHONE_NUMBER_ID")),
   async send({ to, body }) {
-    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+    const phoneId = secret("WHATSAPP_PHONE_NUMBER_ID");
     const version = process.env.WHATSAPP_API_VERSION?.trim() || "v21.0";
     try {
       const res = await fetch(`https://graph.facebook.com/${version}/${encodeURIComponent(phoneId)}/messages`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${process.env.WHATSAPP_CLOUD_ACCESS_TOKEN!.trim()}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${secret("WHATSAPP_CLOUD_ACCESS_TOKEN")}`, "Content-Type": "application/json" },
         body: JSON.stringify({ messaging_product: "whatsapp", to: to.replace(/^\+/, ""), type: "text", text: { body, preview_url: false } }),
       });
       const data = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { message?: string } };
@@ -47,13 +48,13 @@ const whatsapp: ChannelProvider = {
 const email: ChannelProvider = {
   id: "smtp",
   channel: "EMAIL",
-  configured: () => Boolean(process.env.SMTP_URL?.trim()),
+  configured: () => Boolean(secret("SMTP_URL")),
   async send({ to, subject, body }) {
     try {
       const nodemailer = await import("nodemailer");
-      const transport = nodemailer.createTransport(process.env.SMTP_URL!.trim());
+      const transport = nodemailer.createTransport(secret("SMTP_URL"));
       const info = await transport.sendMail({
-        from: process.env.SMTP_FROM?.trim() || "CASTEL STUDIO <no-reply@castel.studio>",
+        from: secret("SMTP_FROM") || "CASTEL STUDIO <no-reply@castel.studio>",
         to,
         subject: subject || "CASTEL STUDIO",
         text: body,

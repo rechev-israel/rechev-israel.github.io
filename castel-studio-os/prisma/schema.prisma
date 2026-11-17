@@ -62,6 +62,7 @@ model Business {
   creativeAssets   CreativeAsset[]
   sitePages        SitePage[]
   twinProfile      TwinProfile?
+  secrets          IntegrationSecret[]
 }
 
 model Branch {
@@ -983,4 +984,21 @@ model TwinProfile {
   portraitUrl   String?
   revokedAt     DateTime?
   updatedAt     DateTime  @updatedAt
+}
+
+/// Integration credentials entered in the app. Encrypted with AES-256-GCM (key: SECRETS_ENCRYPTION_KEY env var).
+/// Plaintext is never stored, logged or sent to the browser; only the last 4 characters are kept for display.
+model IntegrationSecret {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  ciphertext  String
+  iv          String
+  tag         String
+  last4       String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, name])
 }

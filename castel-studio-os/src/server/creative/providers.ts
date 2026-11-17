@@ -9,6 +9,8 @@
  * Replicate model slugs are chosen by the owner (e.g. "owner/model" or "owner/model:version"); input keys
  * differ between models, so we send `prompt` (+ `image` when given) and allow extra JSON input per job.
  */
+import { secret } from "@/server/secrets/store";
+
 export type CreativeKind = "image" | "image_edit" | "video" | "animation" | "model3d" | "voiceover" | "avatar";
 
 export type StartResult =
@@ -18,7 +20,7 @@ export type StartResult =
 
 export type PollResult = { state: "done"; outputUrl: string; mimeType?: string } | { state: "running" } | { state: "failed"; error: string };
 
-const env = (k: string) => process.env[k]?.trim() || "";
+const env = (k: string) => secret(k);
 const MAX_INLINE_BYTES = 4_000_000;
 
 export function replicateModelFor(kind: CreativeKind) {

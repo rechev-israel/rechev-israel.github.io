@@ -10,6 +10,7 @@ import { ActionForm, FieldError, InlineAction, SubmitButton } from "@/components
 import { ResultForm } from "@/components/result-form";
 import { Badge, Button, Card, CardTitle, EmptyState, Input, Label, Notice, PageHeader, Select, Textarea } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
+import { secret } from "@/server/secrets/store";
 
 export const metadata = { title: "Digital Twin" };
 export const dynamic = "force-dynamic";
@@ -108,7 +109,7 @@ export default async function TwinPage() {
                 <Select name="kind" className="w-auto"><option value="voice" disabled={!voice}>{L("קריינות בקול שלי", "Voice-over in my voice")}{voice ? "" : ` — ${L("ללא הסכמה", "no consent")}`}</option><option value="avatar" disabled={!avatar}>{L("וידאו אווטאר", "Avatar video")}{avatar ? "" : ` — ${L("ללא הסכמה", "no consent")}`}</option></Select>
                 <Button type="submit" disabled={!voice && !avatar}>{L("יצירה", "Generate")}</Button>
               </div>
-              <p className="text-[11px] text-muted">{L("ספקים", "Providers")}: {L("קול", "voice")} — {process.env.ELEVENLABS_TWIN_VOICE_ID && providerFor("voiceover") ? "✓ ElevenLabs" : "ELEVENLABS_API_KEY + ELEVENLABS_TWIN_VOICE_ID"} · {L("אווטאר", "avatar")} — {providerFor("avatar") ? "✓ Replicate" : "REPLICATE_API_TOKEN + REPLICATE_MODEL_AVATAR"}. {L("התוצרים נשמרים בספריית הנכסים ומחייבים אישור לפני שימוש.", "Outputs go to the asset library and require approval before use.")}</p>
+              <p className="text-[11px] text-muted">{L("ספקים", "Providers")}: {L("קול", "voice")} — {secret("ELEVENLABS_TWIN_VOICE_ID") && providerFor("voiceover") ? "✓ ElevenLabs" : "ELEVENLABS_API_KEY + ELEVENLABS_TWIN_VOICE_ID"} · {L("אווטאר", "avatar")} — {providerFor("avatar") ? "✓ Replicate" : "REPLICATE_API_TOKEN + REPLICATE_MODEL_AVATAR"}. {L("התוצרים נשמרים בספריית הנכסים ומחייבים אישור לפני שימוש.", "Outputs go to the asset library and require approval before use.")}</p>
             </ResultForm>
           )}
         </Card>

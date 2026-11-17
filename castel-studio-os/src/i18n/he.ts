@@ -15,7 +15,7 @@ export const he = {
     dashboard: "מרכז פיקוד", crm: "לקוחות (CRM)", bookings: "תורים", academy: "האקדמיה", finance: "כספים ו-BI",
     analytics: "אנליטיקה", marketing: "מחלקת שיווק", creative: "סטודיו קריאייטיב", sites: "בונה דפי נחיתה",
     communications: "מרכז תקשורת", automations: "אוטומציות", agents: "סוכני AI", twin: "תאום דיגיטלי",
-    approvals: "אישורים", tasks: "משימות", integrations: "אינטגרציות", settings: "הגדרות", audit: "יומן ביקורת",
+    approvals: "אישורים", tasks: "משימות", integrations: "מרכז חיבורים", settings: "הגדרות", audit: "יומן ביקורת",
   },
   auth: {
     title: "כניסת בעלים וצוות", email: "אימייל", password: "סיסמה", signIn: "כניסה",

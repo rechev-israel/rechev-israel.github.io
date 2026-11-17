@@ -9,6 +9,7 @@ import { routeRequest } from "./router";
 import { getAiProvider, REQUEST_APPROVAL_TOOL, Anthropic, type ChatTurn } from "./provider";
 import { estimateCostUsd } from "./pricing";
 import { addDays, startOfDay } from "@/lib/dates";
+import { secret } from "@/server/secrets/store";
 
 const CREATE_TASK_TOOL: Anthropic.Beta.BetaTool = {
   name: "create_task",
@@ -38,7 +39,7 @@ const CREATE_CONTENT_TOOL: Anthropic.Beta.BetaTool = {
 
 /** Monthly AI spend cap (USD, estimated from list prices). Unset = no cap. */
 export async function aiBudgetStatus(businessId: string) {
-  const cap = Number(process.env.AI_MONTHLY_BUDGET_USD ?? "");
+  const cap = Number(secret("AI_MONTHLY_BUDGET_USD"));
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const agg = await db.aiMessage.aggregate({ where: { conversation: { businessId }, createdAt: { gte: monthStart } }, _sum: { costUsd: true } });
   const spent = Number(agg._sum.costUsd ?? 0);

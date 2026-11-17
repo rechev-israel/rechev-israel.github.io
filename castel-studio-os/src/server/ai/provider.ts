@@ -1,3 +1,4 @@
+import { secret } from "@/server/secrets/store";
 import Anthropic from "@anthropic-ai/sdk";
 import { logger } from "@/lib/logger";
 
@@ -77,13 +78,13 @@ class AnthropicProvider implements AiProvider {
 }
 
 export function aiConfigured() {
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+  return Boolean(secret("ANTHROPIC_API_KEY"));
 }
 
 export function getAiProvider(): AiProvider | null {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  const key = secret("ANTHROPIC_API_KEY");
   if (!key) return null;
-  return new AnthropicProvider(key, process.env.ANTHROPIC_MODEL?.trim() || "claude-opus-5-5");
+  return new AnthropicProvider(key, secret("ANTHROPIC_MODEL") || "claude-opus-5-5");
 }
 
 export { Anthropic };

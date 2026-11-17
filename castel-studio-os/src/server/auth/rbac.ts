@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   "approvals.decide": ["OWNER"],
   "approvals.view": ["OWNER", "MANAGER", "MARKETING"],
   "integrations.view": ["OWNER", "MANAGER"],
+  "integrations.manage": ["OWNER"],
   "settings.users": ["OWNER"],
   "settings.business": ["OWNER", "MANAGER"],
   "audit.view": ["OWNER"],
