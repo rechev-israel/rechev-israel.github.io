@@ -19,7 +19,11 @@ export interface ChannelProvider {
 const whatsapp: ChannelProvider = {
   id: "whatsapp-cloud",
   channel: "WHATSAPP",
-  configured: () => Boolean(process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()),
+  // Hard kill switch: WhatsApp sending stays OFF until the owner sets WHATSAPP_SENDING_ENABLED=true
+  // (the business WhatsApp account currently has a restriction). Credentials alone never enable sending.
+  configured: () =>
+    process.env.WHATSAPP_SENDING_ENABLED === "true" &&
+    Boolean(process.env.WHATSAPP_CLOUD_ACCESS_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()),
   async send({ to, body }) {
     const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
     const version = process.env.WHATSAPP_API_VERSION?.trim() || "v21.0";

@@ -11,5 +11,8 @@
       "path": "/api/cron/daily",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": false
+  }
 }

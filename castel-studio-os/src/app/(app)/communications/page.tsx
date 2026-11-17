@@ -55,7 +55,7 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
         <Stat label={L("נחסמו (הסכמה/פרטים)", "Blocked (consent/contact)")} value={c("BLOCKED_NO_CONSENT")} />
       </div>
       <div className="mb-4 grid gap-3 md:grid-cols-2">
-        {[{ p: PROVIDERS.WHATSAPP, icon: MessageCircle, name: "WhatsApp Cloud API", env: "WHATSAPP_CLOUD_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID" }, { p: PROVIDERS.EMAIL, icon: Mail, name: "Email (SMTP)", env: "SMTP_URL + SMTP_FROM" }].map(({ p, icon: Icon, name, env }) => (
+        {[{ p: PROVIDERS.WHATSAPP, icon: MessageCircle, name: "WhatsApp Cloud API", env: process.env.WHATSAPP_SENDING_ENABLED === "true" ? "WHATSAPP_CLOUD_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID" : L("השליחה מושבתת (הגבלת חשבון) — WHATSAPP_SENDING_ENABLED", "Sending disabled (account restriction) — WHATSAPP_SENDING_ENABLED") }, { p: PROVIDERS.EMAIL, icon: Mail, name: "Email (SMTP)", env: "SMTP_URL + SMTP_FROM" }].map(({ p, icon: Icon, name, env }) => (
           <Card key={p.id} className="flex items-start gap-3 p-4">
             <Icon size={20} className={p.configured() ? "text-success" : "text-muted"} />
             <div className="min-w-0 text-sm">

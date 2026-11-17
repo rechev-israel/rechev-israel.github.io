@@ -68,3 +68,15 @@ describe("communication rules", () => {
     expect(DEFAULT_TEMPLATES.find((t) => t.key === "birthday")?.purpose).toBe("marketing");
   });
 });
+
+describe("WhatsApp kill switch", () => {
+  it("credentials alone never enable sending", async () => {
+    const { PROVIDERS } = await import("@/server/comms/providers");
+    process.env.WHATSAPP_CLOUD_ACCESS_TOKEN = "x"; process.env.WHATSAPP_PHONE_NUMBER_ID = "1";
+    delete process.env.WHATSAPP_SENDING_ENABLED;
+    expect(PROVIDERS.WHATSAPP.configured()).toBe(false);
+    process.env.WHATSAPP_SENDING_ENABLED = "true";
+    expect(PROVIDERS.WHATSAPP.configured()).toBe(true);
+    delete process.env.WHATSAPP_SENDING_ENABLED; delete process.env.WHATSAPP_CLOUD_ACCESS_TOKEN; delete process.env.WHATSAPP_PHONE_NUMBER_ID;
+  });
+});
