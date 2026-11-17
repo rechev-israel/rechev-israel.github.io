@@ -16,7 +16,8 @@ import { lookup } from "./util";
 function tokenMatches(given: string) {
   const expected = process.env.SETUP_TOKEN?.trim();
   if (!expected || expected.length < 12) return false;
-  const a = createHash("sha256").update(given).digest();
+  // Phones often add a space when pasting; compare trimmed values.
+  const a = createHash("sha256").update(given.trim()).digest();
   const b = createHash("sha256").update(expected).digest();
   return timingSafeEqual(a, b);
 }
