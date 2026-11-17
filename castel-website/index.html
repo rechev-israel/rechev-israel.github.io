@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=f8ec0200-590a-42a6-8a9b-b4023f14c146
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CASTEL STUDIO ACADEMY · קורס ספרות גברים למתחילים באשקלון</title>
+<meta name="description" content="CASTEL STUDIO ACADEMY – קורס ספרות גברים למתחילים באשקלון. שני מסלולים: קבוצתי (עד 5 תלמידים) ואישי VIP. 6 מפגשים, 13 שעות הכשרה, תעודת סיום. וגם CASTEL STUDIO, מספרת גברים פרימיום.">
+<meta name="theme-color" content="#0B0B0B">
+<meta name="format-detection" content="telephone=no">
+<!-- After the domain is known, add: <link rel="canonical" href="https://YOUR-DOMAIN/"> -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CASTEL STUDIO">
+<meta property="og:title" content="CASTEL STUDIO ACADEMY · מאפס למקצוע.">
+<meta property="og:description" content="CASTEL STUDIO ACADEMY – קורס ספרות גברים למתחילים באשקלון. שני מסלולים: קבוצתי (עד 5 תלמידים) ואישי VIP. 6 מפגשים, 13 שעות הכשרה, תעודת סיום. וגם CASTEL STUDIO, מספרת גברים פרימיום.">
+<meta property="og:locale" content="he_IL">
+<meta property="og:locale:alternate" content="en_US">
+<!-- og:image must be an absolute URL once the domain is known: https://YOUR-DOMAIN/og-image.jpg -->
+<meta property="og:image" content="og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"EducationalOrganization","@id":"#academy","name":"CASTEL STUDIO ACADEMY","description":"Men's barbering education for complete beginners in Ashkelon, Israel.","telephone":"+972555711239","address":{"@type":"PostalAddress","addressLocality":"Ashkelon","addressCountry":"IL"},"sameAs":["https://www.instagram.com/castel.cutzz"]},
+ {"@type":"BarberShop","@id":"#barbershop","name":"CASTEL STUDIO","description":"Premium men's barbering in Ashkelon, Israel.","telephone":"+972555711239","priceRange":"₪20–₪120","address":{"@type":"PostalAddress","addressLocality":"Ashkelon","addressCountry":"IL"},"sameAs":["https://www.instagram.com/castel.cutzz"]}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&amp;family=Manrope:wght@400;500;600&amp;family=Heebo:wght@200;300;400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/castel.css">
+</head>
+<body class="intro" data-page="home">
+<a class="skip" href="#main" data-i18n="skip">דילוג לתוכן</a>
+<div class="loader" aria-hidden="true"><div><img class="loader-logo" src="images/logo.png" alt="" width="160" height="112"><div class="bar"><i></i></div></div></div>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+<div class="sr" aria-live="polite" id="live"></div>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a aria-label='CASTEL STUDIO' class='logo' href='/'>
+      <img data-fallback src="images/logo.png" alt="" width="62" height="44">
+      <span aria-hidden="true">CASTEL<small>STUDIO</small></span>
+    </a>
+    <nav class="links" aria-label="ראשי" data-i18n-aria="aria.nav">
+      <a href="#home" aria-current="page" data-i18n="nav.home">ראשי</a>
+      <a class='nav-acad' data-i18n='nav.academy' href='/academy/'>האקדמיה</a>
+      <a href="#course" data-i18n="nav.course">על הקורס</a>
+      <a href="#barbershop" data-i18n="nav.shop">המספרה</a>
+      <a href="#gallery" data-i18n="nav.gallery">גלריה</a>
+      <a href="#contact" data-i18n="nav.contact">יצירת קשר</a>
+    </nav>
+    <div class="nav-end">
+      <a class="nav-ig" href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" aria-label="Instagram @castel.cutzz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg></a>
+      <div class="lang" role="group" aria-label="שפה" data-i18n-aria="aria.lang">
+        <button type="button" data-lang="he" lang="he" aria-label="עברית" aria-pressed="true">עב</button>
+        <button type="button" data-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+      </div>
+      <a class="nav-book" href="#book" data-book data-i18n="nav.book">קביעת תור</a>
+      <a class="btn sm" href="#programs" data-i18n="cta.details">לפרטים על הקורס</a>
+      <button class="burger" id="burger" type="button" aria-label="פתיחת תפריט" data-i18n-aria="aria.menu" aria-expanded="false" aria-controls="mmenu"><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="תפריט" data-i18n-aria="aria.menuDlg" inert>
+  <nav aria-label="תפריט נייד" data-i18n-aria="aria.mnav">
+    <a class="ml" href="#home" aria-current="page"><em>01</em><span data-i18n="nav.home">ראשי</span></a>
+    <a class='ml' href='/academy/'><em>02</em><span data-i18n="nav.academy">האקדמיה</span></a>
+    <a class="ml" href="#course"><em>03</em><span data-i18n="nav.course">על הקורס</span></a>
+    <a class="ml" href="#barbershop"><em>04</em><span data-i18n="nav.shop">המספרה</span></a>
+    <a class="ml" href="#gallery"><em>05</em><span data-i18n="nav.gallery">גלריה</span></a>
+    <a class="ml" href="#contact"><em>06</em><span data-i18n="nav.contact">יצירת קשר</span></a>
+  </nav>
+  <div class="mfoot">
+    <a class="btn" href="#programs"><span data-i18n="cta.details">לפרטים על הקורס</span></a>
+    <a class="btn ghost" href="#book" data-book><span data-i18n="cta.bookCut">קביעת תור לתספורת</span></a>
+    <a class="nav-ig" href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" aria-label="Instagram @castel.cutzz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg></a>
+  </div>
+</div>
+
+<main id="main">
+  <section class="hero hero-ac" id="home" aria-labelledby="h1">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <picture><source media="(max-width: 760px)" srcset="images/hero-m.webp" width="1080" height="1600"><img class="hero-img" data-fallback src="images/hero.webp" alt="" fetchpriority="high" decoding="async" width="2400" height="1350"></picture>
+    <div class="coords" aria-hidden="true">Ashkelon · Israel</div>
+    <div class="wrap">
+      <p class="h-brand"><img src="images/logo.png" alt="CASTEL STUDIO" width="638" height="446" decoding="async"></p>
+      <div class="indicator"><span class="en ind-a">Castel Studio Academy</span><i></i><span class="en ind-b">Master the craft.</span></div>
+      <h1 id="h1"><span class="w"><span data-i18n="h.h1">מאפס למקצוע.</span></span></h1>
+      <p class="h-second" data-i18n="h.second">הדרך שלך לעולם ספרות הגברים מתחילה כאן.</p>
+      <div class="hero-row">
+        <div>
+          <p class="h-stats"><span data-i18n="h.s1">6 מפגשים</span><i aria-hidden="true"></i><span data-i18n="h.s2">13 שעות</span><i aria-hidden="true"></i><span data-i18n="h.s4">2 מסלולים</span></p>
+          <p class="h-support" data-i18n="h.support"></p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn lg" href="#programs"><span data-i18n="h.cta1">לגלות את הקורס</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn ghost" href="#book" data-book data-i18n="cta.bookCut">קביעת תור לתספורת</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true"><div class="track" id="mq"></div></div>
+
+  <section class="s acad" id="course" aria-labelledby="courseT">
+    <canvas data-seed="219" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="rv">
+        <span class="label en">01 — The Academy</span>
+        <p class="acad-mark" lang="en" aria-hidden="true">Castel Studio <i>Academy</i></p>
+      </div>
+      <div class="acad-body rv">
+        <div>
+          <span class="acad-course" data-i18n="ac.course">קורס ספרות גברים למתחילים</span>
+          <h2 class="ai-h" id="courseT" data-i18n="ai.h">מאפס למקצוע. בדרך שמתאימה לך.</h2>
+          <p class="ai-sub" data-i18n="ai.sub">שני מסלולים. מטרה אחת. הדרך שלך למקצוע.</p>
+          <p data-i18n="ac.desc"></p>
+          <div class="hero-actions">
+            <a class="btn" href="#programs"><span data-i18n="cta.choose">לבחירת מסלול הלימוד</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class='btn ghost' data-i18n='ac.page' href='/academy/'>לעמוד האקדמיה</a>
+          </div>
+        </div>
+        <div class="focus ai-side">
+          <div><span class="serif en">Foundations</span><span data-i18n="ac.fo1">יסודות המקצוע</span></div>
+          <div><span class="serif en">Precision</span><span data-i18n="ac.fo2">דיוק</span></div>
+          <div><span class="serif en">Practice</span><span data-i18n="ac.fo3">מיומנויות מעשיות</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-band" aria-labelledby="statsT">
+    <div class="wrap rv">
+      <span class="label en">02 — The Course in Numbers</span>
+      <h2 class="sr" id="statsT" data-i18n="st.title">הקורס במספרים</h2>
+      <div class="stats" data-stats style="margin-top:28px"></div>
+      <div class="price-chips" data-pricechips></div>
+    </div>
+  </section>
+  <section class="s" id="why" aria-labelledby="whyT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">03 — Why Castel Studio</span>
+          <h2 id="whyT"><span data-i18n="why.title">למה ללמוד ב־CASTEL STUDIO</span></h2>
+        </div>
+        <p data-i18n="why.intro">ללמוד מקצוע מאדם שעושה אותו, בסטנדרט שרואים בכל תספורת.</p>
+      </div>
+      <div class="why-grid rv">
+        <div class="why-item"><span class="num" aria-hidden="true">I</span><span class="serif en" aria-hidden="true">From the chair</span><h3 data-i18n="why.1t"></h3><p data-i18n="why.1p"></p></div>
+        <div class="why-item"><span class="num" aria-hidden="true">II</span><span class="serif en" aria-hidden="true">Small or private</span><h3 data-i18n="why.2t"></h3><p data-i18n="why.2p"></p></div>
+        <div class="why-item"><span class="num" aria-hidden="true">III</span><span class="serif en" aria-hidden="true">Hands-on</span><h3 data-i18n="why.3t"></h3><p data-i18n="why.3p"></p></div>
+        <div class="why-item"><span class="num" aria-hidden="true">IV</span><span class="serif en" aria-hidden="true">Certificate</span><h3 data-i18n="why.4t"></h3><p data-i18n="why.4p"></p></div>
+      </div>
+    </div>
+  </section>
+  <section class="s services" id="who" aria-labelledby="whoT">
+    <div class="wrap who-grid">
+      <div class="rv">
+        <span class="label en">04 — Who It's For</span>
+        <h2 id="whoT" data-i18n="who.title">למי הקורס מתאים?</h2>
+        <p class="who-msg" data-i18n-html="who.msg">כל מקצוען התחיל פעם <em>מאפס.</em></p>
+        <p class="who-sub" data-i18n="who.sub">לא צריך ניסיון קודם. צריך רצון להתחיל.</p>
+      </div>
+      <ul class="who-list rv">
+        <li data-i18n="who.1">למי שמעולם לא עבד כספר</li>
+        <li data-i18n="who.2">למי שרוצה ללמוד ספרות גברים מאפס</li>
+        <li data-i18n="who.3">למי שמחפש לפתח מיומנות מקצועית חדשה</li>
+        <li data-i18n="who.4">למי שרוצה לבדוק קריירה עתידית בעולם הספרות</li>
+        <li data-i18n="who.5">למי שמעדיף ללמוד בקבוצה קטנה או באופן אישי</li>
+      </ul>
+    </div>
+  </section>
+  <section class="statement" aria-label="CASTEL STUDIO ACADEMY">
+    <canvas data-seed="301" aria-hidden="true"></canvas>
+    <div class="wrap rv">
+      <span class="st-rule" aria-hidden="true"></span>
+      <p class="st-q" data-i18n-html="stm.q">לא משנה מאיפה אתה מתחיל. <em>משנה לאן אתה רוצה להגיע.</em></p>
+      <span class="st-sign" lang="en">— Castel Studio Academy</span>
+    </div>
+  </section>
+  <section class="s" id="programs" aria-labelledby="progT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">05 — Programs</span>
+          <h2 id="progT"><span data-i18n="pg.title">שני מסלולים. מטרה אחת.</span> <span class="serif en">Two Programs</span></h2>
+        </div>
+        <p data-i18n="pg.intro">אותה תוכנית לימודים, אותם 13 שעות הכשרה. ההבדל הוא במסגרת הלימוד ובתשומת הלב האישית.</p>
+      </div>
+      <div class="programs" data-programs><noscript><p class="prog-tag">מסלול קבוצתי ₪5,500 · מסלול אישי VIP ₪6,500 · 6 מפגשים · 13 שעות הכשרה</p></noscript></div>
+      <div class="prog-compare rv" data-compare></div>
+      <p class="prog-note rv" data-i18n="pg.note"></p>
+    </div>
+  </section>
+  <section class="s services" id="curriculum" aria-labelledby="curT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">06 — Curriculum</span>
+          <h2 id="curT"><span data-i18n="cu.title">תוכנית הלימודים</span> <span class="serif en">Six Sessions</span></h2>
+        </div>
+        <p data-i18n="cu.intro">שישה מפגשים, פעמיים בשבוע. זהה בשני המסלולים.</p>
+      </div>
+      <ol class="curriculum rv" data-curriculum></ol>
+    </div>
+  </section>
+  <section class="reg" id="register" aria-labelledby="regT">
+    <canvas data-seed="257" aria-hidden="true"></canvas>
+    <div class="wrap rv">
+      <span class="label en">07 — Join the Academy</span>
+      <h2 id="regT" lang="en">Begin your <i>journey.</i></h2>
+      <p data-i18n="reg.p">הצעד הראשון שלך למקצוע חדש מתחיל בהודעה אחת.</p>
+      <div class="hero-actions">
+        <a class="btn lg" href="https://wa.me/972555711239?text=%D7%94%D7%99%D7%99%2C%20%D7%9E%D7%94%20%D7%A0%D7%A9%D7%9E%D7%A2%3F%20%F0%9F%91%8B%0A%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%94%D7%99%D7%A8%D7%A9%D7%9D%20%D7%9C%D7%A7%D7%95%D7%A8%D7%A1%20%D7%94%D7%A1%D7%A4%D7%A8%D7%95%D7%AA%20%D7%A9%D7%9C%20CASTEL%20STUDIO%20ACADEMY.%0A%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%94%D7%9E%D7%A1%D7%9C%D7%95%D7%9C%D7%99%D7%9D%2C%20%D7%94%D7%9E%D7%95%D7%A2%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%99%D7%A4%D7%94%20%D7%96%D7%94%20%D7%A0%D7%9E%D7%A6%D7%90%20%F0%9F%99%8F" data-wa="register"><span data-i18n="cta.register">אני רוצה להירשם</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn ghost" href="#programs" data-i18n="cta.choose">לבחירת מסלול הלימוד</a>
+      </div>
+      <div class="fine" aria-hidden="true">06 SESSIONS · 13 HOURS · GROUP ₪5,500 · PRIVATE VIP ₪6,500</div>
+    </div>
+  </section>
+  <section class="s" id="about" aria-labelledby="aboutT">
+    <div class="wrap about-grid">
+      <div class="about-visual slot rv">
+        <canvas id="aboutCanvas" aria-hidden="true"></canvas>
+        <img data-fallback src="images/instructor.webp" alt="הספר והמדריך של CASTEL STUDIO" data-i18n-alt="alt.instructor" loading="lazy" decoding="async" width="1200" height="1500">
+        <div class="years"><b>4<sup>+</sup></b><span data-i18n="about.years">שנות ניסיון מקצועי</span></div>
+      </div>
+      <div class="about-text rv">
+        <span class="label en">08 — The Instructor</span>
+        <h2 class="lead" id="aboutT" data-i18n-html="inst.lead"></h2>
+        <span class="inst-name" id="instName" hidden></span>
+        <p data-i18n="inst.p1"></p>
+        <p data-i18n="inst.p2"></p>
+        <div class="pillars">
+          <div class="pillar"><span class="serif" lang="en">Precision</span><span data-i18n="about.pil1">מעברים חלקים וקווים חדים</span></div>
+          <div class="pillar"><span class="serif" lang="en">Texture</span><span data-i18n="about.pil2">תנועה טבעית בשיער</span></div>
+          <div class="pillar"><span class="serif" lang="en">Detail</span><span data-i18n="about.pil3">גימור שרואים מקרוב</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s services" id="barbershop" aria-labelledby="shopT">
+    <div class="wrap">
+      <div class="s-head shop-head rv">
+        <div>
+          <span class="label en">09 — Castel Studio Barbershop</span>
+          <h2 id="shopT" data-i18n="shop.title">דיוק בכל תספורת. סטייל בכל פרט.</h2>
+        </div>
+        <div>
+          <p data-i18n="shop.intro"></p>
+          <a class="btn" href="#book" data-book><span data-i18n="cta.bookCut">קביעת תור לתספורת</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+      <div class="svc-list" id="svcList"></div>
+      <p class="svc-note" data-i18n="svc.note">המחירים בשקלים חדשים.</p>
+    </div>
+  </section>
+
+  <section class="s" id="book" aria-labelledby="bookT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">Book a Chair</span>
+          <h2 id="bookT"><span data-i18n="bk.title">קביעת תור</span> <span class="serif en">Online Booking</span></h2>
+        </div>
+        <p data-i18n="bk.intro">בוחרים שירות, יום ושעה. התור נקבע תוך דקה.</p>
+      </div>
+      <div class="booking-embed" data-castel-booking></div>
+      <noscript><p><a class="btn" href="https://castel-studio-delta.vercel.app/book">קביעת תור</a></p></noscript>
+    </div>
+  </section>
+
+  <section class="s" id="gallery" aria-labelledby="galT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">10 — Portfolio</span>
+          <h2 id="galT"><span data-i18n="gal.title">הגלריה</span> <span class="serif en">Selected Work</span></h2>
+        </div>
+        <p data-i18n="gal.intro">מבחר עבודות מהכיסא.</p>
+      </div>
+      <div class="filters" role="group" aria-label="סינון לפי סגנון" data-i18n-aria="aria.filter" id="filters"></div>
+      <div class="grid" id="grid" data-gallery></div>
+      <div class="gal-actions">
+        <a class="btn" href="#book" data-book><span data-i18n="cta.bookCut">קביעת תור לתספורת</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn ghost" href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" data-ig><span data-i18n="ig.more">לעוד עבודות באינסטגרם</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="ig" aria-labelledby="igT">
+    <div class="wrap">
+      <div class="ig-head rv">
+        <div>
+          <span class="label en">Follow the Craft</span>
+          <h2 id="igT" lang="en">@castel.cutzz</h2>
+          <p data-i18n="ig.text">עבודות אחרונות, סרטונים ומה שקורה בסטודיו.</p>
+        </div>
+        <a class="btn" href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" data-ig><span data-i18n="ig.more">לעוד עבודות באינסטגרם</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="ig-grid" id="igGrid"></div>
+    </div>
+  </section>
+
+  <section class="s reviews" id="reviews" aria-labelledby="revT" hidden>
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">Reviews</span>
+          <h2 id="revT" data-i18n="rev.title">מה הלקוחות אומרים</h2>
+        </div>
+        <div class="rv-ctrl">
+          <button type="button" id="rvPrev" aria-label="הקודם" data-i18n-aria="aria.prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+          <button type="button" id="rvNext" aria-label="הבא" data-i18n-aria="aria.next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="rv-track" id="rvTrack"></div>
+    </div>
+  </section>
+
+  <section class="s" id="contact" aria-labelledby="ctT">
+    <div class="wrap">
+      <div class="s-head rv">
+        <div>
+          <span class="label en">11 — Contact</span>
+          <h2 id="ctT"><span data-i18n="ct.title">יצירת קשר</span> <span class="serif en">Ashkelon</span></h2>
+        </div>
+        <p data-i18n="ct.intro">בחרו את הערוץ המתאים: שאלות על הקורס, תור לתספורת או כל דבר אחר.</p>
+      </div>
+      <div class="ch-grid rv">
+        <div class="ch primary">
+          <span class="label en">Academy</span>
+          <h3 data-i18n="ch.aT">פניות לאקדמיה</h3>
+          <p data-i18n="ch.aP">שאלות על הקורס והרשמה, ישירות בוואטסאפ.</p>
+          <div class="row"><a class="btn" href="https://wa.me/972555711239?text=%D7%94%D7%99%D7%99%2C%20%D7%9E%D7%94%20%D7%A0%D7%A9%D7%9E%D7%A2%3F%20%F0%9F%91%8B%0A%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%94%D7%99%D7%A8%D7%A9%D7%9D%20%D7%9C%D7%A7%D7%95%D7%A8%D7%A1%20%D7%94%D7%A1%D7%A4%D7%A8%D7%95%D7%AA%20%D7%A9%D7%9C%20CASTEL%20STUDIO%20ACADEMY.%0A%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%94%D7%9E%D7%A1%D7%9C%D7%95%D7%9C%D7%99%D7%9D%2C%20%D7%94%D7%9E%D7%95%D7%A2%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%99%D7%A4%D7%94%20%D7%96%D7%94%20%D7%A0%D7%9E%D7%A6%D7%90%20%F0%9F%99%8F" data-wa="register"><span data-i18n="cta.register">אני רוצה להירשם</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+        <div class="ch">
+          <span class="label en">Barbershop</span>
+          <h3 data-i18n="ch.bT">תורים למספרה</h3>
+          <p data-i18n="ch.bP">קביעת תור לתספורת באפליקציית התורים של הסטודיו.</p>
+          <div class="row"><a class="btn ghost" href="#book" data-book data-i18n="cta.book">קביעת תור</a></div>
+        </div>
+        <div class="ch">
+          <span class="label en">General</span>
+          <h3 data-i18n="ch.gT">פניות כלליות</h3>
+          <a class="tel" href="tel:+972555711239" data-tel><span data-phone>055-571-1239</span></a>
+          <div class="row">
+            <a class="btn sm ghost" href="tel:+972555711239" data-tel data-i18n="ct.call">חיוג</a>
+            <a class="btn sm ghost" href="https://wa.me/972555711239?text=%D7%94%D7%99%D7%99%20CASTEL%20STUDIO%2C%20%D7%9E%D7%94%20%D7%A0%D7%A9%D7%9E%D7%A2%3F%20%F0%9F%99%82" data-wa="general">WhatsApp</a>
+          </div>
+        </div>
+      </div>
+      <div class="ct-info rv">
+        <b>CASTEL STUDIO</b>
+        <span data-i18n="ct.city">אשקלון, ישראל</span>
+        <a class="ltr" href="tel:+972555711239" data-tel><span data-phone>055-571-1239</span></a>
+        <a class="ltr" href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" data-ig>@castel.cutzz</a>
+      </div>
+      <div class="ct-extra" id="ctExtra"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand" lang="en"><img class="foot-logo" src="images/logo-full.png" alt="CASTEL STUDIO" width="646" height="548" loading="lazy" decoding="async"><small>ACADEMY · BARBERSHOP · ASHKELON</small></div>
+      <div class="foot-cols">
+        <div>
+          <h2 class="fh">Academy</h2>
+          <a data-i18n='nav.academy' href='/academy/'>האקדמיה</a>
+          <a href="#course" data-i18n="nav.course">על הקורס</a>
+          <a data-i18n='nav.faq' href='/academy/#faq'>שאלות נפוצות</a>
+          <a href="#programs" data-i18n="cta.details">לפרטים על הקורס</a>
+        </div>
+        <div>
+          <h2 class="fh">Barbershop</h2>
+          <a href="#barbershop" data-i18n="nav.shop">המספרה</a>
+          <a href="#gallery" data-i18n="nav.gallery">גלריה</a>
+          <a href="#book" data-book data-i18n="cta.book">קביעת תור</a>
+        </div>
+        <div>
+          <h2 class="fh">Studio</h2>
+          <p data-i18n="ct.city">אשקלון, ישראל</p>
+          <a href="tel:+972555711239" data-tel class="ltr-link"><span data-phone>055-571-1239</span></a>
+          <a href="https://wa.me/972555711239?text=%D7%94%D7%99%D7%99%20CASTEL%20STUDIO%2C%20%D7%9E%D7%94%20%D7%A0%D7%A9%D7%9E%D7%A2%3F%20%F0%9F%99%82" data-wa="general">WhatsApp</a>
+          <a href="https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&amp;utm_source=qr" data-ig>Instagram · @castel.cutzz</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr">2026</span> CASTEL STUDIO · <span data-i18n="foot.rights">כל הזכויות שמורות</span></span>
+      <span data-i18n="foot.tag">אקדמיה לספרות גברים ומספרה פרימיום באשקלון</span>
+    </div>
+  </div>
+</footer>
+
+<div class="sticky-cta" id="sticky">
+  <a class="btn sb-join" href="#programs"><span data-i18n="cta.details">לפרטים על הקורס</span></a>
+  <a class="btn sb-book" href="#book" data-book><span data-i18n="cta.bookCut">קביעת תור לתספורת</span></a>
+</div>
+<a class="fab-wa" href="https://wa.me/972555711239?text=%D7%94%D7%99%D7%99%20CASTEL%20STUDIO%2C%20%D7%9E%D7%94%20%D7%A0%D7%A9%D7%9E%D7%A2%3F%20%F0%9F%99%82" data-wa="general" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 20.5l1.3-4A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 9.5c.3 2.3 2.2 4.2 4.5 4.5l1.2-1.2 1.8.8-.4 1.6c-3.8.2-7.1-3.1-6.9-6.9l1.6-.4.8 1.8z"/></svg></a>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="גלריה" data-i18n-aria="aria.gallery" hidden>
+  <div class="lb-stage" id="lbStage"></div>
+  <div class="lb-cap" id="lbCap" aria-live="polite"></div>
+  <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="סגירה" data-i18n-aria="aria.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="הקודם" data-i18n-aria="aria.prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="הבא" data-i18n-aria="aria.next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+</div>
+
+<script src="assets/castel.js"></script>
+<script src="https://castel-studio-delta.vercel.app/embed.js" async></script>
+</body>
+</html>

@@ -16,7 +16,7 @@ const ERR: Record<string, [string, string]> = {
   disabled: ["קביעת תורים אונליין סגורה כרגע.", "Online booking is currently closed."],
 };
 
-export function BookingWizard({ locale, services, staff, dates }: { locale: string; services: Service[]; staff: Staff[]; dates: string[] }) {
+export function BookingWizard({ locale, services, staff, dates, embed = false }: { locale: string; services: Service[]; staff: Staff[]; dates: string[]; embed?: boolean }) {
   const he = locale === "he";
   const L = (h: string, e: string) => (he ? h : e);
   const router = useRouter();
@@ -59,7 +59,7 @@ export function BookingWizard({ locale, services, staff, dates }: { locale: stri
       body: JSON.stringify({ serviceId, staffId, date, start, name, phone, notes: notes || undefined, marketingConsent: marketing, terms, website: (document.getElementById("bk-website") as HTMLInputElement)?.value ?? "" }),
     }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
-    if (res?.ok && data.manageUrl) { router.push(data.manageUrl); return; }
+    if (res?.ok && data.manageUrl) { router.push(embed ? `/embed${data.manageUrl}` : data.manageUrl); return; }
     const m = ERR[data.error as string];
     setError(m ? (he ? m[0] : m[1]) : L("משהו השתבש. נסו שוב.", "Something went wrong. Please try again."));
     if (data.error === "slot_taken") { setStart(null); setDate((d) => d); setSlots(null); fetch(`/api/public/booking/slots?serviceId=${serviceId}&staffId=${staffId}&date=${date}`).then((r) => r.json()).then((d) => setSlots(d.slots ?? [])); }

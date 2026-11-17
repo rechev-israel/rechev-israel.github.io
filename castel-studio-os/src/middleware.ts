@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Edge pre-check only: cookie presence. Real validation (DB session, role) happens server-side.
-const PUBLIC = [/^\/login/, /^\/setup/, /^\/join(\/|$)/, /^\/book(\/|$)/, /^\/portal\//, /^\/s\//, /^\/api\/assets\//, /^\/api\/public\//, /^\/api\/health/, /^\/api\/cron\//, /^\/api\/integrations\/cali\/webhook$/, /^\/_next\//, /^\/favicon/, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/, /^\/icons\//, /^\/sw\.js$/, /^\/offline\.html$/];
+const PUBLIC = [/^\/login/, /^\/setup/, /^\/join(\/|$)/, /^\/book(\/|$)/, /^\/embed(\/|\.js$)/, /^\/portal\//, /^\/s\//, /^\/api\/assets\//, /^\/api\/public\//, /^\/api\/health/, /^\/api\/cron\//, /^\/api\/integrations\/cali\/webhook$/, /^\/_next\//, /^\/favicon/, /^\/icon/, /^\/apple-icon/, /^\/manifest\.webmanifest$/, /^\/icons\//, /^\/sw\.js$/, /^\/offline\.html$/];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
