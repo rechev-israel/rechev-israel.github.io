@@ -176,7 +176,7 @@ async function verifyWhatsApp(): Promise<VerifyResult> {
     return httpFail("WhatsApp", r.status, r.body);
   }
   const sending = process.env.WHATSAPP_SENDING_ENABLED === "true";
-  return ok(bi(`החיבור אומת (ללא שליחת הודעה). שליחה: ${sending ? "מופעלת" : "מושבתת עד הסרת הגבלת החשבון"}.`, `Connection verified (no message sent). Sending: ${sending ? "enabled" : "disabled until the account restriction is lifted"}.`), {
+  return ok(bi(`החיבור אומת (ללא שליחת הודעה). שליחה: ${sending ? "מופעלת" : "מושבתת (WHATSAPP_SENDING_ENABLED)"}.`, `Connection verified (no message sent). Sending: ${sending ? "enabled" : "disabled (WHATSAPP_SENDING_ENABLED)"}.`), {
     number: String(r.body.display_phone_number ?? ""), name: String(r.body.verified_name ?? ""), quality: String(r.body.quality_rating ?? "—"), sending: sending ? "on" : "off (kill switch)",
   });
 }
@@ -294,7 +294,7 @@ export const INTEGRATIONS: IntegrationDef[] = [
   {
     provider: "whatsapp", name: "WhatsApp Cloud API", category: "communications", auth: "api_key",
     fields: [F("WHATSAPP_CLOUD_ACCESS_TOKEN", "System User access token", "System User access token", { placeholder: "EAA…" }), F("WHATSAPP_PHONE_NUMBER_ID", "Phone number ID", "Phone number ID", { secret: false })],
-    purpose: bi("הודעות ללקוחות שאישרו קבלה, רק אחרי אישור בעלים. השליחה מושבתת כרגע (הגבלת חשבון).", "Messages to opted-in customers after owner approval. Sending is currently disabled (account restriction)."),
+    purpose: bi("הודעות ללקוחות שאישרו קבלה, רק אחרי אישור בעלים. מתג השליחה: WHATSAPP_SENDING_ENABLED ב-Vercel.", "Messages to opted-in customers after owner approval. Sending switch: WHATSAPP_SENDING_ENABLED in Vercel."),
     steps: [bi("business.facebook.com → Settings → System users → צרו משתמש והפיקו token עם whatsapp_business_messaging.", "business.facebook.com → Settings → System users → generate a token with whatsapp_business_messaging."), bi("WhatsApp Manager → Phone numbers: העתיקו Phone number ID.", "WhatsApp Manager → Phone numbers: copy the Phone number ID."), bi("הבדיקה רק קוראת את פרטי המספר — לא נשלחת הודעה.", "The test only reads number details — no message is sent.")],
     links: [{ label: "business.facebook.com", href: "https://business.facebook.com/settings/system-users" }],
     cost: bi("הבדיקה חינמית. שיחות עסקיות בתשלום של Meta.", "Test is free. Business conversations are billed by Meta."),
