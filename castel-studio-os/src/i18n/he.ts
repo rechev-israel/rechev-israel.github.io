@@ -120,8 +120,8 @@ export const he = {
     history: "שיחות קודמות", newChat: "שיחה חדשה", error: "שגיאה בקבלת תשובה מהספק",
   },
   agents: {
-    orchestrator: "אורקסטרטור", ceo: "סוכן אסטרטגיה (CEO)", marketing: "סוכן שיווק", sales: "סוכן מכירות",
-    support: "סוכן שירות לקוחות", finance: "סוכן ניתוח פיננסי", content: "סוכן יצירת תוכן", academy: "עוזר האקדמיה", operations: "סוכן תפעול",
+    orchestrator: "אורקסטרטור", ceo: "סוכן מנכ״ל (אסטרטגיה)", marketing: "סוכן שיווק", sales: "סוכן מכירות", finance: "סוכן כספים",
+    support: "סוכן שירות לקוחות", academy: "סוכן האקדמיה", creative: "סוכן קריאייטיב", automation: "סוכן אוטומציה ותפעול",
   },
   approvals: {
     title: "מרכז אישורים", subtitle: "כל פעולה חיצונית — שליחה, פרסום, הוצאה כספית או מחיקה — ממתינה לאישור בעלים",

@@ -1,3 +1,5 @@
+> **Superseded:** see [FEATURE_STATUS.md](./FEATURE_STATUS.md) and [MASTER_ROADMAP.md](./MASTER_ROADMAP.md) for the current status (Phase 2).
+
 # CASTEL STUDIO — AI Business OS · Build Status
 
 _Last updated: 2026-11-16 · Phase 1 (foundation + first operational modules)_

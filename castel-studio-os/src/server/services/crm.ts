@@ -5,6 +5,7 @@ import { computeSegment } from "@/domain/crm";
 import { toNumber } from "@/lib/utils";
 import type { z } from "zod";
 import type { customerSchema } from "@/lib/validation";
+import { emitEvent, customerCtx } from "@/server/automation/engine";
 
 type CustomerInput = z.infer<typeof customerSchema>;
 type Actor = { id: string; businessId: string };
@@ -37,6 +38,7 @@ export async function createCustomer(actor: Actor, input: CustomerInput) {
       data: { businessId: actor.businessId, ...toData(input), status: input.status === "BLOCKED" ? "BLOCKED" : "ACTIVE", consentUpdatedAt: new Date() },
     });
     await audit({ businessId: actor.businessId, userId: actor.id, action: "customer.create", entityType: "Customer", entityId: c.id });
+    await emitEvent(actor.businessId, "customer.created", { customer: customerCtx(c) });
     return c;
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") throw new DomainError("crm.duplicatePhone", "phone");

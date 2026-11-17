@@ -122,8 +122,8 @@ export const en: Dictionary = {
     history: "Previous conversations", newChat: "New chat", error: "Error getting a response from the provider",
   },
   agents: {
-    orchestrator: "Orchestrator", ceo: "CEO Strategy Agent", marketing: "Marketing Agent", sales: "Sales Agent",
-    support: "Customer Support Agent", finance: "Finance Analysis Agent", content: "Content Creator Agent", academy: "Academy Assistant", operations: "Operations Agent",
+    orchestrator: "Orchestrator", ceo: "CEO Agent (strategy)", marketing: "Marketing Agent", sales: "Sales Agent", finance: "Finance Agent",
+    support: "Customer Support Agent", academy: "Academy Agent", creative: "Creative Agent", automation: "Automation & Ops Agent",
   },
   approvals: {
     title: "Approvals", subtitle: "Every external action — sending, publishing, spending or deleting — waits for owner approval",

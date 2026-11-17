@@ -35,24 +35,28 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches       Branch[]
-  users          User[]
-  customers      Customer[]
-  services       Service[]
-  appointments   Appointment[]
-  courses        Course[]
-  students       Student[]
-  leads          Lead[]
-  transactions   Transaction[]
-  tasks          Task[]
-  auditLogs      AuditLog[]
-  integrations   Integration[]
-  aiConversations AiConversation[]
-  approvals      ApprovalRequest[]
-  automations    Automation[]
+  branches         Branch[]
+  users            User[]
+  customers        Customer[]
+  services         Service[]
+  appointments     Appointment[]
+  courses          Course[]
+  students         Student[]
+  leads            Lead[]
+  transactions     Transaction[]
+  tasks            Task[]
+  auditLogs        AuditLog[]
+  integrations     Integration[]
+  aiConversations  AiConversation[]
+  approvals        ApprovalRequest[]
+  automations      Automation[]
   messageTemplates MessageTemplate[]
-  campaigns      Campaign[]
-  knowledgeItems KnowledgeItem[]
+  campaigns        Campaign[]
+  knowledgeItems   KnowledgeItem[]
+  notifications    Notification[]
+  outboundMessages OutboundMessage[]
+  contentItems     ContentItem[]
+  automationRuns   AutomationRun[]
 }
 
 model Branch {
@@ -71,31 +75,35 @@ model Branch {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  businessId   String
-  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  email        String    @unique
-  name         String
-  passwordHash String
-  role         Role      @default(VIEWER)
-  isActive     Boolean   @default(true)
-  locale       String    @default("he")
-  failedLogins Int       @default(0)
-  lockedUntil  DateTime?
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  businessId       String
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email            String    @unique
+  name             String
+  passwordHash     String
+  role             Role      @default(VIEWER)
+  isActive         Boolean   @default(true)
+  locale           String    @default("he")
+  failedLogins     Int       @default(0)
+  /// Per-user dashboard layout: ordered list of visible widget ids.
+  dashboardWidgets Json?
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  sessions        Session[]
-  auditLogs       AuditLog[]
-  appointments    Appointment[] @relation("StaffAppointments")
-  cohortsTaught   Cohort[]      @relation("CohortInstructor")
-  tasksAssigned   Task[]        @relation("TaskAssignee")
-  approvalsDecided ApprovalRequest[] @relation("ApprovalDecider")
-  approvalsRequested ApprovalRequest[] @relation("ApprovalRequester")
-  customerNotes   CustomerNote[]
-  aiConversations AiConversation[]
-  availability    AvailabilityRule[]
+  sessions           Session[]
+  auditLogs          AuditLog[]
+  appointments       Appointment[]      @relation("StaffAppointments")
+  cohortsTaught      Cohort[]           @relation("CohortInstructor")
+  tasksAssigned      Task[]             @relation("TaskAssignee")
+  approvalsDecided   ApprovalRequest[]  @relation("ApprovalDecider")
+  approvalsRequested ApprovalRequest[]  @relation("ApprovalRequester")
+  customerNotes      CustomerNote[]
+  aiConversations    AiConversation[]
+  notifications      Notification[]
+  outboundMessages   OutboundMessage[]  @relation("MessageCreator")
+  availability       AvailabilityRule[]
 }
 
 /// Sessions are stored by SHA-256 hash of the token; the raw token only lives in an HttpOnly cookie.
@@ -147,36 +155,37 @@ enum ConsentStatus {
 }
 
 model Customer {
-  id             String         @id @default(cuid())
-  businessId     String
-  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  firstName      String
-  lastName       String?
-  phone          String?
-  email          String?
-  birthday       DateTime?
-  gender         String?
-  status         CustomerStatus @default(ACTIVE)
-  source         String? // walk-in, instagram, referral, booking-app…
-  tags           String[]
-  preferences    String? // preferred cut, products, barber
-  marketingConsentSms      ConsentStatus @default(UNKNOWN)
-  marketingConsentEmail    ConsentStatus @default(UNKNOWN)
-  marketingConsentWhatsapp ConsentStatus @default(UNKNOWN)
-  consentUpdatedAt DateTime?
-  externalRef    String? // id in the external booking app, if ever linked
-  lastVisitAt    DateTime?
-  totalSpent     Decimal        @default(0) @db.Decimal(12, 2)
-  visitCount     Int            @default(0)
-  archivedAt     DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                       String         @id @default(cuid())
+  businessId               String
+  business                 Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  firstName                String
+  lastName                 String?
+  phone                    String?
+  email                    String?
+  birthday                 DateTime?
+  gender                   String?
+  status                   CustomerStatus @default(ACTIVE)
+  source                   String? // walk-in, instagram, referral, booking-app…
+  tags                     String[]
+  preferences              String? // preferred cut, products, barber
+  marketingConsentSms      ConsentStatus  @default(UNKNOWN)
+  marketingConsentEmail    ConsentStatus  @default(UNKNOWN)
+  marketingConsentWhatsapp ConsentStatus  @default(UNKNOWN)
+  consentUpdatedAt         DateTime?
+  externalRef              String? // id in the external booking app, if ever linked
+  lastVisitAt              DateTime?
+  totalSpent               Decimal        @default(0) @db.Decimal(12, 2)
+  visitCount               Int            @default(0)
+  archivedAt               DateTime?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
-  notes         CustomerNote[]
-  appointments  Appointment[]
-  interactions  Interaction[]
-  transactions  Transaction[]
-  student       Student?
+  notes            CustomerNote[]
+  outboundMessages OutboundMessage[]
+  appointments     Appointment[]
+  interactions     Interaction[]
+  transactions     Transaction[]
+  student          Student?
 
   @@unique([businessId, phone])
   @@index([businessId, status])
@@ -252,28 +261,28 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id          String            @id @default(cuid())
-  businessId  String
-  business    Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  branchId    String?
-  branch      Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  customerId  String?
-  customer    Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  serviceId   String?
-  service     Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  staffId     String?
-  staff       User?             @relation("StaffAppointments", fields: [staffId], references: [id], onDelete: SetNull)
-  startsAt    DateTime
-  endsAt      DateTime
-  status      AppointmentStatus @default(SCHEDULED)
-  price       Decimal?          @db.Decimal(10, 2)
-  source      String            @default("manual") // manual | external-import
-  externalRef String?
-  notes       String?
-  cancelledAt DateTime?
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  customerId   String?
+  customer     Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  serviceId    String?
+  service      Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  staffId      String?
+  staff        User?             @relation("StaffAppointments", fields: [staffId], references: [id], onDelete: SetNull)
+  startsAt     DateTime
+  endsAt       DateTime
+  status       AppointmentStatus @default(SCHEDULED)
+  price        Decimal?          @db.Decimal(10, 2)
+  source       String            @default("manual") // manual | external-import
+  externalRef  String?
+  notes        String?
+  cancelledAt  DateTime?
   cancelReason String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([businessId, startsAt])
   @@index([customerId])
@@ -406,18 +415,18 @@ enum EnrollmentStatus {
 }
 
 model Enrollment {
-  id          String           @id @default(cuid())
-  studentId   String
-  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  cohortId    String
-  cohort      Cohort           @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  status      EnrollmentStatus @default(PENDING)
-  agreedPrice Decimal          @db.Decimal(10, 2)
-  progress    Int              @default(0) // 0-100, instructor-assessed
+  id                  String           @id @default(cuid())
+  studentId           String
+  student             Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cohortId            String
+  cohort              Cohort           @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  status              EnrollmentStatus @default(PENDING)
+  agreedPrice         Decimal          @db.Decimal(10, 2)
+  progress            Int              @default(0) // 0-100, instructor-assessed
   certificateIssuedAt DateTime?
-  certificateNumber   String?   @unique
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  certificateNumber   String?          @unique
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   attendance Attendance[]
   payments   Payment[]
@@ -455,29 +464,29 @@ enum PaymentMethod {
 }
 
 model Payment {
-  id           String        @id @default(cuid())
-  enrollmentId String
-  enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  amount       Decimal       @db.Decimal(10, 2)
-  method       PaymentMethod
-  paidAt       DateTime      @default(now())
-  reference    String?
-  note         String?
-  transactionId String?      @unique
-  transaction  Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  createdAt    DateTime      @default(now())
+  id            String        @id @default(cuid())
+  enrollmentId  String
+  enrollment    Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  paidAt        DateTime      @default(now())
+  reference     String?
+  note          String?
+  transactionId String?       @unique
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
 }
 
 model CourseMaterial {
-  id        String   @id @default(cuid())
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title     String
-  kind      String // link | pdf | video | note
-  url       String?
-  body      String?
+  id           String   @id @default(cuid())
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  kind         String // link | pdf | video | note
+  url          String?
+  body         String?
   lessonNumber Int?
-  createdAt DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
 
 enum LeadStatus {
@@ -489,20 +498,25 @@ enum LeadStatus {
 }
 
 model Lead {
-  id         String     @id @default(cuid())
-  businessId String
-  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  courseId   String?
-  course     Course?    @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  name       String
-  phone      String?
-  email      String?
-  source     String? // landing-page slug, instagram, referral
-  message    String?
-  status     LeadStatus @default(NEW)
-  consent    Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id               String            @id @default(cuid())
+  businessId       String
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  courseId         String?
+  course           Course?           @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  name             String
+  phone            String?
+  email            String?
+  source           String? // landing-page slug, instagram, referral
+  message          String?
+  status           LeadStatus        @default(NEW)
+  consent          Boolean           @default(false)
+  /// barbershop | academy
+  kind             String            @default("academy")
+  nextFollowUpAt   DateTime?
+  lostReason       String?
+  outboundMessages OutboundMessage[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([businessId, status])
 }
@@ -593,15 +607,15 @@ model Integration {
 // ───────────────────────── AI & approvals ─────────────────────────
 
 model AiConversation {
-  id         String      @id @default(cuid())
+  id         String   @id @default(cuid())
   businessId String
-  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   userId     String?
-  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   agent      String
   title      String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   messages AiMessage[]
 }
@@ -615,6 +629,11 @@ model AiMessage {
   content        String
   provider       String?
   model          String?
+  inputTokens    Int?
+  outputTokens   Int?
+  /// Estimated cost in USD from list prices (estimate, not an invoice).
+  costUsd        Decimal?       @db.Decimal(10, 6)
+  error          String?
   createdAt      DateTime       @default(now())
 
   @@index([conversationId, createdAt])
@@ -630,21 +649,21 @@ enum ApprovalStatus {
 
 /// Every external action (send message, publish, spend) is queued here and requires human approval.
 model ApprovalRequest {
-  id          String         @id @default(cuid())
-  businessId  String
-  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  kind        String // message.send | content.publish | ads.spend | data.delete
-  title       String
-  payload     Json
-  status      ApprovalStatus @default(PENDING)
-  requestedById String?
-  requestedBy User?          @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  id               String         @id @default(cuid())
+  businessId       String
+  business         Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  kind             String // message.send | content.publish | ads.spend | data.delete
+  title            String
+  payload          Json
+  status           ApprovalStatus @default(PENDING)
+  requestedById    String?
+  requestedBy      User?          @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: SetNull)
   requestedByAgent String?
-  decidedById String?
-  decidedBy   User?          @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
-  decidedAt   DateTime?
-  decisionNote String?
-  createdAt   DateTime       @default(now())
+  decidedById      String?
+  decidedBy        User?          @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt        DateTime?
+  decisionNote     String?
+  createdAt        DateTime       @default(now())
 
   @@index([businessId, status])
 }
@@ -663,31 +682,113 @@ model KnowledgeItem {
 // ───────────────────────── Automation (Phase 3 engine, schema ready) ─────────────────────────
 
 model Automation {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Stable key for built-in workflows (null for user-created ones).
+  key         String?
   name        String
-  trigger     String // customer.created | appointment.completed | lead.created | schedule.weekly
-  definition  Json // { conditions: [], actions: [] }
-  isActive    Boolean  @default(false)
-  maxRetries  Int      @default(3)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String?
+  trigger     String // see src/server/automation/triggers.ts
+  definition  Json // { conditions: Condition[], actions: Action[] }
+  isActive    Boolean   @default(false)
+  maxRetries  Int       @default(3)
+  lastRunAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   runs AutomationRun[]
+
+  @@unique([businessId, key])
 }
 
 model AutomationRun {
   id           String     @id @default(cuid())
+  businessId   String?
+  business     Business?  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   automationId String
   automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  status       String // queued | running | succeeded | failed | awaiting_approval
+  status       String // running | succeeded | skipped | failed | retrying
   attempt      Int        @default(1)
+  /// Prevents the same scheduled item being processed twice (e.g. "appt:<id>").
+  dedupeKey    String?
   input        Json?
   output       Json?
+  steps        Json?
   error        String?
+  nextRetryAt  DateTime?
   startedAt    DateTime   @default(now())
   finishedAt   DateTime?
+
+  @@unique([automationId, dedupeKey])
+  @@index([status, nextRetryAt])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// null = visible to all owners/managers
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       String // automation | report | ai_insight | system
+  level      String    @default("info") // info | warn | success
+  title      String
+  body       String?
+  link       String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, readAt, createdAt])
+}
+
+enum MessageStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+  BLOCKED_NO_CONSENT
+}
+
+/// Every outbound customer communication. Nothing leaves the system unless status passes APPROVED
+/// and a real provider is configured.
+model OutboundMessage {
+  id                String        @id @default(cuid())
+  businessId        String
+  business          Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  channel           Channel
+  /// marketing | transactional
+  purpose           String        @default("transactional")
+  customerId        String?
+  customer          Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  leadId            String?
+  lead              Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  recipientName     String?
+  toAddress         String?
+  subject           String?
+  body              String
+  status            MessageStatus @default(PENDING_APPROVAL)
+  templateKey       String?
+  automationRunId   String?
+  scheduledFor      DateTime?
+  provider          String?
+  providerMessageId String?
+  error             String?
+  attempts          Int           @default(0)
+  approvedById      String?
+  approvedAt        DateTime?
+  sentAt            DateTime?
+  createdById       String?
+  createdBy         User?         @relation("MessageCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([businessId, status, createdAt])
+  @@index([customerId])
 }
 
 // ───────────────────────── Communications & marketing (schema ready) ─────────────────────────
@@ -696,6 +797,9 @@ model MessageTemplate {
   id         String   @id @default(cuid())
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  key        String?
+  purpose    String   @default("transactional")
+  isActive   Boolean  @default(true)
   name       String
   channel    Channel
   locale     String   @default("he")
@@ -703,20 +807,57 @@ model MessageTemplate {
   body       String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, key, channel, locale])
 }
 
 model Campaign {
-  id         String   @id @default(cuid())
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name       String
-  objective  String?
-  channel    String? // instagram, tiktok, meta-ads, google-ads
-  status     String   @default("draft") // draft | pending_approval | approved | live | ended
-  budget     Decimal? @db.Decimal(10, 2)
-  startsAt   DateTime?
-  endsAt     DateTime?
-  plan       Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  objective   String?
+  channel     String? // instagram, tiktok, meta-ads, google-ads
+  status      String    @default("draft") // draft | pending_approval | approved | live | ended
+  budget      Decimal?  @db.Decimal(10, 2)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  plan        Json?
+  audience    String?
+  /// Manually entered results until ad platforms are connected.
+  spendActual Decimal?  @db.Decimal(10, 2)
+  impressions Int?
+  clicks      Int?
+  leads       Int?
+  conversions Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  contentItems ContentItem[]
+}
+
+model ContentItem {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId   String?
+  campaign     Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  platform     String // instagram | tiktok | facebook | other
+  format       String // post | reel | story | carousel | video
+  title        String
+  caption      String?
+  hashtags     String[]
+  scheduledFor DateTime?
+  status       String    @default("idea") // idea | draft | pending_approval | approved | published
+  notes        String?
+  /// Manually entered performance until platforms are connected.
+  views        Int?
+  likes        Int?
+  comments     Int?
+  saves        Int?
+  leads        Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([businessId, scheduledFor])
 }

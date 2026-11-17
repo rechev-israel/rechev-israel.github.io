@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { COURSE_DEFINITIONS } from "@/domain/academy";
+import { ensureBuiltinAutomations } from "@/server/automation/defaults";
 
 /**
  * Idempotent base data: business, first branch, academy courses, placeholder opening hours.
@@ -35,5 +36,6 @@ export async function ensureBaseData(db: PrismaClient) {
     hours.push({ weekday: 4, startTime: "09:00", endTime: "21:00" }, { weekday: 5, startTime: "08:00", endTime: "14:00" });
     await db.availabilityRule.createMany({ data: hours.map((h) => ({ ...h, branchId: branch.id })) });
   }
+  await ensureBuiltinAutomations(db, business.id);
   return business;
 }

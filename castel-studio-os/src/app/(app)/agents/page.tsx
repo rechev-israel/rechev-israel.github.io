@@ -15,6 +15,11 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
   const { user, t, locale, allowed } = await pageGuard("ai.use");
   if (!allowed) return <Forbidden message={t.errors.forbidden} />;
   const { c } = await searchParams;
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const [usage, errors30] = await Promise.all([
+    db.aiMessage.aggregate({ where: { conversation: { businessId: user.businessId }, createdAt: { gte: monthStart }, role: "assistant" }, _sum: { inputTokens: true, outputTokens: true, costUsd: true }, _count: true }),
+    db.aiMessage.count({ where: { conversation: { businessId: user.businessId }, createdAt: { gte: new Date(Date.now() - 30 * 86400_000) }, error: { not: null } } }),
+  ]);
   const [history, convo] = await Promise.all([
     db.aiConversation.findMany({ where: { businessId: user.businessId, userId: user.id }, orderBy: { updatedAt: "desc" }, take: 20 }),
     c ? db.aiConversation.findFirst({ where: { id: c, businessId: user.businessId, userId: user.id }, include: { messages: { orderBy: { createdAt: "asc" } } } }) : null,
@@ -34,6 +39,16 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
           labels={{ placeholder: t.ai.placeholder, send: t.ai.send, auto: t.ai.auto, routedTo: t.ai.routedTo, notConfigured: t.ai.notConfigured, error: t.ai.error, approvals: t.nav.approvals }}
         />
         <div className="space-y-4">
+          <Card className="p-4">
+            <CardTitle>{locale === "he" ? "שימוש ועלות (החודש)" : "Usage & cost (this month)"}</CardTitle>
+            <dl className="grid grid-cols-2 gap-2 text-xs">
+              <div><dt className="text-muted">{locale === "he" ? "תשובות" : "Replies"}</dt><dd className="text-base font-semibold tabular-nums">{usage._count}</dd></div>
+              <div><dt className="text-muted">{locale === "he" ? "עלות משוערת" : "Est. cost"}</dt><dd className="text-base font-semibold tabular-nums">${Number(usage._sum.costUsd ?? 0).toFixed(2)}</dd></div>
+              <div><dt className="text-muted">{locale === "he" ? "טוקנים נכנסים" : "Input tokens"}</dt><dd className="tabular-nums">{(usage._sum.inputTokens ?? 0).toLocaleString()}</dd></div>
+              <div><dt className="text-muted">{locale === "he" ? "טוקנים יוצאים" : "Output tokens"}</dt><dd className="tabular-nums">{(usage._sum.outputTokens ?? 0).toLocaleString()}</dd></div>
+            </dl>
+            <p className="mt-2 text-[10px] text-muted">{locale === "he" ? "הערכה לפי מחירון רשמי, לא חשבונית." : "Estimate from list prices, not an invoice."}{errors30 ? ` · ${errors30} ${locale === "he" ? "שגיאות ב-30 יום" : "errors in 30d"}` : ""}</p>
+          </Card>
           <Notice tone="gold">{t.ai.approvalNote}</Notice>
           <Notice tone="neutral">{t.ai.dataNote}</Notice>
           <Card className="p-4">

@@ -3,5 +3,13 @@
   "framework": "nextjs",
   "installCommand": "npm ci",
   "buildCommand": "node scripts/vercel-build.mjs",
-  "regions": ["fra1"]
+  "regions": [
+    "fra1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/daily",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }

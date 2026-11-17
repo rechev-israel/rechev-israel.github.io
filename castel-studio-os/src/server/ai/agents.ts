@@ -1,6 +1,6 @@
 import type { Permission } from "@/server/auth/rbac";
 
-export type AgentId = "ceo" | "marketing" | "sales" | "support" | "finance" | "content" | "academy" | "operations";
+export type AgentId = "ceo" | "marketing" | "sales" | "finance" | "support" | "academy" | "creative" | "automation";
 
 export type AgentDef = {
   id: AgentId;
@@ -25,12 +25,6 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     keywords: ["קמפיין", "שיווק", "פרסום", "מודעה", "קהל", "תקציב פרסום", "מטא", "גוגל", "campaign", "marketing", "ads", "audience", "meta", "google ads", "budget", "funnel"],
     scopes: ["overview", "crm", "academy", "marketing"],
     brief: "Marketing strategist: campaigns, audiences, budget allocation, funnels, Meta/Google Ads planning (plans only).",
-  },
-  content: {
-    id: "content",
-    keywords: ["פוסט", "אינסטגרם", "טיקטוק", "כיתוב", "האשטאג", "רילס", "סרטון", "לוח תוכן", "תסריט", "caption", "hashtag", "instagram", "tiktok", "reel", "content calendar", "script", "post"],
-    scopes: ["overview"],
-    brief: "Content creator: Instagram/TikTok ideas, captions, hashtags, reel scripts, monthly content calendars in the CASTEL brand voice.",
   },
   sales: {
     id: "sales",
@@ -57,11 +51,17 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     scopes: ["overview", "academy"],
     brief: "Academy assistant: curriculum, lesson plans, student communication drafts, cohort planning for the Group (5,500 ILS) and VIP (6,500 ILS) courses.",
   },
-  operations: {
-    id: "operations",
-    keywords: ["תפעול", "משמרות", "ספרים", "מלאי", "תורים", "יעילות", "ביטולים", "אי הגעה", "operations", "staff", "schedule", "inventory", "no-show", "cancellation", "efficiency"],
+  creative: {
+    id: "creative",
+    keywords: ["פוסט", "אינסטגרם", "טיקטוק", "כיתוב", "האשטאג", "רילס", "סרטון", "תסריט", "תמונה", "עיצוב", "מודעה", "מיתוג", "לוח תוכן", "caption", "hashtag", "instagram", "tiktok", "reel", "script", "image prompt", "video", "design", "brand", "content calendar", "post", "ad creative"],
+    scopes: ["overview"],
+    brief: "Creative director: Instagram/TikTok content, captions, hashtags, reel and video concepts, image-generation prompts, ad creatives and branding in the CASTEL voice.",
+  },
+  automation: {
+    id: "automation",
+    keywords: ["אוטומציה", "תהליך", "workflow", "תזכורת", "אוטומטי", "טריגר", "לא הגיע", "ביטולים", "תפעול", "יעילות", "automation", "trigger", "reminder", "no-show", "operations", "efficiency", "process"],
     scopes: ["overview", "bookings"],
-    brief: "Operations: scheduling, staffing, no-show reduction, inventory and daily workflows.",
+    brief: "Automation & operations specialist: designs, monitors and troubleshoots workflows (triggers, conditions, actions), reminders, no-show reduction and daily efficiency.",
   },
 };
 

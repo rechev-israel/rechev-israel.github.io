@@ -4,6 +4,7 @@ import { zonedDate } from "@/lib/dates";
 import { toNumber } from "@/lib/utils";
 import { certificateEligibility, certificateNumber, enrollmentBalance, generateLessonSchedule } from "@/domain/academy";
 import { DomainError } from "./crm";
+import { emitEvent } from "@/server/automation/engine";
 import { Prisma, type AttendanceStatus, type PaymentMethod } from "@prisma/client";
 import type { z } from "zod";
 import type { cohortSchema, studentSchema, paymentSchema } from "@/lib/validation";
@@ -91,6 +92,7 @@ async function enrollOnce(actor: Actor, cohortId: string, studentId: string, agr
     { isolationLevel: "Serializable" },
   ).then(async (e) => {
     await audit({ businessId: actor.businessId, userId: actor.id, action: "enrollment.create", entityType: "Enrollment", entityId: e.id });
+    await emitEvent(actor.businessId, "enrollment.created", { enrollment: { id: e.id, cohortId, studentId } });
     return e;
   });
 }

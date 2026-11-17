@@ -6,6 +6,7 @@ import type { AppointmentStatus } from "@prisma/client";
 import type { z } from "zod";
 import type { appointmentSchema } from "@/lib/validation";
 import { toNumber } from "@/lib/utils";
+import { emitEvent, customerCtx } from "@/server/automation/engine";
 
 type Actor = { id: string; businessId: string };
 
@@ -45,6 +46,7 @@ export async function createAppointment(actor: Actor, input: z.infer<typeof appo
     },
   });
   await audit({ businessId: actor.businessId, userId: actor.id, action: "appointment.create", entityType: "Appointment", entityId: a.id });
+  await emitAppointment(actor.businessId, "appointment.created", a.id);
   return a;
 }
 
@@ -84,7 +86,18 @@ export async function setAppointmentStatus(actor: Actor, id: string, status: App
     await db.transaction.deleteMany({ where: { businessId: actor.businessId, description: marker } });
   }
   if (a.customerId) await recomputeCustomerStats(actor.businessId, a.customerId);
+  if (status === "COMPLETED") await emitAppointment(actor.businessId, "appointment.completed", id);
+  if (status === "NO_SHOW") await emitAppointment(actor.businessId, "appointment.no_show", id);
   await audit({ businessId: actor.businessId, userId: actor.id, action: `appointment.${status.toLowerCase()}`, entityType: "Appointment", entityId: id, metadata: reason ? { reason } : undefined });
+}
+
+async function emitAppointment(businessId: string, trigger: "appointment.created" | "appointment.completed" | "appointment.no_show", id: string) {
+  const ap = await db.appointment.findUnique({ where: { id }, include: { customer: true, service: true } });
+  if (!ap) return;
+  await emitEvent(businessId, trigger, {
+    appointment: { id: ap.id, startsAt: ap.startsAt, status: ap.status, price: toNumber(ap.price), serviceName: ap.service?.nameHe ?? "" },
+    ...(ap.customer ? { customer: customerCtx(ap.customer) } : {}),
+  });
 }
 
 export async function bookingAnalytics(businessId: string, days = 30) {

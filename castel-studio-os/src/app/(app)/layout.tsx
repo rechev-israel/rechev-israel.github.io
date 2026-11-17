@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/auth/rbac";
 import { getI18n } from "@/i18n";
@@ -17,7 +17,11 @@ const PHONE_TABS = ["/dashboard", "/crm", "/bookings", "/academy", "/finance", "
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const { t, locale } = await getI18n();
-  const pendingApprovals = can(user.role, "approvals.view") ? await db.approvalRequest.count({ where: { businessId: user.businessId, status: "PENDING" } }) : 0;
+  const [pendingApprovals, unread, pendingMessages] = await Promise.all([
+    can(user.role, "approvals.view") ? db.approvalRequest.count({ where: { businessId: user.businessId, status: "PENDING" } }) : 0,
+    db.notification.count({ where: { businessId: user.businessId, readAt: null, OR: [{ userId: null }, { userId: user.id }] } }),
+    can(user.role, "comms.view") ? db.outboundMessage.count({ where: { businessId: user.businessId, status: "PENDING_APPROVAL" } }) : 0,
+  ]);
 
   const groups: SidebarGroup[] = NAV.map((g) => ({
     label: t.nav.groups[g.key],
@@ -28,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         label: t.nav[i.key as keyof typeof t.nav] as string,
         icon: i.icon as SidebarGroup["items"][number]["icon"],
         state: i.state,
-        badge: i.key === "approvals" ? pendingApprovals : undefined,
+        badge: i.key === "approvals" ? pendingApprovals : i.key === "communications" ? pendingMessages : undefined,
       })),
   })).filter((g) => g.items.length);
   const allowed = new Set(groups.flatMap((g) => g.items.map((i) => i.href)));
@@ -52,6 +56,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <div className="ms-auto flex items-center gap-2">
               <InstallButton label={locale === "he" ? "התקנת האפליקציה" : "Install app"} />
+              <Link href="/notifications" className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:border-gold/40 hover:text-text" aria-label={locale === "he" ? `התראות (${unread})` : `Notifications (${unread})`}>
+                <Bell size={15} />
+                {unread > 0 && <span className="absolute -end-1 -top-1 min-w-4 rounded-full bg-gold px-1 text-center text-[9px] font-bold leading-4 text-black">{unread > 99 ? "99+" : unread}</span>}
+              </Link>
               <PreferenceToggles locale={locale} t={t} />
               <div className="hidden text-end sm:block">
                 <p className="text-sm font-medium leading-tight">{user.name}</p>

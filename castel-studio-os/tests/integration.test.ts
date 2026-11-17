@@ -93,3 +93,76 @@ d("integration (PostgreSQL)", () => {
     await expect(bookings.createAppointment(actor, { staffId: actor.id, startsAt: "2026-12-01T10:30", durationMin: 30 })).rejects.toThrow("bookings.overlap");
   });
 });
+
+d("automation engine (PostgreSQL)", () => {
+  let db: typeof import("@/lib/db").db;
+  let engine: typeof import("@/server/automation/engine");
+  let msgs: typeof import("@/server/comms/messages");
+  let crm: typeof import("@/server/services/crm");
+  let bizId: string;
+  let actor: { id: string; businessId: string };
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = url;
+    ({ db } = await import("@/lib/db"));
+    engine = await import("@/server/automation/engine");
+    msgs = await import("@/server/comms/messages");
+    crm = await import("@/server/services/crm");
+    const { ensureBaseData } = await import("@/server/services/bootstrap");
+    const b = await db.business.create({ data: { name: "AutoBiz", category: "x", city: "Ashkelon", branches: { create: { name: "main" } } } });
+    bizId = b.id;
+    const u = await db.user.create({ data: { businessId: bizId, email: "auto@test.local", name: "A", passwordHash: "x", role: "OWNER" } });
+    actor = { id: u.id, businessId: bizId };
+    const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
+    expect(await ensureBuiltinAutomations(db, bizId)).toBeGreaterThanOrEqual(7);
+    expect(await ensureBuiltinAutomations(db, bizId)).toBe(0); // idempotent
+    void ensureBaseData;
+  });
+
+  it("customer.created → task + welcome draft awaiting approval (never sent)", async () => {
+    const c = await crm.createCustomer(actor, { firstName: "Noam", phone: "+972521234567", tags: [], marketingConsentSms: "UNKNOWN", marketingConsentEmail: "UNKNOWN", marketingConsentWhatsapp: "UNKNOWN" });
+    const m = await db.outboundMessage.findFirstOrThrow({ where: { customerId: c.id, templateKey: "welcome" } });
+    expect(m.status).toBe("PENDING_APPROVAL");
+    expect(m.body).toContain("Noam");
+    expect(await db.task.count({ where: { businessId: bizId, source: "automation" } })).toBeGreaterThan(0);
+    const run = await db.automationRun.findFirstOrThrow({ where: { businessId: bizId, status: "succeeded" } });
+    expect(Array.isArray(run.steps)).toBe(true);
+  });
+
+  it("approval without a configured provider does NOT mark as sent", async () => {
+    delete process.env.WHATSAPP_CLOUD_ACCESS_TOKEN;
+    const m = await db.outboundMessage.findFirstOrThrow({ where: { businessId: bizId, templateKey: "welcome" } });
+    const r = await msgs.approveMessages(actor, [m.id]);
+    expect(r.approved).toBe(1);
+    const after = await db.outboundMessage.findUniqueOrThrow({ where: { id: m.id } });
+    expect(after.status).toBe("APPROVED");
+    expect(after.error).toBe("provider_not_configured");
+    expect(after.sentAt).toBeNull();
+  });
+
+  it("birthday (marketing) without opt-in is blocked; scheduled runs are deduplicated", async () => {
+    const today = new Date();
+    const c = await db.customer.create({ data: { businessId: bizId, firstName: "Bday", phone: "+972531112233", birthday: new Date(Date.UTC(1990, today.getUTCMonth(), today.getUTCDate())) } });
+    await engine.runScheduled(today);
+    await engine.runScheduled(today);
+    const drafts = await db.outboundMessage.findMany({ where: { customerId: c.id, templateKey: "birthday" } });
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0].status).toBe("BLOCKED_NO_CONSENT");
+  });
+
+  it("failed actions are retried with backoff", async () => {
+    const a = await db.automation.create({
+      data: { businessId: bizId, name: "broken", trigger: "customer.created", isActive: false, maxRetries: 2, definition: { conditions: [], actions: [{ type: "message.draft", channel: "WHATSAPP", templateKey: "does-not-exist" }] } },
+    });
+    const status = await engine.runAutomation(a, { customer: { id: "nonexistent-customer" } });
+    expect(status).toBe("failed");
+    const run = await db.automationRun.findFirstOrThrow({ where: { automationId: a.id } });
+    expect(run.status).toBe("retrying");
+    expect(run.nextRetryAt).not.toBeNull();
+    await db.automationRun.update({ where: { id: run.id }, data: { nextRetryAt: new Date(Date.now() - 1000) } });
+    await engine.processRetries();
+    const final = await db.automationRun.findUniqueOrThrow({ where: { id: run.id } });
+    expect(final.status).toBe("failed");
+    expect(final.attempt).toBe(2);
+  });
+});

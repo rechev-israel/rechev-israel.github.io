@@ -8,11 +8,11 @@ import { customerSchema, leadPublicSchema, transactionSchema } from "@/lib/valid
 
 describe("AI router", () => {
   it("routes to specialists by keywords (he/en)", () => {
-    expect(routeRequest("תכתוב לי כיתוב לפוסט באינסטגרם עם האשטאגים").agent).toBe("content");
+    expect(routeRequest("תכתוב לי כיתוב לפוסט באינסטגרם עם האשטאגים").agent).toBe("creative");
     expect(routeRequest("מה הרווח וההוצאות שלי החודש?").agent).toBe("finance");
     expect(routeRequest("build a syllabus for the next academy cohort").agent).toBe("academy");
     expect(routeRequest("plan a meta ads campaign with 1000 budget").agent).toBe("marketing");
-    expect(routeRequest("how do I reduce no-show and cancellation").agent).toBe("operations");
+    expect(routeRequest("how do I reduce no-show and cancellation").agent).toBe("automation");
     expect(routeRequest("שלום").agent).toBe("ceo");
   });
 });

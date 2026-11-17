@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { leadPublicSchema } from "@/lib/validation";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { emitEvent } from "@/server/automation/engine";
 
 /** Public academy lead capture. Rate limited, honeypot-protected, requires explicit consent. */
 export async function POST(req: Request) {
@@ -24,5 +25,8 @@ export async function POST(req: Request) {
     data: { businessId: business.id, courseId: course?.id, name: d.name, phone: d.phone ?? null, email: d.email ?? null, message: d.message ?? null, consent: true, source: "landing:/join" },
   });
   logger.info("lead.created", { leadId: lead.id, course: d.courseCode ?? null });
+  await emitEvent(business.id, "lead.created", {
+    lead: { id: lead.id, name: lead.name, status: lead.status, kind: lead.kind, source: lead.source, courseName: course ? course.nameHe : null },
+  });
   return Response.json({ ok: true }, { status: 201 });
 }

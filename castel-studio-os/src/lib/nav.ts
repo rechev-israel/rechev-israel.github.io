@@ -20,11 +20,11 @@ export const NAV: NavGroup[] = [
     key: "growth",
     items: [
       { key: "analytics", href: "/analytics", icon: "LineChart", state: "partial", permission: "dashboard.view" },
-      { key: "marketing", href: "/marketing", icon: "Megaphone", state: "planned" },
+      { key: "marketing", href: "/marketing", icon: "Megaphone", state: "live", permission: "marketing.view" },
       { key: "creative", href: "/creative", icon: "Palette", state: "planned" },
       { key: "sites", href: "/sites", icon: "Globe", state: "partial" },
-      { key: "communications", href: "/communications", icon: "MessagesSquare", state: "planned" },
-      { key: "automations", href: "/automations", icon: "Workflow", state: "planned" },
+      { key: "communications", href: "/communications", icon: "MessagesSquare", state: "live", permission: "comms.view" },
+      { key: "automations", href: "/automations", icon: "Workflow", state: "live", permission: "automations.view" },
     ],
   },
   {
