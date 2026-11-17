@@ -15,6 +15,8 @@ Deployments are **live** (owner approved 2026-11-19): every push to the producti
 
 - **Integration Center** — "מרכז חיבורים": real per-provider connection tests (Anthropic first), Connected only after verification of current credentials, encrypted in-app credential storage (AES-256-GCM), Meta OAuth, cron-run recording, redaction of secrets from errors/logs.
 
+- **Online booking** — own booking system replacing the external app: public `/book`, slot engine, race-safe booking, manage link, owner settings, site block. (Cali sync/import kept for the transition.)
+
 ## Next — Package 5: Hardening & go-live readiness
 1. External error monitoring (e.g. Sentry) + uptime alert on `/api/health`.
 2. Blob storage adapter (Vercel Blob / S3) for large video/3D assets instead of temporary provider links.

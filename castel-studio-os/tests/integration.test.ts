@@ -288,3 +288,62 @@ d("sites (PostgreSQL)", () => {
     expect(await count([ok.id])).toBe(1);
   });
 });
+
+d("online booking (PostgreSQL)", () => {
+  let db: typeof import("@/lib/db").db;
+  let ob: typeof import("@/server/services/online-booking");
+  let biz: string;
+  let serviceId: string;
+  const now = new Date(Date.UTC(2027, 2, 1, 4, 0)); // Mon 1 Mar 2027 06:00 Jerusalem
+  const date = "2027-03-02"; // Tuesday
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = url;
+    ({ db } = await import("@/lib/db"));
+    ob = await import("@/server/services/online-booking");
+    const b = await db.business.create({ data: { name: "Booking", category: "x", city: "Ashkelon", createdAt: new Date(0), branches: { create: { name: "main" } } } });
+    biz = b.id;
+    const branch = await db.branch.findFirstOrThrow({ where: { businessId: biz } });
+    await db.availabilityRule.create({ data: { branchId: branch.id, weekday: 2, startTime: "09:00", endTime: "11:00" } });
+    await db.user.create({ data: { businessId: biz, email: "barber@book.local", name: "Barber", passwordHash: "x", role: "BARBER", acceptsBookings: true } });
+    serviceId = (await db.service.create({ data: { businessId: biz, nameHe: "תספורת", nameEn: "Cut", durationMin: 30, price: 100 } })).id;
+    await db.bookingSettings.create({ data: { businessId: biz, enabled: true, slotStepMin: 30, minNoticeMin: 60, maxDaysAhead: 30, maxActivePerPhone: 1 } });
+  });
+
+  const input = (start: number, phone: string) => ({ serviceId, staffId: "any", date, start, name: "Test Customer", phone });
+
+  it("offers slots from opening hours", async () => {
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    expect(slots).toHaveLength(4); // 09:00, 09:30, 10:00, 10:30
+  });
+
+  it("only one of many simultaneous requests gets the same slot", async () => {
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    const r = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => ob.createOnlineBooking(biz, input(slots[0].start, `05012345${10 + i}`), now)));
+    expect(r.filter((x) => x.status === "fulfilled")).toHaveLength(1);
+    const after = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    expect(after.slots.map((s) => s.start)).not.toContain(slots[0].start);
+    const appts = await db.appointment.findMany({ where: { businessId: biz, source: "online" }, include: { customer: true } });
+    expect(appts).toHaveLength(1);
+    expect(appts[0].customer?.source).toBe("online-booking");
+    expect(appts[0].status).toBe("CONFIRMED");
+  });
+
+  it("limits open bookings per phone and supports cancel via the private link", async () => {
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    const first = await ob.createOnlineBooking(biz, input(slots[0].start, "0529998877"), now);
+    await expect(ob.createOnlineBooking(biz, input(slots[1].start, "052-999-8877"), now)).rejects.toMatchObject({ code: "limit" });
+    expect((await ob.findByToken("not-a-real-token-xxxxxxxxxx"))).toBeNull();
+    const c = await ob.cancelByToken(first.token, now);
+    expect(c.status).toBe("CANCELLED");
+    const again = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    expect(again.slots.map((s) => s.start)).toContain(slots[0].start);
+  });
+
+  it("time off removes availability; closed booking refuses", async () => {
+    await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
+    expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);
+    await db.bookingSettings.update({ where: { businessId: biz }, data: { enabled: false } });
+    await expect(ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).rejects.toMatchObject({ code: "disabled" });
+  });
+});

@@ -16,6 +16,7 @@ export const blockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), title: text(120), body: text(4000) }),
   z.object({ type: z.literal("testimonials"), title: text(80), items: z.array(z.object({ quote: text(400), author: text(80) })).max(12) }),
   z.object({ type: z.literal("cta"), title: text(120), text: text(400), buttonText: text(40), buttonHref: safeHref }),
+  z.object({ type: z.literal("booking"), title: text(120), text: text(400), buttonText: text(40) }),
   z.object({ type: z.literal("leadForm"), title: text(120), kind: z.enum(["barbershop", "academy"]) }),
   z.object({ type: z.literal("contact"), title: text(80), phone: text(30), address: text(200), hours: text(300), instagram: safeHref, whatsapp: safeHref }),
 ]);
@@ -33,8 +34,9 @@ export const RESERVED_SLUGS = new Set(["admin", "api", "login", "setup", "join",
 
 export function defaultBlocks(he: boolean): Block[] {
   return [
-    { type: "hero", title: "CASTEL STUDIO", subtitle: he ? "ספרות גברים פרימיום ואקדמיה מקצועית באשקלון" : "Premium men's grooming & barber academy in Ashkelon", ctaText: he ? "קביעת תור" : "Book now", ctaHref: "https://cali-b5f0e.web.app/#/aeKiKr0vCLX", imageAssetId: "" },
+    { type: "hero", title: "CASTEL STUDIO", subtitle: he ? "ספרות גברים פרימיום ואקדמיה מקצועית באשקלון" : "Premium men's grooming & barber academy in Ashkelon", ctaText: he ? "קביעת תור" : "Book now", ctaHref: "/book", imageAssetId: "" },
     { type: "services", title: he ? "השירותים שלנו" : "Our services", showPrices: true },
+    { type: "booking", title: he ? "קביעת תור אונליין" : "Book online", text: he ? "בוחרים שירות, ספר ושעה — והתור נקבע תוך דקה." : "Pick a service, barber and time — booked in a minute.", buttonText: he ? "לקביעת תור" : "Book now" },
     { type: "academy", title: "CASTEL STUDIO ACADEMY" },
     { type: "leadForm", title: he ? "השאירו פרטים ונחזור אליכם" : "Leave your details", kind: "barbershop" },
     { type: "contact", title: he ? "צרו קשר" : "Contact", phone: "", address: he ? "אשקלון" : "Ashkelon", hours: "", instagram: "https://www.instagram.com/castel.cutzz", whatsapp: "" },

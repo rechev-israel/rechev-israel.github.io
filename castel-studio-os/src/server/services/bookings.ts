@@ -91,7 +91,7 @@ export async function setAppointmentStatus(actor: Actor, id: string, status: App
   await audit({ businessId: actor.businessId, userId: actor.id, action: `appointment.${status.toLowerCase()}`, entityType: "Appointment", entityId: id, metadata: reason ? { reason } : undefined });
 }
 
-async function emitAppointment(businessId: string, trigger: "appointment.created" | "appointment.completed" | "appointment.no_show", id: string) {
+export async function emitAppointment(businessId: string, trigger: "appointment.created" | "appointment.completed" | "appointment.no_show", id: string) {
   const ap = await db.appointment.findUnique({ where: { id }, include: { customer: true, service: true } });
   if (!ap) return;
   await emitEvent(businessId, trigger, {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus, Scissors, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe, Plus, Scissors, Upload } from "lucide-react";
 import { pageGuard } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
@@ -43,6 +43,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         actions={
           <>
             <Link href="/bookings/services" className={buttonClass("secondary")}><Scissors size={14} /> {t.bookings.services}</Link>
+            <Link href="/bookings/online" className={buttonClass("secondary")}><Globe size={14} /> {locale === "he" ? "קביעת תורים אונליין" : "Online booking"}</Link>
             {edit && <Link href="/bookings/import" className={buttonClass("secondary")}><Upload size={14} /> {t.bookings.import}</Link>}
             {edit && <Link href="/bookings/new" className={buttonClass("primary")}><Plus size={14} /> {t.bookings.new}</Link>}
           </>

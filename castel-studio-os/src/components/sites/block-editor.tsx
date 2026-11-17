@@ -14,6 +14,7 @@ const NEW: Record<string, Block> = {
   text: { type: "text", title: "", body: "" },
   testimonials: { type: "testimonials", title: "", items: [{ quote: "", author: "" }] },
   cta: { type: "cta", title: "", text: "", buttonText: "", buttonHref: "" },
+  booking: { type: "booking", title: "", text: "", buttonText: "" },
   leadForm: { type: "leadForm", title: "", kind: "barbershop" },
   contact: { type: "contact", title: "", phone: "", address: "", hours: "", instagram: "", whatsapp: "" },
 };
@@ -55,6 +56,7 @@ export function BlockEditor({ initial, assets, labels }: { initial: Block[]; ass
             {b.type === "services" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(b.showPrices)} onChange={(e) => set(i, { showPrices: e.target.checked })} className="h-4 w-4 accent-[var(--gold)]" /> {labels.showPrices}</label>}
             {b.type === "text" && field(i, "body", labels.body, { area: true, max: 4000 })}
             {b.type === "cta" && (<>{field(i, "text", labels.body, { area: true, max: 400 })}{field(i, "buttonText", labels.buttonText, { max: 40 })}{field(i, "buttonHref", labels.link, { ltr: true, max: 500 })}</>)}
+            {b.type === "booking" && (<>{field(i, "text", labels.body, { area: true, max: 400 })}{field(i, "buttonText", labels.buttonText, { max: 40 })}</>)}
             {b.type === "leadForm" && <div><Label>{labels.leadKind}</Label><Select value={String(b.kind)} onChange={(e) => set(i, { kind: e.target.value })}><option value="barbershop">{labels.kindShop}</option><option value="academy">{labels.kindAcademy}</option></Select></div>}
             {b.type === "contact" && (<>{field(i, "phone", labels.phone, { ltr: true, max: 30 })}{field(i, "address", labels.address, { max: 200 })}{field(i, "instagram", "Instagram (https://…)", { ltr: true, max: 500 })}{field(i, "whatsapp", "WhatsApp (https://wa.me/…)", { ltr: true, max: 500 })}{field(i, "hours", labels.hours, { area: true, max: 300 })}</>)}
             {b.type === "gallery" && (

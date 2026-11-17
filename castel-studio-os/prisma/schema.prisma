@@ -23,17 +23,19 @@ enum Role {
 }
 
 model Business {
-  id        String   @id @default(cuid())
-  name      String
-  category  String
-  city      String
-  country   String   @default("IL")
-  currency  String   @default("ILS")
-  timezone  String   @default("Asia/Jerusalem")
-  locale    String   @default("he")
-  instagram String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  bookingSettings BookingSettings?
+  timeOff         TimeOff[]
+  id              String           @id @default(cuid())
+  name            String
+  category        String
+  city            String
+  country         String           @default("IL")
+  currency        String           @default("ILS")
+  timezone        String           @default("Asia/Jerusalem")
+  locale          String           @default("he")
+  instagram       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   branches         Branch[]
   users            User[]
@@ -81,6 +83,9 @@ model Branch {
 }
 
 model User {
+  /// Shown as a bookable barber on the public booking page.
+  acceptsBookings  Boolean   @default(false)
+  timeOff          TimeOff[] @relation("StaffTimeOff")
   id               String    @id @default(cuid())
   businessId       String
   business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -244,18 +249,20 @@ model Interaction {
 // ───────────────────────── Booking ─────────────────────────
 
 model Service {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  nameHe      String
-  nameEn      String
-  durationMin Int
-  price       Decimal  @db.Decimal(10, 2)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  externalRef String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  /// Offered on the public booking page.
+  bookableOnline Boolean  @default(true)
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  nameHe         String
+  nameEn         String
+  durationMin    Int
+  price          Decimal  @db.Decimal(10, 2)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  externalRef    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   appointments Appointment[]
 }
@@ -269,6 +276,8 @@ enum AppointmentStatus {
 }
 
 model Appointment {
+  /// SHA-256 of the customer's private manage link token (online bookings only).
+  manageTokenHash  String?           @unique
   id               String            @id @default(cuid())
   businessId       String
   business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1001,4 +1010,37 @@ model IntegrationSecret {
   updatedAt   DateTime @updatedAt
 
   @@unique([businessId, name])
+}
+
+/// Public online booking (replaces the external booking app). One row per business.
+model BookingSettings {
+  businessId        String   @id
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  enabled           Boolean  @default(false)
+  /// true = online bookings are CONFIRMED immediately; false = SCHEDULED, staff confirms.
+  autoConfirm       Boolean  @default(true)
+  slotStepMin       Int      @default(15)
+  minNoticeMin      Int      @default(60)
+  maxDaysAhead      Int      @default(30)
+  cancelNoticeMin   Int      @default(180)
+  bufferMin         Int      @default(0)
+  maxActivePerPhone Int      @default(2)
+  noteHe            String?
+  noteEn            String?
+  updatedAt         DateTime @updatedAt
+}
+
+/// Closed periods: holidays (staffId null = whole shop) or a barber's vacation.
+model TimeOff {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staffId    String?
+  staff      User?    @relation("StaffTimeOff", fields: [staffId], references: [id], onDelete: Cascade)
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, startsAt])
 }

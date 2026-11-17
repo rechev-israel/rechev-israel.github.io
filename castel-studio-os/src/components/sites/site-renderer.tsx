@@ -79,6 +79,13 @@ export async function SiteRenderer({ businessId, blocks, slug, locale, t }: { bu
                 {b.buttonText && b.buttonHref && <a href={b.buttonHref} className="mt-6 inline-flex h-12 items-center rounded-full bg-gold px-8 font-semibold text-black" rel="noopener">{b.buttonText}</a>}
               </div></section>
             );
+          case "booking":
+            return (
+              <section key={i} id="book" className={section}><div className="rounded-3xl border border-gold/40 bg-gold-soft p-8 text-center md:p-12">
+                <h2 className="font-display text-3xl font-bold">{b.title}</h2>{b.text && <p className="mx-auto mt-3 max-w-2xl text-muted">{b.text}</p>}
+                <a href="/book" className="mt-6 inline-flex h-12 items-center rounded-full bg-gold px-8 font-semibold text-black">{b.buttonText || "קביעת תור"}</a>
+              </div></section>
+            );
           case "leadForm":
             return (
               <section key={i} className={section}><div className="mx-auto max-w-xl rounded-2xl border border-gold/30 bg-surface p-6 md:p-8"><h2 className="mb-5 text-center font-display text-2xl font-bold">{b.title}</h2>
