@@ -30,6 +30,9 @@ export default async function BookPage() {
   const ready = Boolean(settings?.enabled && services.length && staff.length);
   const dates = settings ? bookableDates(settings.maxDaysAhead) : [];
   const note = settings ? (he ? settings.noteHe : settings.noteEn) : null;
+  const branch = b ? await db.branch.findFirst({ where: { businessId: b.id, isActive: true }, orderBy: { createdAt: "asc" }, select: { phone: true } }) : null;
+  const phone = branch?.phone?.trim() || "";
+  const intl = phone.replace(/[^\d]/g, "").replace(/^0/, "972");
 
   return (
     <main className="min-h-dvh pb-16">
@@ -56,6 +59,12 @@ export default async function BookPage() {
           <div className="rounded-2xl border border-border bg-surface p-6 text-center">
             <p className="font-semibold">{L("קביעת תורים אונליין תיפתח בקרוב.", "Online booking opens soon.")}</p>
             <p className="mt-1 text-sm text-muted">{L("בינתיים אפשר לפנות אלינו בטלפון או בוואטסאפ.", "Meanwhile, contact us by phone or WhatsApp.")}</p>
+            {phone && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <a href={`tel:${phone}`} dir="ltr" className="inline-flex h-11 items-center rounded-xl border border-gold/50 px-4 text-sm text-gold">{phone}</a>
+                <a href={`https://wa.me/${intl}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-xl bg-gold px-4 text-sm font-semibold text-black">WhatsApp</a>
+              </div>
+            )}
           </div>
         )}
       </section>

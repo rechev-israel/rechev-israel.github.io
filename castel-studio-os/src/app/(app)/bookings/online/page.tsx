@@ -97,6 +97,7 @@ export default async function OnlineBookingPage() {
               <div><Label>{L("ביטול אונליין עד (שעות לפני)", "Online cancel until (h before)")}</Label><Select name="cancelNoticeMin" defaultValue={String(settings.cancelNoticeMin)}>{[0, 60, 120, 180, 360, 720, 1440, 2880].map((n) => <option key={n} value={n}>{n / 60}</option>)}</Select></div>
               <div><Label>{L("מקס׳ תורים פתוחים ללקוח", "Max open bookings per customer")}</Label><Select name="maxActivePerPhone" defaultValue={String(settings.maxActivePerPhone)}>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</Select></div>
             </div>
+            <div><Label>{L("טלפון המספרה (מוצג ללקוחות)", "Shop phone (shown to customers)")}</Label><Input name="shopPhone" dir="ltr" inputMode="tel" maxLength={20} defaultValue={branch?.phone ?? ""} placeholder="050-0000000" /></div>
             <div><Label>{L("הודעה בראש דף ההזמנה (עברית)", "Note on booking page (Hebrew)")}</Label><Textarea name="noteHe" rows={2} maxLength={500} defaultValue={settings.noteHe ?? ""} placeholder={L("לדוגמה: איחור של יותר מ-10 דקות עלול לבטל את התור.", "e.g. Arriving 10+ min late may cancel the booking.")} /></div>
             <div><Label>{L("הודעה (אנגלית)", "Note (English)")}</Label><Textarea name="noteEn" rows={2} maxLength={500} defaultValue={settings.noteEn ?? ""} /></div>
             {edit && <SubmitButton>{t.common.save}</SubmitButton>}

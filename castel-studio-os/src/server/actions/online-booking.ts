@@ -16,13 +16,16 @@ const int = (min: number, max: number) => z.coerce.number().int().min(min).max(m
 const done = () => { revalidatePath("/bookings/online"); revalidatePath("/book"); };
 
 export async function saveBookingSettingsAction(_: ActionState, fd: FormData): Promise<ActionState> {
-  return runAction(async () => {
+  return runAction(async (): Promise<ActionState | void> => {
     const user = await requireUser(PERM);
     const d = z.object({
       enabled: bool, autoConfirm: bool, slotStepMin: int(5, 120), minNoticeMin: int(0, 10080), maxDaysAhead: int(1, 180),
       cancelNoticeMin: int(0, 10080), bufferMin: int(0, 120), maxActivePerPhone: int(1, 10),
       noteHe: z.string().trim().max(500).optional(), noteEn: z.string().trim().max(500).optional(),
     }).parse({ ...formToObject(fd), enabled: fd.get("enabled"), autoConfirm: fd.get("autoConfirm") });
+    const shopPhone = String(fd.get("shopPhone") ?? "").trim();
+    if (shopPhone && !/^[\d+\-\s()]{9,20}$/.test(shopPhone)) return { error: "טלפון לא תקין / invalid phone", fieldErrors: { shopPhone: "✕" } };
+    await db.branch.updateMany({ where: { businessId: user.businessId, isActive: true }, data: { phone: shopPhone || null } });
     await db.bookingSettings.upsert({ where: { businessId: user.businessId }, create: { businessId: user.businessId, ...d }, update: d });
     // Opening bookings with no bookable barber would show an empty page: make the person enabling it bookable.
     if (d.enabled && !(await db.user.count({ where: { businessId: user.businessId, isActive: true, acceptsBookings: true } })))
