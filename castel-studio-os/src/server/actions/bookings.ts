@@ -55,7 +55,9 @@ export async function importBookingCsvAction(_: ActionState, fd: FormData): Prom
     const user = await requireUser("bookings.edit");
     const { t } = await getI18n();
     const file = fd.get("file");
-    if (!(file instanceof File) || file.size === 0 || file.size > 5_000_000) return { error: t.errors.validation };
+    const heUi = t.common.saved !== "Saved";
+    if (!(file instanceof File) || file.size === 0) return { error: heUi ? "לא נבחר קובץ. לחצו על ״בחירת קובץ״ ובחרו קובץ CSV של תורים." : "No file selected. Tap \"Choose file\" and pick a CSV of appointments.", fieldErrors: { file: "✕" } };
+    if (file.size > 5_000_000) return { error: heUi ? "הקובץ גדול מ-5MB." : "File is larger than 5MB.", fieldErrors: { file: "✕" } };
     const { events, errors } = csvToCaliEvents(await file.text());
     if (!events.length) return { error: `${t.errors.validation}${errors.length ? ` — ${errors.slice(0, 3).join("; ")}` : ""}` };
     const r = await applyCaliEvents(user.businessId, events, "csv");
