@@ -259,3 +259,19 @@ d("package 2 (PostgreSQL)", () => {
     expect(await db.outboundMessage.count({ where: { businessId: bizId, templateKey: "academy_payment" } })).toBe(1);
   });
 });
+
+d("creative studio (PostgreSQL)", () => {
+  it("jobs without a configured provider are stored as pending_config, never faked", async () => {
+    process.env.DATABASE_URL = url;
+    const { db } = await import("@/lib/db");
+    const { createGenerationJob } = await import("@/server/creative/service");
+    const b = await db.business.create({ data: { name: "Cre", category: "x", city: "Ashkelon" } });
+    const u = await db.user.create({ data: { businessId: b.id, email: "cre@test.local", name: "C", passwordHash: "x", role: "OWNER" } });
+    for (const k of ["OPENAI_API_KEY", "REPLICATE_API_TOKEN", "ELEVENLABS_API_KEY"]) delete process.env[k];
+    const a = await createGenerationJob({ id: u.id, businessId: b.id }, { kind: "video", title: "Reel", prompt: "slow-motion fade" });
+    expect(a.status).toBe("pending_config");
+    expect(a.outputUrl).toBeNull();
+    expect(a.dataUrl).toBeNull();
+    expect(await db.auditLog.count({ where: { businessId: b.id, action: "creative.job_create" } })).toBe(1);
+  });
+});

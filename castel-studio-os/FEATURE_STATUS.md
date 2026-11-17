@@ -1,6 +1,6 @@
 # CASTEL STUDIO AI Business OS — Feature Status
 
-_Last updated: 2026-11-18 · Package 2 complete · **Deployments frozen** (owner decision — `vercel.json` `git.deploymentEnabled: false`); live site still runs the Phase 2 batch 1 build_
+_Last updated: 2026-11-18 · Packages 2 & 3 complete · **Deployments frozen** (owner decision — `vercel.json` `git.deploymentEnabled: false`); live site still runs the Phase 2 batch 1 build_
 
 Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to activate · 📋 planned
 
@@ -17,7 +17,7 @@ Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to
 | 9 | **Responsive premium UI** | ✅ | Sidebar / tablet rail / phone tab bar, he RTL + en LTR, dark/light, PWA, verified at 390/768/1024/1440 | — |
 | 10 | **Security & reliability** | ✅ | bcrypt + hashed DB sessions, lockout, RBAC on every action/page/API (new: automations, comms approve, marketing), Zod validation, CSRF/origin checks, audit log, secrets only in env, additive-only migrations applied at build, structured logs, error records for AI/automation, 47 automated tests | External error monitoring service (e.g. Sentry) |
 | — | **Cali booking sync** | ✅ / 🔑 | Signed HMAC webhook endpoint (idempotent upserts, cancellations, customer matching by id/phone, revenue once per completed appointment, sync log, replay protection), duplicate-free CSV import (Hebrew/English headers), sync history UI, integration status | Cali has no public API — needs the vendor to push events + `CALI_WEBHOOK_SECRET`; availability not exposed by Cali. See CALI_INTEGRATION.md |
-| — | Creative Studio (image/video/voice) | 📋 | Creative agent writes prompts/concepts 🔑 | Media provider adapters |
+| — | **AI Creative Studio** | ✅ / 🔑 | **Built-in graphic designer** (works without providers): 4 templates (promo, academy, quote, announcement) × post/story/landscape, brand-kit colours, own background photo, correct Hebrew RTL, PNG download, save to library. **AI generation** via real adapters: OpenAI Images (image), Replicate (image, image edit, video, animation image→video, 3D — model chosen per type), ElevenLabs (voice-over); async job polling (page + daily cron), small outputs persisted (provider links are temporary), large ones flagged. **Asset library** with filters, preview (image/video/audio/3D download), approval flow (submit → owner approves/rejects; approved assets can't be deleted). **Brand kit**. **AI prompt writer** (Creative agent) 🔑 | Provider keys/models (`OPENAI_API_KEY`, `REPLICATE_API_TOKEN` + `REPLICATE_MODEL_*`, `ELEVENLABS_*`); external blob storage for large video/3D files |
 | — | Digital Twin | 📋 | — | Consent flow, approved knowledge base, avatar/voice provider |
 | — | Website builder | 🟡 | Academy landing page `/join` | Block editor, SEO, custom domains |
 
@@ -31,6 +31,9 @@ Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to
 | `ANTHROPIC_API_KEY` (+ optional `ANTHROPIC_MODEL`) | AI agents, insights, marketing generators | ❌ add when ready |
 | `WHATSAPP_SENDING_ENABLED` + `WHATSAPP_CLOUD_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Sending approved WhatsApp messages | ⛔ intentionally OFF until the account restriction is resolved |
 | `AI_MONTHLY_BUDGET_USD` | Optional AI spend cap | optional |
+| `OPENAI_API_KEY` / `REPLICATE_API_TOKEN` + `REPLICATE_MODEL_IMAGE` | Creative Studio images | ❌ pending configuration |
+| `REPLICATE_MODEL_VIDEO`, `_ANIMATION`, `_3D`, `_IMAGE_EDIT` | Creative Studio video / animation / 3D / edits | ❌ pending configuration |
+| `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Voice-overs | ❌ pending configuration |
 | `SMTP_URL`, `SMTP_FROM` | Sending approved emails | ❌ any SMTP provider |
 | `CALI_WEBHOOK_SECRET` | Live sync from Cali | ❌ set together with the Cali developer (see CALI_INTEGRATION.md) |
 | `META_ADS_ACCESS_TOKEN`, `GOOGLE_ADS_DEVELOPER_TOKEN` | Future ads reporting | 📋 adapters not built yet |

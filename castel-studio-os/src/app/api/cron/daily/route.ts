@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { ensureBuiltinAutomations } from "@/server/automation/defaults";
 import { processRetries, runScheduled } from "@/server/automation/engine";
 import { flushDueMessages } from "@/server/comms/messages";
+import { refreshCreativeJobs } from "@/server/creative/service";
 
 export const maxDuration = 60;
 
@@ -22,7 +23,8 @@ export async function GET(req: Request) {
   const scheduled = await runScheduled();
   const retried = await processRetries();
   const messages = await flushDueMessages();
-  const result = { scheduled, retried, messages, ms: Date.now() - started };
+  const creative = await refreshCreativeJobs();
+  const result = { scheduled, retried, messages, creative, ms: Date.now() - started };
   logger.info("cron.daily", result);
   return Response.json(result);
 }

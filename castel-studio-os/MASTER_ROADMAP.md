@@ -9,14 +9,9 @@
 ## Deployment policy
 Deployments are **frozen** until the owner approves going live (`vercel.json` → `git.deploymentEnabled: false`). To go live: set it to `true` (or remove the `git` block) and push; migrations are additive and apply automatically.
 
-## Next — Package 3: AI Creative Studio
-1. Provider-agnostic media adapters (image, video, voice/TTS) with "pending configuration" status; real calls only when keys exist.
-2. Creative jobs: prompt → job record → provider call → asset storage → owner approval before any use.
-3. Brand kit (colours, fonts, logo, voice) applied to prompts and templates.
-4. Promotional graphics templates (posts/stories) rendered server-side from brand kit (works without external providers).
-5. Asset library with tags, approval status, and links to content calendar items.
+- **Package 3** — AI Creative Studio: built-in brand graphic designer, OpenAI/Replicate/ElevenLabs adapters (pending configuration), async jobs + cron polling, output persistence, asset library with approval, brand kit, AI prompt writer.
 
-## Package 4: Website builder & Digital Twin
+## Next — Package 4: Website builder & Digital Twin
 - Block-based page builder (hero, services, academy, gallery, testimonials, CTA/lead form), SEO, preview → publish, custom domain readiness.
 - Digital Twin: explicit consent record, owner-approved knowledge base, avatar/voice provider adapters, approval before publishing.
 

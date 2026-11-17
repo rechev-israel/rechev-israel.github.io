@@ -58,6 +58,8 @@ model Business {
   contentItems     ContentItem[]
   automationRuns   AutomationRun[]
   syncLogs         SyncLog[]
+  brandKit         BrandKit?
+  creativeAssets   CreativeAsset[]
 }
 
 model Branch {
@@ -890,4 +892,53 @@ model SyncLog {
   createdAt  DateTime @default(now())
 
   @@index([businessId, createdAt])
+}
+
+/// Brand identity used by the Creative Studio (templates, prompts, AI voice).
+model BrandKit {
+  id           String   @id @default(cuid())
+  businessId   String   @unique
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  displayName  String   @default("CASTEL STUDIO")
+  tagline      String?
+  primaryColor String   @default("#0a0a0b")
+  accentColor  String   @default("#c9a44c")
+  textColor    String   @default("#f2ede3")
+  voiceTone    String?
+  visualStyle  String?
+  hashtags     String[]
+  handle       String?  @default("@castel.cutzz")
+  updatedAt    DateTime @updatedAt
+}
+
+/// Every Creative Studio output: built-in graphics and provider-generated media.
+model CreativeAsset {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// graphic | image | image_edit | video | animation | model3d | voiceover
+  kind          String
+  title         String
+  prompt        String?
+  /// builtin | openai | replicate | elevenlabs
+  provider      String
+  model         String?
+  /// pending_config | queued | processing | succeeded | failed
+  status        String   @default("queued")
+  providerJobId String?
+  outputUrl     String?
+  /// Inline result for small built-in outputs (PNG/JPEG data URL, size-capped).
+  dataUrl       String?
+  mimeType      String?
+  /// draft | pending_approval | approved | rejected
+  approval      String   @default("draft")
+  error         String?
+  meta          Json?
+  createdById   String?
+  costNote      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId, kind, createdAt])
+  @@index([status])
 }

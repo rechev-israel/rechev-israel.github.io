@@ -69,19 +69,19 @@ export const INTEGRATIONS: IntegrationDef[] = [
     status: envStatus("SMTP_URL"),
   },
   {
-    provider: "image-gen", name: "Image generation provider", category: "media", envVars: ["IMAGE_PROVIDER_API_KEY"], phase: 4,
-    docsHe: "מתאם ספק יוגדר בשלב 4. ללא ספק — היכולת אינה פעילה.", docsEn: "Provider adapter in Phase 4. Without a provider the capability is inactive.",
-    status: envStatus("IMAGE_PROVIDER_API_KEY"),
+    provider: "image-gen", name: "OpenAI Images / Replicate (images)", category: "media", envVars: ["OPENAI_API_KEY", "REPLICATE_API_TOKEN + REPLICATE_MODEL_IMAGE"], phase: 3,
+    docsHe: "יצירת תמונות בסטודיו הקריאייטיב. מספיק אחד מהשניים.", docsEn: "Image generation in the Creative Studio. Either one is enough.",
+    status: async () => ({ status: hasEnv("OPENAI_API_KEY") || (hasEnv("REPLICATE_API_TOKEN") && hasEnv("REPLICATE_MODEL_IMAGE")) ? "CONNECTED" : "NOT_CONFIGURED" }),
   },
   {
-    provider: "video-gen", name: "Video / avatar provider", category: "media", envVars: ["VIDEO_PROVIDER_API_KEY"], phase: 4,
-    docsHe: "אווטאר ווידאו — רק בהסכמה מפורשת וחומרי מקור מהבעלים.", docsEn: "Avatar & video — only with explicit consent and owner-supplied source media.",
-    status: envStatus("VIDEO_PROVIDER_API_KEY"),
+    provider: "video-gen", name: "Replicate (video, animation, 3D, image edit)", category: "media", envVars: ["REPLICATE_API_TOKEN", "REPLICATE_MODEL_VIDEO / _ANIMATION / _3D / _IMAGE_EDIT"], phase: 3,
+    docsHe: "בוחרים מודל לכל סוג במשתני הסביבה. סוג ללא מודל נשאר ״ממתין להגדרה״.", docsEn: "Choose a model per type via env vars. Types without a model stay \"pending configuration\".",
+    status: async () => ({ status: hasEnv("REPLICATE_API_TOKEN") ? (hasEnv("REPLICATE_MODEL_VIDEO") || hasEnv("REPLICATE_MODEL_ANIMATION") || hasEnv("REPLICATE_MODEL_3D") ? "CONNECTED" : "REQUIRES_AUTHORIZATION") : "NOT_CONFIGURED" }),
   },
   {
-    provider: "tts", name: "Text-to-speech / voice", category: "media", envVars: ["TTS_PROVIDER_API_KEY"], phase: 4,
-    docsHe: "שיבוט קול רק בהסכמה ובדגימות מאושרות.", docsEn: "Voice cloning only with consent and approved samples.",
-    status: envStatus("TTS_PROVIDER_API_KEY"),
+    provider: "tts", name: "ElevenLabs (voice-over)", category: "media", envVars: ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"], phase: 3,
+    docsHe: "קריינות בסטודיו. שיבוט קול של הבעלים — רק בהסכמה מפורשת ובדגימות מאושרות (תאום דיגיטלי).", docsEn: "Voice-overs in the studio. Owner voice cloning only with explicit consent and approved samples (Digital Twin).",
+    status: envStatus("ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"),
   },
 ];
 
