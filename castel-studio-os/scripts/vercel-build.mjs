@@ -9,8 +9,12 @@
 import { execSync } from "node:child_process";
 
 const env = { ...process.env };
-const pooled = env.DATABASE_URL || env.POSTGRES_PRISMA_URL || env.POSTGRES_URL;
-const direct = env.DATABASE_URL_UNPOOLED || env.POSTGRES_URL_NON_POOLING || env.DIRECT_DATABASE_URL || pooled;
+// Neon/Vercel name the variables differently depending on the "custom prefix" chosen at connect time.
+const first = (...keys) => keys.map((k) => env[k]).find((v) => v && v.trim());
+const pooled = first("DATABASE_URL", "DATABASE_POSTGRES_PRISMA_URL", "DATABASE_POSTGRES_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "STORAGE_URL");
+const direct =
+  first("DATABASE_URL_UNPOOLED", "DATABASE_POSTGRES_URL_NON_POOLING", "POSTGRES_URL_NON_POOLING", "STORAGE_URL_UNPOOLED", "DIRECT_DATABASE_URL") || pooled;
+console.log(`Database: pooled=${pooled ? "found" : "missing"}, direct=${direct && direct !== pooled ? "found" : "same as pooled"}`);
 
 if (!pooled) {
   console.error(
