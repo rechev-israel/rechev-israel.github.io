@@ -1,6 +1,6 @@
 # CASTEL STUDIO AI Business OS — Feature Status
 
-_Last updated: 2026-11-19 · Packages 2, 3, 4 & Integration Center complete · **Deployments frozen** (owner decision — `vercel.json` `git.deploymentEnabled: false`); live site still runs the Phase 2 batch 1 build_
+_Last updated: 2026-11-19 · Packages 2, 3, 4 & Integration Center complete · **Deployed** (owner approved go-live of all packages, 2026-11-19)_
 
 Legend: ✅ working & tested · 🟡 partial · 🔑 built, needs credentials to activate · 📋 planned
 

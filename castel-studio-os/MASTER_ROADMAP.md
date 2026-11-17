@@ -7,7 +7,7 @@
 - **Package 2** — CRM lead pipeline + unified timeline + loyalty tiers/milestones, academy student portal + payment reminders + analytics, 12-month P&L (+CSV), AI monthly budget cap, WhatsApp kill switch, Cali signed sync endpoint + duplicate-free import, deployment freeze.
 
 ## Deployment policy
-Deployments are **frozen** until the owner approves going live (`vercel.json` → `git.deploymentEnabled: false`). To go live: set it to `true` (or remove the `git` block) and push; migrations are additive and apply automatically.
+Deployments are **live** (owner approved 2026-11-19): every push to the production branch deploys; migrations are additive and apply automatically at build. `SECRETS_ENCRYPTION_KEY` and `CRON_SECRET` are set in Vercel.
 
 - **Package 3** — AI Creative Studio: built-in brand graphic designer, OpenAI/Replicate/ElevenLabs adapters (pending configuration), async jobs + cron polling, output persistence, asset library with approval, brand kit, AI prompt writer.
 
