@@ -5,7 +5,8 @@ import { pageGuard } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime, formatILS, fullName } from "@/lib/utils";
-import { updateCustomerAction, addNoteAction, deleteNoteAction, logInteractionAction, archiveCustomerAction, createFollowUpTaskAction } from "@/server/actions/crm";
+import { updateCustomerAction, addNoteAction, deleteNoteAction, logInteractionAction, archiveCustomerAction, createFollowUpTaskAction, setCustomerBlockedAction } from "@/server/actions/crm";
+import { ActionForm as BlockForm, SubmitButton as BlockSubmit } from "@/components/forms";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, EmptyState, Label, PageHeader, Select, Stat, Table, Td, Textarea, Th, buttonClass } from "@/components/ui";
 import { CustomerFields, segmentTone } from "@/components/crm/customer-fields";
@@ -60,6 +61,23 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         }
       />
       {c.archivedAt && <Badge tone="warning" className="mb-4">{t.crm.archived}</Badge>}
+      {can(user.role, "crm.delete") && (c.status === "BLOCKED" ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/40 bg-danger/10 p-4">
+          <div className="text-sm"><b className="text-danger">🚫 {locale === "he" ? "הלקוח חסום" : "Customer blocked"}</b><p className="mt-0.5 text-xs text-muted">{locale === "he" ? "לא יכול לקבוע תור באתר, לא מקבל הודעות, ו״התורים שלי״ סגור בפניו. אפשר עדיין לקבוע לו תור ידנית מהמערכת." : "Can't book online, gets no messages, and \"My appointments\" is closed. You can still book him manually."}</p></div>
+          <BlockForm action={setCustomerBlockedAction}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="block" value="0" /><BlockSubmit variant="secondary" size="sm">{locale === "he" ? "ביטול חסימה" : "Unblock"}</BlockSubmit></BlockForm>
+        </div>
+      ) : (
+        <details className="mb-4 rounded-2xl border border-border p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-danger">🚫 {locale === "he" ? "חסימת לקוח" : "Block customer"}</summary>
+          <BlockForm action={setCustomerBlockedAction} className="mt-3 space-y-2">
+            <input type="hidden" name="id" value={c.id} /><input type="hidden" name="block" value="1" />
+            <p className="text-xs text-muted">{locale === "he" ? "לקוח חסום לא יוכל לקבוע תור באתר (הוא יראה ״לא ניתן לקבוע תור אונליין, צרו קשר עם המספרה״ — בלי לדעת שנחסם), לא יקבל הודעות, ו״התורים שלי״ ייסגר בפניו." : "A blocked customer can't book online (sees a neutral message), gets no messages, and \"My appointments\" closes."}</p>
+            <input name="reason" maxLength={300} placeholder={locale === "he" ? "סיבה (לא חובה, רק בשבילך)" : "Reason (optional, private)"} className="h-11 w-full rounded-xl border border-border bg-surface-2 px-3 text-sm" />
+            <label className="flex items-center gap-2 text-xs"><input type="checkbox" name="cancelFuture" className="h-4 w-4 accent-[var(--gold)]" /> {locale === "he" ? "לבטל גם את התורים העתידיים שלו" : "Also cancel his upcoming appointments"}</label>
+            <BlockSubmit variant="danger" size="sm">{locale === "he" ? "חסימה" : "Block"}</BlockSubmit>
+          </BlockForm>
+        </details>
+      ))}
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label={L("דרגת נאמנות", "Loyalty tier")} value={<span className="gold-text">{tierLabel}</span>} hint={next ? L(`עוד ${next.remaining} ביקורים לאבן דרך ${next.at}`, `${next.remaining} visits to milestone ${next.at}`) : undefined} />

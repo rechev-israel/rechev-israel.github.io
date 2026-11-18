@@ -511,6 +511,15 @@ d("online booking (PostgreSQL)", () => {
     await db.availabilityRule.deleteMany({ where: { branchId: branch.id, kind: "premium" } });
   });
 
+  it("a blocked customer can't book online and 'My appointments' is closed", async () => {
+    const portal = await import("@/server/services/customer-portal");
+    await db.customer.create({ data: { businessId: biz, firstName: "חסום", phone: "+972527770000", status: "BLOCKED" } });
+    const d7 = "2027-03-30";
+    const sl = (await ob.getSlots(biz, { serviceId, staffId: "any", date: d7 }, now)).slots;
+    await expect(ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: d7, start: sl[sl.length - 1].start, name: "שם אחר", phone: "052-777-0000" }, now)).rejects.toMatchObject({ code: "blocked" });
+    expect(await portal.customerOverviewByPhone("0527770000")).toBeNull();
+  });
+
   it("time off removes availability; closed booking refuses", async () => {
     await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);

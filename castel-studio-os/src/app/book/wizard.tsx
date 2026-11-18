@@ -11,6 +11,7 @@ const ERR: Record<string, [string, string]> = {
   slot_taken: ["השעה הזאת נתפסה הרגע. בחרו שעה אחרת.", "That time was just taken. Pick another."],
   phone: ["מספר הטלפון לא תקין.", "Invalid phone number."],
   limit: ["כבר יש לכם תורים פתוחים. לשינוי צרו קשר עם המספרה.", "You already have upcoming bookings. Contact the shop to change."],
+  blocked: ["לא ניתן לקבוע תור אונליין. לפרטים צרו קשר עם המספרה.", "Online booking isn't available. Please contact the shop."],
   rate_limited: ["יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.", "Too many attempts. Try again in a few minutes."],
   validation: ["נא למלא שם וטלפון ולאשר את התנאים.", "Please fill name and phone and accept the terms."],
   disabled: ["קביעת תורים אונליין סגורה כרגע.", "Online booking is currently closed."],

@@ -118,3 +118,33 @@ export async function draftBirthdayCampaignAction(_: ActionState, fd: FormData):
     return { ok: true, message: `✓ ${recipients.length} → /approvals` };
   });
 }
+
+/** Block / unblock a customer: a blocked customer can't book online, gets no messages, and "My appointments" is closed. */
+export async function setCustomerBlockedAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("crm.delete"); // owner / manager
+    const id = String(fd.get("id") ?? "");
+    const block = fd.get("block") === "1";
+    const reason = String(fd.get("reason") ?? "").trim().slice(0, 300);
+    const c = await db.customer.findFirst({ where: { id, businessId: user.businessId } });
+    if (!c) throw new Error("not found");
+    let cancelled = 0;
+    if (block) {
+      await db.customer.update({ where: { id }, data: { status: "BLOCKED" } });
+      if (fd.get("cancelFuture") === "on") {
+        const r = await db.appointment.updateMany({ where: { customerId: id, status: { in: ["SCHEDULED", "CONFIRMED"] }, startsAt: { gt: new Date() } }, data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: "customer_blocked" } });
+        cancelled = r.count;
+      }
+      // Nothing waiting to be sent to a blocked customer.
+      await db.outboundMessage.updateMany({ where: { customerId: id, status: { in: ["DRAFT", "PENDING_APPROVAL", "APPROVED"] } }, data: { status: "CANCELLED", error: "blocked" } });
+      await db.customerNote.create({ data: { customerId: id, authorId: user.id, body: `🚫 הלקוח נחסם${reason ? `: ${reason}` : ""}${cancelled ? ` · בוטלו ${cancelled} תורים עתידיים` : ""}`, pinned: true } });
+    } else {
+      await db.customer.update({ where: { id }, data: { status: "ACTIVE" } });
+      await recomputeCustomerStats(user.businessId, id).catch(() => {});
+      await db.customerNote.create({ data: { customerId: id, authorId: user.id, body: "✓ החסימה הוסרה" } });
+    }
+    await audit({ businessId: user.businessId, userId: user.id, action: block ? "customer.block" : "customer.unblock", entityType: "Customer", entityId: id, metadata: { reason: reason || undefined, cancelled } });
+    revalidatePath(`/crm/${id}`); revalidatePath("/crm"); revalidatePath("/bookings");
+    return { ok: true, message: block ? `הלקוח נחסם${cancelled ? ` · בוטלו ${cancelled} תורים עתידיים` : ""}.` : "החסימה הוסרה." };
+  });
+}

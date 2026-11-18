@@ -19,7 +19,7 @@ export const OCCUPYING = ["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW"] as c
 export const hashManageToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export class BookingError extends Error {
-  constructor(public code: "disabled" | "service" | "staff" | "date" | "slot_taken" | "phone" | "limit" | "not_found" | "too_late" | "busy") { super(code); }
+  constructor(public code: "disabled" | "service" | "staff" | "date" | "slot_taken" | "phone" | "limit" | "blocked" | "not_found" | "too_late" | "busy") { super(code); }
 }
 
 /** Single-business deployment: the public site belongs to the first business. */
@@ -193,7 +193,7 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
         // Returning customer typed a different name: keep the CRM name, but record what was typed on the booking.
         const typedName = input.name.trim();
         const nameNote = customer && [customer.firstName, customer.lastName].filter(Boolean).join(" ") !== typedName ? `נקבע בשם: ${typedName}` : "";
-        if (customer?.status === "BLOCKED") throw new BookingError("limit");
+        if (customer?.status === "BLOCKED") throw new BookingError("blocked");
         if (customer) {
           const active = await tx.appointment.count({ where: { customerId: customer.id, status: { in: [...ACTIVE] }, startsAt: { gt: now } } });
           if (active >= settings.maxActivePerPhone) throw new BookingError("limit");

@@ -24,7 +24,7 @@
       wd: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"], prevM: "החודש הקודם", nextM: "החודש הבא", free: "פנוי", full: "אין שעות פנויות",
       legendFree: "יש שעות פנויות", legendNone: "סגור / מלא", customer: "שם", service: "שירות", date: "תאריך", timeL: "שעה", duration: "משך", status: "סטטוס",
       st: { CONFIRMED: "מאושר", SCHEDULED: "ממתין לאישור", CANCELLED: "בוטל", COMPLETED: "הושלם", NO_SHOW: "לא הגיע" }, noDays: "אין כרגע ימים פנויים. נסו שוב מאוחר יותר או צרו קשר.",
-      e: { slot_taken: "השעה הזאת נתפסה הרגע. בחרו שעה אחרת.", phone: "מספר הטלפון לא תקין.", limit: "כבר יש לכם תורים פתוחים. לשינוי צרו קשר עם המספרה.", rate_limited: "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.", validation: "נא למלא שם וטלפון ולאשר.", disabled: "קביעת תורים סגורה כרגע." }
+      e: { slot_taken: "השעה הזאת נתפסה הרגע. בחרו שעה אחרת.", phone: "מספר הטלפון לא תקין.", limit: "כבר יש לכם תורים פתוחים. לשינוי צרו קשר עם המספרה.", blocked: "לא ניתן לקבוע תור אונליין. לפרטים צרו קשר עם המספרה.", rate_limited: "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.", validation: "נא למלא שם וטלפון ולאשר.", disabled: "קביעת תורים סגורה כרגע." }
     },
     en: {
       loading: "Loading…", svc: "Choose a service", barber: "Choose a barber", any: "Any available", day: "Choose a day", time: "Choose a time",
@@ -40,7 +40,7 @@
       wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], prevM: "Previous month", nextM: "Next month", free: "free", full: "No free times",
       legendFree: "Available", legendNone: "Closed / full", customer: "Name", service: "Service", date: "Date", timeL: "Time", duration: "Duration", status: "Status",
       st: { CONFIRMED: "Confirmed", SCHEDULED: "Awaiting confirmation", CANCELLED: "Cancelled", COMPLETED: "Completed", NO_SHOW: "No-show" }, noDays: "No available days right now. Please try later or contact us.",
-      e: { slot_taken: "That time was just taken. Pick another.", phone: "Invalid phone number.", limit: "You already have upcoming bookings. Contact the shop to change.", rate_limited: "Too many attempts. Try again in a few minutes.", validation: "Please fill name and phone and accept.", disabled: "Booking is closed right now." }
+      e: { slot_taken: "That time was just taken. Pick another.", phone: "Invalid phone number.", limit: "You already have upcoming bookings. Contact the shop to change.", blocked: "Online booking isn't available. Please contact the shop.", rate_limited: "Too many attempts. Try again in a few minutes.", validation: "Please fill name and phone and accept.", disabled: "Booking is closed right now." }
     }
   };
   var lang = function () { return document.documentElement.lang === "en" ? "en" : "he"; };
