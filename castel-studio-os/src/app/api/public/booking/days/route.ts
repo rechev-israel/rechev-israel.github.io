@@ -20,7 +20,7 @@ async function handle(req: Request) {
   const b = await publicBusiness();
   if (!b) return Response.json({ error: "disabled" }, { status: 503 });
   try {
-    return Response.json({ days: await availableDays(b.id, { serviceId, staffId }) }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json({ days: await availableDays(b.id, { serviceId, staffId, withSlots: u.searchParams.get("slots") === "1" }) }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return bookingErrorResponse(e);
   }

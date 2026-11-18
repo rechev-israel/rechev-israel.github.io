@@ -19,7 +19,7 @@
       copy: "העתקת קישור", copied: "הועתק", closed: "קביעת תורים אונליין תיפתח בקרוב.", contact: "בינתיים אפשר לפנות אלינו:",
       tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", cancelUntil: "ביטול אונליין אפשרי עד {h} שעות לפני התור.",
       min: "דק׳", err: "משהו השתבש. נסו שוב.", notFound: "התור לא נמצא.",
-      hello: "שלום {n}, הפרטים שלך מולאו אוטומטית.", notMe: "לא אני", remember: "לזכור את השם והטלפון במכשיר הזה (נשמר רק בטלפון שלך)",
+      hello: "שלום {n}, הפרטים שלך מולאו אוטומטית.", notMe: "לא אני", hi: "שלום {n} 👋", quickNote: "התור יישמר על שמך ובטלפון שלך. בלחיצה על קביעת התור את/ה מאשר/ת שימוש בפרטים לניהול התור.", remember: "לזכור את השם והטלפון במכשיר הזה (נשמר רק בטלפון שלך)",
       wd: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"], prevM: "החודש הקודם", nextM: "החודש הבא", free: "פנוי", full: "אין שעות פנויות",
       legendFree: "יש שעות פנויות", legendNone: "סגור / מלא", customer: "שם", service: "שירות", date: "תאריך", timeL: "שעה", duration: "משך", status: "סטטוס",
       st: { CONFIRMED: "מאושר", SCHEDULED: "ממתין לאישור", CANCELLED: "בוטל", COMPLETED: "הושלם", NO_SHOW: "לא הגיע" }, noDays: "אין כרגע ימים פנויים. נסו שוב מאוחר יותר או צרו קשר.",
@@ -34,7 +34,7 @@
       copy: "Copy link", copied: "Copied", closed: "Online booking opens soon.", contact: "Meanwhile, reach us:",
       tooLate: "Too late to cancel online. Please call the shop.", cancelUntil: "Online cancellation up to {h}h before.",
       min: "min", err: "Something went wrong. Please try again.", notFound: "Booking not found.",
-      hello: "Hi {n}, your details were filled in automatically.", notMe: "Not me", remember: "Remember my name and phone on this device (stored only on your phone)",
+      hello: "Hi {n}, your details were filled in automatically.", notMe: "Not me", hi: "Hi {n} 👋", quickNote: "Booked under your saved name and phone. By confirming you agree they are used to manage this booking.", remember: "Remember my name and phone on this device (stored only on your phone)",
       wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], prevM: "Previous month", nextM: "Next month", free: "free", full: "No free times",
       legendFree: "Available", legendNone: "Closed / full", customer: "Name", service: "Service", date: "Date", timeL: "Time", duration: "Duration", status: "Status",
       st: { CONFIRMED: "Confirmed", SCHEDULED: "Awaiting confirmation", CANCELLED: "Cancelled", COMPLETED: "Completed", NO_SHOW: "No-show" }, noDays: "No available days right now. Please try later or contact us.",
@@ -116,17 +116,35 @@
     h += '</div><div class="bk-legend"><span><i class="dot avail"></i>' + L.legendFree + '</span><span><i class="dot none"></i>' + L.legendNone + "</span></div></div>";
     return h;
   }
-  function loadDays() {
+  // ── Availability cache: one request per service returns all days AND their times; prefetched on page load ──
+  var cache = {}, FRESH_MS = 90000;
+  function cacheKey(svc, staff) { return svc + "|" + staff; }
+  function fetchDays(svc, staff, force) {
+    var k = cacheKey(svc, staff), c = cache[k];
+    if (!force && c && (c.days || c.p) && Date.now() - c.at < FRESH_MS) return c.p || Promise.resolve(c.days);
+    var entry = { at: Date.now(), days: null, p: null };
+    entry.p = get("/days?serviceId=" + svc + "&staffId=" + staff + "&slots=1").then(function (d) { entry.days = d.days || []; entry.p = null; return entry.days; })
+      .catch(function () { delete cache[k]; return []; });
+    cache[k] = entry;
+    return entry.p;
+  }
+  function prefetchAll() { if (S.cfg && S.cfg.open) S.cfg.services.forEach(function (sv) { fetchDays(sv.id, S.staff); }); }
+  function applyDays(days) {
+    S.days = days;
+    var firstFree = days.filter(function (x) { return x.free > 0; })[0];
+    if (!S.month || !days.some(function (x) { return ym(x.date) === S.month; })) S.month = firstFree ? ym(firstFree.date) : (days[0] ? ym(days[0].date) : "");
+  }
+
+  function loadDays(force) {
     if (!S.service) return;
-    S.days = null; S.date = ""; S.slots = null; S.start = null; render();
-    var key = S.service + S.staff;
-    get("/days?serviceId=" + S.service + "&staffId=" + S.staff).then(function (d) {
-      if (key !== S.service + S.staff) return;
-      S.days = d.days || [];
-      var firstFree = S.days.filter(function (x) { return x.free > 0; })[0];
-      S.month = firstFree ? ym(firstFree.date) : (S.days[0] ? ym(S.days[0].date) : "");
-      render();
-    }).catch(function () { S.days = []; render(); });
+    S.date = ""; S.slots = null; S.start = null;
+    var k = cacheKey(S.service, S.staff), c = cache[k];
+    if (!force && c && c.days && Date.now() - c.at < FRESH_MS) { applyDays(c.days); render(); return; }
+    S.days = null; render();
+    fetchDays(S.service, S.staff, force).then(function (days) {
+      if (k !== cacheKey(S.service, S.staff)) return;
+      applyDays(days); render();
+    });
   }
 
   function render() {
@@ -156,18 +174,27 @@
       var svc = c.services.filter(function (s) { return s.id === S.service; })[0];
       var slot = (S.slots || []).filter(function (x) { return x.start === S.start; })[0];
       var me = S.me;
-      h += '<form class="bk-step" id="bkForm" data-step="details" novalidate><h3 class="bk-h"><span class="bk-n">' + n + "</span>" + L.details + "</h3>" +
-        '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span> · " + svc.durationMin + " " + L.min + " · ₪" + svc.price + "</p>" +
-        (me ? '<p class="bk-hello">' + esc(L.hello.replace("{n}", me.name.split(" ")[0])) + ' <button type="button" class="bk-link-btn" data-forget>' + L.notMe + "</button></p>" : "") +
-        '<div class="bk-grid2"><label class="bk-field">' + L.name + '<input name="name" autocomplete="name" maxlength="80" required value="' + esc(me ? me.name : "") + '"></label>' +
-        '<label class="bk-field">' + L.phone + '<input name="phone" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="050-0000000" maxlength="20" required value="' + esc(me ? me.phone : "") + '"></label></div>' +
-        '<label class="bk-field">' + L.note + '<input name="notes" maxlength="500"></label>' +
-        '<input name="website" tabindex="-1" autocomplete="off" class="bk-hp" aria-hidden="true">' +
-        '<label class="bk-check"><input type="checkbox" name="terms"' + (me ? " checked" : "") + "> " + L.terms + "</label>" +
-        '<label class="bk-check"><input type="checkbox" name="mkt"> ' + L.mkt + "</label>" +
-        '<label class="bk-check"><input type="checkbox" name="remember" checked> ' + L.remember + "</label>" +
-        (S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + "</p>" : "") +
-        '<button class="btn bk-submit" type="submit"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? L.loading : L.book) + "</button></form>";
+      var sum = '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span> · " + svc.durationMin + " " + L.min + " · ₪" + svc.price + "</p>";
+      var err = S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + "</p>" : "";
+      var btn = '<button class="btn bk-submit" type="submit"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? L.loading : L.book) + "</button>";
+      var hp = '<input name="website" tabindex="-1" autocomplete="off" class="bk-hp" aria-hidden="true">';
+      if (me) {
+        // Returning customer on this device: no form at all — just a greeting and one button.
+        h += '<form class="bk-step bk-quick" id="bkForm" data-step="details" novalidate>' +
+          '<p class="bk-hi">' + esc(L.hi.replace("{n}", me.name.split(" ")[0])) + "</p>" + sum +
+          '<input type="hidden" name="name" value="' + esc(me.name) + '"><input type="hidden" name="phone" value="' + esc(me.phone) + '"><input type="hidden" name="notes" value="">' +
+          '<input type="hidden" name="terms" value="1"><input type="hidden" name="mkt" value=""><input type="hidden" name="remember" value="1">' + hp +
+          err + btn + '<p class="bk-muted bk-small bk-quick-note">' + L.quickNote + ' <button type="button" class="bk-link-btn" data-forget>' + L.notMe + "</button></p></form>";
+      } else {
+        h += '<form class="bk-step" id="bkForm" data-step="details" novalidate><h3 class="bk-h"><span class="bk-n">' + n + "</span>" + L.details + "</h3>" + sum +
+          '<div class="bk-grid2"><label class="bk-field">' + L.name + '<input name="name" autocomplete="name" maxlength="80" required></label>' +
+          '<label class="bk-field">' + L.phone + '<input name="phone" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="050-0000000" maxlength="20" required></label></div>' +
+          '<label class="bk-field">' + L.note + '<input name="notes" maxlength="500"></label>' + hp +
+          '<label class="bk-check"><input type="checkbox" name="terms"> ' + L.terms + "</label>" +
+          '<label class="bk-check"><input type="checkbox" name="mkt"> ' + L.mkt + "</label>" +
+          '<label class="bk-check"><input type="checkbox" name="remember" checked> ' + L.remember + "</label>" +
+          err + btn + "</form>";
+      }
     }
     root.innerHTML = h;
     animateNew();
@@ -201,7 +228,10 @@
 
   function loadSlots() {
     if (!S.service || !S.date) return;
-    S.slots = null; S.start = null; render();
+    S.start = null;
+    var day = (S.days || []).filter(function (x) { return x.date === S.date; })[0];
+    if (day && day.slots) { S.slots = day.slots; render(); return; } // instant: already prefetched
+    S.slots = null; render();
     var key = S.service + S.staff + S.date;
     get("/slots?serviceId=" + S.service + "&staffId=" + S.staff + "&date=" + S.date).then(function (d) {
       if (key !== S.service + S.staff + S.date) return;
@@ -242,31 +272,33 @@
     }
   });
 
+  function on(f, name) { var el = f.elements[name]; return !!el && (el.type === "checkbox" ? el.checked : el.value === "1"); }
   root.addEventListener("submit", function (e) {
     e.preventDefault();
     var f = e.target, L = t();
-    if (!f.terms.checked || f.name.value.trim().length < 2 || f.phone.value.trim().length < 9) { S.error = L.e.validation; render(); return; }
-    var vals = { name: f.name.value, phone: f.phone.value, notes: f.notes.value, remember: f.remember.checked };
+    if (!on(f, "terms") || f.name.value.trim().length < 2 || f.phone.value.trim().length < 9) { S.error = L.e.validation; render(); return; }
+    var vals = { name: f.name.value, phone: f.phone.value, notes: f.notes.value, remember: on(f, "remember") };
     S.busy = true; S.error = ""; render();
-    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: f.mkt.checked, terms: true, website: f.website.value })
+    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: on(f, "mkt"), terms: true, website: f.website.value })
       .then(function (d) {
         S.busy = false;
         if (d._ok && d.token) {
           if (vals.remember) { saveMe(vals); S.me = readMe(); } else { forgetMe(); S.me = null; }
+          cache = {};
           history.replaceState(null, "", "?booking=" + encodeURIComponent(d.token) + "#book");
           return openManage(d.token).then(function () { root.scrollIntoView({ behavior: "smooth", block: "start" }); });
         }
         S.error = L.e[d.error] || L.err;
         render();
         var nf = document.getElementById("bkForm");
-        if (nf) { nf.name.value = vals.name; nf.phone.value = vals.phone; nf.notes.value = vals.notes; nf.terms.checked = true; nf.remember.checked = vals.remember; }
-        if (d.error === "slot_taken") loadSlots();
+        if (nf && nf.terms.type === "checkbox") { nf.name.value = vals.name; nf.phone.value = vals.phone; nf.notes.value = vals.notes; nf.terms.checked = true; nf.remember.checked = vals.remember; }
+        if (d.error === "slot_taken") { var dt = S.date; fetchDays(S.service, S.staff, true).then(function (days) { applyDays(days); S.date = dt; loadSlots(); }); }
       }).catch(function () { S.busy = false; S.error = L.err; render(); });
   });
 
   // Re-render when the site language toggles (keeps typed values).
   new MutationObserver(function () {
-    var f = document.getElementById("bkForm"), v = f && { n: f.name.value, p: f.phone.value, o: f.notes.value, t: f.terms.checked, m: f.mkt.checked, r: f.remember.checked };
+    var f = document.getElementById("bkForm"), v = f && f.terms.type === "checkbox" && { n: f.name.value, p: f.phone.value, o: f.notes.value, t: f.terms.checked, m: f.mkt.checked, r: f.remember.checked };
     render();
     var g = document.getElementById("bkForm");
     if (g && v) { g.name.value = v.n; g.phone.value = v.p; g.notes.value = v.o; g.terms.checked = v.t; g.mkt.checked = v.m; g.remember.checked = v.r; }
@@ -279,6 +311,7 @@
       if (d.open && d.services.length === 1) S.service = d.services[0].id;
       if (d.open && d.staff.length === 1) S.staff = d.staff[0].id;
       render();
+      prefetchAll();
       if (S.service) loadDays();
     }).catch(function () { S.cfg = { open: false }; render(); });
   }

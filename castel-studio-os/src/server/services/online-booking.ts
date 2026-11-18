@@ -107,7 +107,7 @@ export async function staffDays(businessId: string, date: string, staffIds: stri
 }
 
 /** Which bookable days have at least one free slot for this service/barber (for the date calendar). */
-export async function availableDays(businessId: string, q: { serviceId: string; staffId: string }, now = new Date()) {
+export async function availableDays(businessId: string, q: { serviceId: string; staffId: string; withSlots?: boolean }, now = new Date()) {
   const settings = await getBookingSettings(businessId);
   if (!settings.enabled) throw new BookingError("disabled");
   const service = await db.service.findFirst({ where: { id: q.serviceId, businessId, isActive: true, bookableOnline: true } });
@@ -121,7 +121,9 @@ export async function availableDays(businessId: string, q: { serviceId: string; 
   if (!r) return [];
   return days.map((day, i) => {
     const slots = computeSlots({ staff: daySchedule(day, ids, r), durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin });
-    return { date: dates[i], free: slots.length };
+    if (!q.withSlots) return { date: dates[i], free: slots.length };
+    // Times for every day in one response, so the website can show them instantly (re-validated on booking).
+    return { date: dates[i], free: slots.length, slots: slots.map((x) => { const p = zonedParts(new Date(x.start)); return { start: x.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}` }; }) };
   });
 }
 

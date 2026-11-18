@@ -866,7 +866,7 @@ html[dir="ltr"] .pp-num { text-align: start; }
 .bk-link { flex: 1 1 260px; margin: 0; font-size: 14px; }
 .bk-check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--muted); margin: 8px 0; }
 .bk-check input { accent-color: var(--gold); width: 18px; height: 18px; margin-top: 3px; flex: none; }
-.bk-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.bk-hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); opacity: 0; pointer-events: none; }
 .bk-err { color: #e88; border: 1px solid rgba(232,136,136,.35); background: rgba(232,136,136,.08); padding: 10px 14px; margin: 12px 0 0; font-size: 15px; }
 .bk-submit { width: 100%; margin-top: 16px; justify-content: center; }
 .bk-submit[disabled] { opacity: .55; pointer-events: none; }
@@ -912,3 +912,7 @@ html[dir="ltr"] .pp-num { text-align: start; }
 .bk-hello { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--hair); background: rgba(198,164,119,.07); color: var(--ivory); font-size: 15px; }
 .bk-link-btn { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; margin-inline-start: 8px; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .bk-enter { animation: none; } }
+.bk-quick { text-align: center; border-color: var(--hair); }
+.bk-hi { font-family: var(--serif); font-size: clamp(34px, 8vw, 46px); line-height: 1.1; color: var(--ivory); margin: 4px 0 16px; }
+.bk-quick .bk-sum { text-align: start; }
+.bk-quick-note { margin: 14px 0 0; }
