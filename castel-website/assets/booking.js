@@ -52,6 +52,9 @@
   var MEM = "castel.booking.me";
   function readMe() { try { var v = JSON.parse(localStorage.getItem(MEM) || "null"); return v && typeof v.name === "string" && typeof v.phone === "string" ? v : null; } catch (e) { return null; } }
   function saveMe(v) { try { localStorage.setItem(MEM, JSON.stringify({ name: v.name.trim().slice(0, 80), phone: v.phone.trim().slice(0, 20) })); } catch (e) { /* private mode */ } }
+  var DEV = "castel.booking.device";
+  function readDev() { try { var d = localStorage.getItem(DEV); return d && /^[A-Za-z0-9_-]{30,64}$/.test(d) ? d : ""; } catch (e) { return ""; } }
+  function saveDev(d) { try { if (d) { localStorage.setItem(DEV, d); window.dispatchEvent(new Event("castel:device")); } } catch (e) { /* private mode */ } }
   function forgetMe() { try { localStorage.removeItem(MEM); } catch (e) { /* ignore */ } }
 
   // ── Guided flow: scroll to the next step and reveal it softly ──
@@ -241,6 +244,7 @@
 
   function openManage(token) {
     S.token = token;
+    if (!readDev()) post("/../me/claim", { t: token }).then(function (r) { if (r._ok && r.deviceToken) saveDev(r.deviceToken); }).catch(function () {});
     return get("/manage?t=" + encodeURIComponent(token)).then(function (d) { S.manage = d._status === 200 ? d : { error: true }; render(); })
       .catch(function () { S.manage = { error: true }; render(); });
   }
@@ -279,10 +283,11 @@
     if (!on(f, "terms") || f.name.value.trim().length < 2 || f.phone.value.trim().length < 9) { S.error = L.e.validation; render(); return; }
     var vals = { name: f.name.value, phone: f.phone.value, notes: f.notes.value, remember: on(f, "remember") };
     S.busy = true; S.error = ""; render();
-    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: on(f, "mkt"), terms: true, website: f.website.value })
+    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: on(f, "mkt"), terms: true, deviceToken: readDev() || undefined, website: f.website.value })
       .then(function (d) {
         S.busy = false;
         if (d._ok && d.token) {
+          if (d.deviceToken) saveDev(d.deviceToken);
           if (vals.remember) { saveMe(vals); S.me = readMe(); } else { forgetMe(); S.me = null; }
           cache = {};
           history.replaceState(null, "", "?booking=" + encodeURIComponent(d.token) + "#book");
@@ -297,6 +302,7 @@
   });
 
   // Re-render when the site language toggles (keeps typed values).
+  window.addEventListener("castel:changed", function () { cache = {}; });
   new MutationObserver(function () {
     var f = document.getElementById("bkForm"), v = f && f.terms.type === "checkbox" && { n: f.name.value, p: f.phone.value, o: f.notes.value, t: f.terms.checked, m: f.mkt.checked, r: f.remember.checked };
     render();

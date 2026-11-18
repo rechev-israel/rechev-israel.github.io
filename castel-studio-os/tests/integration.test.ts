@@ -390,6 +390,32 @@ d("online booking (PostgreSQL)", () => {
     expect(await db.notification.count({ where: { entityId: a2.appointment.id, kind: "booking_rescheduled" } })).toBe(1);
   });
 
+  it("customer device key: my appointments, same key on rebooking, cancel, claim by link, unknown key gets nothing", async () => {
+    const portal = await import("@/server/services/customer-portal");
+    const date3 = "2027-03-16";
+    const sl = async () => (await ob.getSlots(biz, { serviceId, staffId: "any", date: date3 }, now)).slots;
+    const first = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: date3, start: (await sl())[0].start, name: "לקוח פורטל", phone: "0581112233" }, now);
+    expect(first.deviceToken).toMatch(/^[A-Za-z0-9_-]{30,}$/);
+    const o = await portal.customerOverview(first.deviceToken);
+    expect(o?.name).toBe("לקוח פורטל");
+    expect(o?.tier).toBe("NEW");
+    expect(o?.upcoming.length).toBe(1);
+    expect(await portal.customerOverview("x".repeat(43))).toBeNull();
+    // cancel from "my appointments", then rebook from the same device keeps the same key
+    expect((await portal.cancelFromPortal(first.deviceToken, first.appointment.id)).ok).toBe(true);
+    const again = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: date3, start: (await sl())[0].start, name: "לקוח פורטל", phone: "0581112233", deviceToken: first.deviceToken! }, now);
+    expect(again.deviceToken).toBe(first.deviceToken);
+    const o2 = await portal.customerOverview(first.deviceToken);
+    expect(o2?.history.some((h) => h.status === "CANCELLED")).toBe(true);
+    // someone else's key never shows this customer's data
+    const other = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: date3, start: (await sl())[0].start, name: "אחר", phone: "0589998877" }, now);
+    expect((await portal.customerOverview(other.deviceToken))?.name).toBe("אחר");
+    expect((await portal.cancelFromPortal(other.deviceToken, again.appointment.id)).ok).toBe(false);
+    // a device without a key can be linked with a booking's private link
+    const claimed = await portal.claimDeviceByManageToken(again.token);
+    expect((await portal.customerOverview(claimed))?.name).toBe("לקוח פורטל");
+  });
+
   it("time off removes availability; closed booking refuses", async () => {
     await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);

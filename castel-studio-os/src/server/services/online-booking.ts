@@ -140,7 +140,7 @@ export async function getSlots(businessId: string, q: { serviceId: string; staff
   return { service, slots: computeSlots({ staff: days, durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin }) };
 }
 
-export type BookingInput = { serviceId: string; staffId: string; date: string; start: number; name: string; phone: string; notes?: string; marketingConsent?: boolean; locale?: string };
+export type BookingInput = { serviceId: string; staffId: string; date: string; start: number; name: string; phone: string; notes?: string; marketingConsent?: boolean; locale?: string; deviceToken?: string };
 
 /** Create an online booking. Re-checks availability inside a SERIALIZABLE transaction, so two people can never take the same slot. */
 export async function createOnlineBooking(businessId: string, input: BookingInput, now = new Date()) {
@@ -204,7 +204,9 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
       await notifyAppointmentEvent(settings.autoConfirm ? "booking_created" : "booking_pending", appt.id);
       await emitAppointment(businessId, "appointment.created", appt.id).catch((e) => logger.warn("booking.emit_failed", { err: String(e) }));
       if (appt.customerId) await recomputeCustomerStats(businessId, appt.customerId).catch(() => {});
-      return { token, appointment: appt };
+      const { ensureDevice } = await import("./customer-portal");
+      const deviceToken = appt.customerId ? await ensureDevice(appt.customerId, input.deviceToken).catch(() => null) : null;
+      return { token, appointment: appt, deviceToken };
     } catch (e) {
       if (e instanceof BookingError) throw e;
       const code = (e as { code?: string }).code;

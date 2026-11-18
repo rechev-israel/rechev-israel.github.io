@@ -17,6 +17,7 @@ const schema = z.object({
   marketingConsent: z.boolean().optional(),
   terms: z.literal(true),
   website: z.string().max(0).optional(), // honeypot
+  deviceToken: z.string().max(80).optional(),
 });
 
 /** Public online booking. Rate limited, honeypot-protected; availability is re-validated server-side. */
@@ -36,8 +37,8 @@ async function handle(req: Request) {
   const b = await publicBusiness();
   if (!b) return Response.json({ error: "disabled" }, { status: 503 });
   try {
-    const { token } = await createOnlineBooking(b.id, parsed.data);
-    return Response.json({ ok: true, token, manageUrl: `/book/m/${token}` }, { status: 201 });
+    const { token, deviceToken } = await createOnlineBooking(b.id, parsed.data);
+    return Response.json({ ok: true, token, deviceToken, manageUrl: `/book/m/${token}` }, { status: 201 });
   } catch (e) {
     return bookingErrorResponse(e);
   }

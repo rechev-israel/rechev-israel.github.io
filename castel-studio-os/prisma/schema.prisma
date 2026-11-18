@@ -168,30 +168,31 @@ enum ConsentStatus {
 }
 
 model Customer {
-  id                       String         @id @default(cuid())
+  devices                  CustomerDevice[]
+  id                       String           @id @default(cuid())
   businessId               String
-  business                 Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business                 Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
   firstName                String
   lastName                 String?
   phone                    String?
   email                    String?
   birthday                 DateTime?
   gender                   String?
-  status                   CustomerStatus @default(ACTIVE)
+  status                   CustomerStatus   @default(ACTIVE)
   source                   String? // walk-in, instagram, referral, booking-app…
   tags                     String[]
   preferences              String? // preferred cut, products, barber
-  marketingConsentSms      ConsentStatus  @default(UNKNOWN)
-  marketingConsentEmail    ConsentStatus  @default(UNKNOWN)
-  marketingConsentWhatsapp ConsentStatus  @default(UNKNOWN)
+  marketingConsentSms      ConsentStatus    @default(UNKNOWN)
+  marketingConsentEmail    ConsentStatus    @default(UNKNOWN)
+  marketingConsentWhatsapp ConsentStatus    @default(UNKNOWN)
   consentUpdatedAt         DateTime?
   externalRef              String? // id in the external booking app, if ever linked
   lastVisitAt              DateTime?
-  totalSpent               Decimal        @default(0) @db.Decimal(12, 2)
-  visitCount               Int            @default(0)
+  totalSpent               Decimal          @default(0) @db.Decimal(12, 2)
+  visitCount               Int              @default(0)
   archivedAt               DateTime?
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
 
   notes            CustomerNote[]
   outboundMessages OutboundMessage[]
@@ -1070,4 +1071,17 @@ model PushSubscription {
   failures      Int       @default(0)
 
   @@index([businessId])
+}
+
+/// A customer's own phone/browser that booked online. The device keeps a random key (only its SHA-256 is stored here)
+/// that lets it open "My appointments" on the public website without a password.
+model CustomerDevice {
+  id         String    @id @default(cuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime?
+
+  @@index([customerId])
 }
