@@ -52,11 +52,11 @@ export const interactionSchema = z.object({
 
 export const serviceSchema = z.object({
   nameHe: z.string().trim().min(1).max(100),
-  nameEn: z.string().trim().min(1).max(100),
+  nameEn: z.string().trim().max(100).optional(),
   durationMin: z.coerce.number().int().min(5).max(600),
   price: z.coerce.number().min(0).max(100000),
   isActive: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
-});
+}).transform((v) => ({ ...v, nameEn: v.nameEn || v.nameHe })); // English name is optional: falls back to the Hebrew name
 
 export const appointmentSchema = z.object({
   customerId: optionalText(40),

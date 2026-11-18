@@ -13,7 +13,7 @@ function ServiceForm({ s, t, disabled }: { s?: Service; t: Dictionary; disabled:
   return (
     <ActionForm action={saveServiceAction.bind(null, s?.id ?? null)} resetOnSuccess={!s} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_100px_100px_auto_auto]">
       <div><Label>{t.bookings.nameHe}</Label><Input name="nameHe" defaultValue={s?.nameHe} required disabled={disabled} /><FieldError name="nameHe" /></div>
-      <div><Label>{t.bookings.nameEn}</Label><Input name="nameEn" defaultValue={s?.nameEn} required disabled={disabled} dir="ltr" /><FieldError name="nameEn" /></div>
+      {s?.nameEn && s.nameEn !== s.nameHe && <input type="hidden" name="nameEn" value={s.nameEn} />}
       <div><Label>{t.bookings.duration}</Label><Input name="durationMin" type="number" min={5} defaultValue={s?.durationMin ?? 30} disabled={disabled} /></div>
       <div><Label>{t.common.price} ₪</Label><Input name="price" type="number" min={0} defaultValue={s ? toNumber(s.price) : ""} required disabled={disabled} /><FieldError name="price" /></div>
       <label className="flex h-10 items-center gap-2 text-xs text-muted"><input type="checkbox" name="isActive" defaultChecked={s?.isActive ?? true} disabled={disabled} className="accent-[var(--gold)]" /> {t.bookings.active}</label>
