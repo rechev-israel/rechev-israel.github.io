@@ -41,6 +41,7 @@ async function executeAction(a: Action, automation: Automation, ctx: RunContext,
         },
         scheduledFor: a.delayHours ? new Date(Date.now() + a.delayHours * 3600_000) : null,
         automationRunId: runId,
+        auto: true,
       });
       return { action: a.type, ok: true, detail: `message ${m.id} → ${m.status}${m.error ? ` (${m.error})` : ""}` };
     }

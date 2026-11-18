@@ -790,6 +790,8 @@ enum MessageStatus {
 /// Every outbound customer communication. Nothing leaves the system unless status passes APPROVED
 /// and a real provider is configured.
 model OutboundMessage {
+  /// Values for the WhatsApp template parameters (name, date, time, service…).
+  templateVars      Json?
   id                String        @id @default(cuid())
   businessId        String
   business          Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1023,20 +1025,24 @@ model IntegrationSecret {
 
 /// Public online booking (replaces the external booking app). One row per business.
 model BookingSettings {
-  businessId        String   @id
-  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  enabled           Boolean  @default(false)
+  /// Service messages (confirmation, reminder, post-visit, academy) from automations are sent without manual approval.
+  autoSendTransactional Boolean  @default(true)
+  /// Marketing messages (e.g. birthday) are sent automatically — only to customers who opted in.
+  autoSendMarketing     Boolean  @default(false)
+  businessId            String   @id
+  business              Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  enabled               Boolean  @default(false)
   /// true = online bookings are CONFIRMED immediately; false = SCHEDULED, staff confirms.
-  autoConfirm       Boolean  @default(true)
-  slotStepMin       Int      @default(15)
-  minNoticeMin      Int      @default(60)
-  maxDaysAhead      Int      @default(30)
-  cancelNoticeMin   Int      @default(180)
-  bufferMin         Int      @default(0)
-  maxActivePerPhone Int      @default(2)
-  noteHe            String?
-  noteEn            String?
-  updatedAt         DateTime @updatedAt
+  autoConfirm           Boolean  @default(true)
+  slotStepMin           Int      @default(15)
+  minNoticeMin          Int      @default(60)
+  maxDaysAhead          Int      @default(30)
+  cancelNoticeMin       Int      @default(180)
+  bufferMin             Int      @default(0)
+  maxActivePerPhone     Int      @default(2)
+  noteHe                String?
+  noteEn                String?
+  updatedAt             DateTime @updatedAt
 }
 
 /// Closed periods: holidays (staffId null = whole shop) or a barber's vacation.

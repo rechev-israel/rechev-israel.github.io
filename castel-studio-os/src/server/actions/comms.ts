@@ -106,3 +106,15 @@ export async function markNotificationsReadAction(fd: FormData) {
 export async function bulkMessagesAction(prev: ActionState, fd: FormData): Promise<ActionState> {
   return fd.get("op") === "cancel" ? cancelMessagesAction(prev, fd) : approveMessagesAction(prev, fd);
 }
+
+export async function saveAutoSendAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("comms.approve"); // owner
+    const data = { autoSendTransactional: fd.get("autoSendTransactional") === "on", autoSendMarketing: fd.get("autoSendMarketing") === "on" };
+    await db.bookingSettings.upsert({ where: { businessId: user.businessId }, create: { businessId: user.businessId, ...data }, update: data });
+    const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
+    await ensureBuiltinAutomations(db, user.businessId);
+    await audit({ businessId: user.businessId, userId: user.id, action: "comms.autosend", entityType: "BookingSettings", metadata: data });
+    revalidatePath("/communications");
+  });
+}

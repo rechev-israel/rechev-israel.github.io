@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { formatDateTime, fullName } from "@/lib/utils";
 import { PROVIDERS } from "@/server/comms/providers";
 import { DEFAULT_TEMPLATES } from "@/server/comms/templates";
-import { bulkMessagesAction, composeMessageAction, saveTemplateAction } from "@/server/actions/comms";
+import { bulkMessagesAction, composeMessageAction, saveTemplateAction, saveAutoSendAction } from "@/server/actions/comms";
 import { ActionForm, FieldError, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, EmptyState, Input, Label, Notice, PageHeader, Select, Stat, Textarea, buttonClass } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
@@ -42,12 +42,23 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
     tab === "templates" ? db.messageTemplate.findMany({ where }) : Promise.resolve([]),
   ]);
   const c = (s: MessageStatus) => counts.find((x) => x.status === s)?._count ?? 0;
+  const auto = await db.bookingSettings.findUnique({ where: { businessId: user.businessId }, select: { autoSendTransactional: true, autoSendMarketing: true } });
   const canApprove = can(user.role, "comms.approve");
   const tabLabel = { queue: `${L("לאישור", "To approve")} (${c("PENDING_APPROVAL")})`, outbox: L("יוצא ומצב משלוח", "Outbox & delivery"), blocked: L("נחסמו / בוטלו", "Blocked / cancelled"), compose: L("הודעה חדשה", "New message"), templates: L("תבניות", "Templates") };
 
   return (
     <>
       <PageHeader title={t.nav.communications} subtitle={L("כל הודעה ללקוח עוברת כאן: טיוטה → אישור שלך → שליחה דרך ספק אמיתי → מעקב מסירה", "Every customer message passes here: draft → your approval → real provider → delivery tracking")} />
+      {can(user.role, "comms.approve") && (
+        <Card className="mb-4 border-gold/30">
+          <CardTitle>{L("שליחה אוטומטית מהאוטומציות", "Automatic sending from automations")}</CardTitle>
+          <ActionForm action={saveAutoSendAction} className="space-y-2">
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="autoSendTransactional" defaultChecked={auto ? auto.autoSendTransactional : true} className="mt-0.5 h-5 w-5 accent-[var(--gold)]" /><span><b>{L("הודעות שירות נשלחות לבד", "Service messages send automatically")}</b><br /><span className="text-xs text-muted">{L("אישור קביעת תור, תזכורת יום לפני, תודה אחרי ביקור, מענה לליד ותזכורת תשלום באקדמיה — בלי אישור ידני.", "Booking confirmation, day-before reminder, post-visit thanks, lead reply and academy payment reminder — no manual approval.")}</span></span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="autoSendMarketing" defaultChecked={Boolean(auto?.autoSendMarketing)} className="mt-0.5 h-5 w-5 accent-[var(--gold)]" /><span><b>{L("גם הודעות שיווק (יום הולדת) לבד", "Marketing (birthday) too")}</b><br /><span className="text-xs text-muted">{L("רק ללקוחות שסימנו הסכמה לקבל עדכונים. בלי סימון — ממתינות לאישור שלך.", "Only to customers who opted in. Off — they wait for your approval.")}</span></span></label>
+            <SubmitButton size="sm">{L("שמירה", "Save")}</SubmitButton>
+          </ActionForm>
+        </Card>
+      )}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label={L("ממתינות לאישור", "Awaiting approval")} value={c("PENDING_APPROVAL")} />
         <Stat label={L("אושרו, ממתינות לספק/מועד", "Approved, waiting")} value={c("APPROVED")} />

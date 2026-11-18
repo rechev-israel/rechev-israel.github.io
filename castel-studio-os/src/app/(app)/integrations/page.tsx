@@ -6,7 +6,9 @@ import { getIntegrationOverview } from "@/server/integrations/registry";
 import { storedSecretMeta } from "@/server/secrets/store";
 import { encryptionAvailable } from "@/server/secrets/crypto";
 import { appOrigin } from "@/server/integrations/origin";
-import { saveIntegrationAction, testIntegrationAction, removeIntegrationSecretAction } from "@/server/actions/integrations";
+import { saveIntegrationAction, testIntegrationAction, removeIntegrationSecretAction, createWhatsappTemplatesAction, whatsappTestSendAction } from "@/server/actions/integrations";
+import { whatsappTemplateStatus } from "@/server/integrations/registry";
+import { WA_TEMPLATES } from "@/server/comms/whatsapp-templates";
 import { formatDateTime } from "@/lib/utils";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Badge, Card, Input, Label, Notice, PageHeader } from "@/components/ui";
@@ -45,6 +47,10 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   const counts = list.reduce<Record<string, number>>((a, i) => ((a[i.state] = (a[i.state] ?? 0) + 1), a), {});
   const metaMsg = sp.meta ? META_MSG[sp.meta] : null;
   const ai = list.find((i) => i.provider === "anthropic")!;
+  const wa = list.find((i) => i.provider === "whatsapp");
+  const waTemplates = wa && wa.missing.length === 0 ? await whatsappTemplateStatus().catch((e) => ({ error: String(e instanceof Error ? e.message : e).slice(0, 200) })) : null;
+  const tplLabel: Record<string, string> = { booking_confirmation: "אישור קביעת תור", appointment_reminder: "תזכורת לתור", post_visit: "תודה אחרי ביקור", welcome: "ברוכים הבאים", academy_lead: "ליד אקדמיה", academy_payment: "תזכורת תשלום אקדמיה", birthday: "יום הולדת" };
+  const stTone = (st: string) => (st === "APPROVED" ? "success" : st === "PENDING" || st === "IN_APPEAL" ? "warning" : st === "MISSING" ? "neutral" : "danger");
 
   return (
     <>
@@ -162,6 +168,28 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
                   </ActionForm>
                 ))}
               </details>
+              )}
+
+              {i.provider === "whatsapp" && i.missing.length === 0 && (
+                <div className="mt-3 rounded-lg border border-border bg-surface-2/50 p-3">
+                  <p className="text-sm font-semibold text-gold">{L("תבניות הודעה (נדרשות ע״י Meta)", "Message templates (required by Meta)")}</p>
+                  {!waTemplates ? <p className="mt-1 text-xs text-muted">{L("כדי ליצור תבניות, הזינו למעלה את WhatsApp Business Account ID.", "Enter the WhatsApp Business Account ID above to create templates.")}</p>
+                    : "error" in waTemplates ? <Notice tone="danger" className="mt-2">{waTemplates.error}</Notice>
+                    : (
+                      <ul className="mt-2 space-y-1 text-xs">
+                        {waTemplates.map((t) => <li key={t.key} className="flex items-center justify-between gap-2"><span>{tplLabel[t.key] ?? t.key} <code dir="ltr" className="text-muted">{t.name}</code></span><Badge tone={stTone(t.status)}>{t.status === "APPROVED" ? L("מאושרת", "Approved") : t.status === "PENDING" ? L("בבדיקה", "Pending") : t.status === "MISSING" ? L("לא נוצרה", "Not created") : t.status}</Badge></li>)}
+                      </ul>
+                    )}
+                  {manage && waTemplates && !("error" in waTemplates) && waTemplates.some((t) => t.status === "MISSING" || t.status === "REJECTED") && (
+                    <ActionForm action={createWhatsappTemplatesAction} className="mt-2"><SubmitButton size="sm" pendingLabel={L("שולח…", "Submitting…")}>{L("יצירת כל התבניות ב-Meta", "Create all templates in Meta")} ({Object.keys(WA_TEMPLATES).length})</SubmitButton></ActionForm>
+                  )}
+                  {manage && (
+                    <ActionForm action={whatsappTestSendAction} className="mt-3 flex flex-wrap items-end gap-2">
+                      <div><Label>{L("שליחת הודעת בדיקה לטלפון", "Send a test to phone")}</Label><Input name="phone" dir="ltr" inputMode="tel" placeholder="050-0000000" className="w-44" /></div>
+                      <SubmitButton size="sm" variant="secondary" pendingLabel="…">{L("שליחה", "Send")}</SubmitButton>
+                    </ActionForm>
+                  )}
+                </div>
               )}
 
               <div className="mt-3 flex flex-wrap gap-2">

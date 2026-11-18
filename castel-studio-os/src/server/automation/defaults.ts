@@ -23,6 +23,14 @@ export const BUILTIN_AUTOMATIONS: Builtin[] = [
     },
   },
   {
+    key: "booking_confirmation",
+    name: "אישור קביעת תור",
+    description: "מיד אחרי שנקבע תור — הודעת WhatsApp ללקוח עם השירות, היום והשעה.",
+    trigger: "appointment.created",
+    isActive: true,
+    definition: { conditions: [], actions: [{ type: "message.draft", channel: "WHATSAPP", templateKey: "booking_confirmation" }] },
+  },
+  {
     key: "appointment_reminder",
     name: "תזכורת לתור",
     description: "כל בוקר: טיוטת תזכורת WhatsApp לכל תור של מחר (לאישור).",

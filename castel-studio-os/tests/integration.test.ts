@@ -113,6 +113,8 @@ d("automation engine (PostgreSQL)", () => {
     bizId = b.id;
     const u = await db.user.create({ data: { businessId: bizId, email: "auto@test.local", name: "A", passwordHash: "x", role: "OWNER" } });
     actor = { id: u.id, businessId: bizId };
+    // These tests cover the manual-approval flow (owner turned automatic sending off).
+    await db.bookingSettings.create({ data: { businessId: bizId, autoSendTransactional: false } });
     const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
     expect(await ensureBuiltinAutomations(db, bizId)).toBeGreaterThanOrEqual(7);
     expect(await ensureBuiltinAutomations(db, bizId)).toBe(0); // idempotent
@@ -234,6 +236,7 @@ d("package 2 (PostgreSQL)", () => {
     engine = await import("@/server/automation/engine");
     const b = await db.business.create({ data: { name: "P2", category: "x", city: "Ashkelon", branches: { create: { name: "main" } } } });
     bizId = b.id;
+    await db.bookingSettings.create({ data: { businessId: bizId, autoSendTransactional: false } }); // approval-flow tests
     const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
     await ensureBuiltinAutomations(db, bizId);
   });
@@ -447,6 +450,32 @@ d("online booking (PostgreSQL)", () => {
     await bookings.purgeDemoData({ id: owner.id, businessId: biz });
     expect(await bookings.demoDataCounts(biz)).toEqual({ appointments: 0, transactions: 0, customers: 0, services: 0, leads: 0 });
     expect(await db.customer.count({ where: { id: realCust.id } })).toBe(1);
+  });
+
+  it("WhatsApp: a new booking sends the approved confirmation template automatically (no manual approval)", async () => {
+    const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
+    await ensureBuiltinAutomations(db, biz);
+    process.env.WHATSAPP_SENDING_ENABLED = "true"; process.env.WHATSAPP_CLOUD_ACCESS_TOKEN = "EAAtest-token-value-123456"; process.env.WHATSAPP_PHONE_NUMBER_ID = "1234567890";
+    const sent: Record<string, unknown>[] = [];
+    const realFetch = global.fetch;
+    global.fetch = (async (url: string, init?: RequestInit) => {
+      if (String(url).includes("graph.facebook.com")) { sent.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({ messages: [{ id: "wamid.TEST" }] }), { status: 200 }); }
+      return realFetch(url, init);
+    }) as typeof fetch;
+    try {
+      const date4 = "2027-03-23";
+      const sl = (await ob.getSlots(biz, { serviceId, staffId: "any", date: date4 }, now)).slots;
+      const r = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: date4, start: sl[0].start, name: "דני וואטסאפ", phone: "0523334444" }, now);
+      const msgs = await db.outboundMessage.findMany({ where: { customerId: r.appointment.customerId!, templateKey: "booking_confirmation" } });
+      expect(msgs).toHaveLength(1);
+      expect(msgs[0].status).toBe("SENT");
+      const payload = sent.find((x) => (x.template as { name?: string })?.name === "castel_booking_confirmation") as { to: string; template: { language: { code: string }; components: { parameters: { text: string }[] }[] } };
+      expect(payload.to).toBe("972523334444");
+      expect(payload.template.language.code).toBe("he");
+      expect(payload.template.components[0].parameters.map((p) => p.text)).toEqual(["דני", "תספורת", "23/03/2027", "09:00"]);
+    } finally {
+      global.fetch = realFetch; delete process.env.WHATSAPP_SENDING_ENABLED;
+    }
   });
 
   it("time off removes availability; closed booking refuses", async () => {

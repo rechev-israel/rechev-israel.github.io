@@ -1,4 +1,4 @@
-import type { Channel, MessageStatus } from "@prisma/client";
+import { Prisma, type Channel, type MessageStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { audit } from "@/server/audit";
 import { canMarketTo } from "@/domain/crm";
@@ -20,6 +20,8 @@ export type DraftInput = {
   automationRunId?: string | null;
   createdById?: string | null;
   locale?: string;
+  /** From an automation: send without manual approval when the owner enabled auto-send for this purpose. */
+  auto?: boolean;
 };
 
 /** Pure consent/contact decision — unit tested. */
@@ -78,8 +80,14 @@ export async function draftMessage(input: DraftInput) {
   const body = renderTemplate(input.body ?? tpl?.body ?? "", vars);
   if (!body) throw new Error("empty message body");
   const decision = contactDecision({ channel: input.channel, purpose, customer, lead, student });
-  const status: MessageStatus = decision.ok ? "PENDING_APPROVAL" : "BLOCKED_NO_CONSENT";
-  return db.outboundMessage.create({
+  let autoApprove = false;
+  if (decision.ok && input.auto) {
+    const s = await db.bookingSettings.findUnique({ where: { businessId: input.businessId }, select: { autoSendTransactional: true, autoSendMarketing: true } });
+    // Marketing auto-send still requires explicit opt-in — contactDecision already refused anyone without it.
+    autoApprove = purpose === "marketing" ? Boolean(s?.autoSendMarketing) : s ? s.autoSendTransactional : true;
+  }
+  const status: MessageStatus = !decision.ok ? "BLOCKED_NO_CONSENT" : autoApprove ? "APPROVED" : "PENDING_APPROVAL";
+  const created = await db.outboundMessage.create({
     data: {
       businessId: input.businessId,
       channel: input.channel as Channel,
@@ -97,8 +105,15 @@ export async function draftMessage(input: DraftInput) {
       scheduledFor: input.scheduledFor ?? null,
       automationRunId: input.automationRunId ?? null,
       createdById: input.createdById ?? null,
+      templateVars: vars as Prisma.InputJsonValue,
+      approvedAt: autoApprove ? new Date() : null,
     },
   });
+  if (autoApprove && !created.scheduledFor) {
+    await sendApprovedMessage(created.id).catch(() => null);
+    return (await db.outboundMessage.findUnique({ where: { id: created.id } })) ?? created;
+  }
+  return created;
 }
 
 /**
@@ -115,7 +130,7 @@ export async function sendApprovedMessage(id: string) {
     return "APPROVED" as const;
   }
   await db.outboundMessage.update({ where: { id }, data: { status: "SENDING", attempts: { increment: 1 } } });
-  const r = await provider.send({ to: m.toAddress, subject: m.subject, body: m.body });
+  const r = await provider.send({ to: m.toAddress, subject: m.subject, body: m.body, templateKey: m.templateKey, vars: (m.templateVars ?? {}) as Record<string, unknown> });
   if (r.ok) {
     await db.outboundMessage.update({ where: { id }, data: { status: "SENT", sentAt: new Date(), provider: provider.id, providerMessageId: r.providerMessageId, error: null } });
     if (m.customerId) {
@@ -162,4 +177,18 @@ export async function flushDueMessages(limit = 50) {
   let sent = 0;
   for (const m of due) if ((await sendApprovedMessage(m.id)) === "SENT") sent++;
   return { checked: due.length, sent };
+}
+
+const lastFlush = new Map<string, number>();
+const ensured = new Set<string>();
+/** Throttled housekeeping run while the app/website is in use: built-in automations exist, due messages go out. */
+export async function commsTick(businessId: string) {
+  if (Date.now() - (lastFlush.get(businessId) ?? 0) < 60_000) return;
+  lastFlush.set(businessId, Date.now());
+  if (!ensured.has(businessId)) {
+    const { ensureBuiltinAutomations } = await import("@/server/automation/defaults");
+    await ensureBuiltinAutomations(db, businessId).catch(() => 0);
+    ensured.add(businessId);
+  }
+  await flushDueMessages(20).catch(() => null);
 }

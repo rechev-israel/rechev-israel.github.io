@@ -3,6 +3,16 @@ export type TemplateDef = { key: string; purpose: "transactional" | "marketing";
 
 export const DEFAULT_TEMPLATES: TemplateDef[] = [
   {
+    key: "booking_confirmation",
+    purpose: "transactional",
+    name: { he: "אישור קביעת תור", en: "Booking confirmation" },
+    subject: { he: "התור שלך ב-CASTEL STUDIO נקבע", en: "Your CASTEL STUDIO booking" },
+    body: {
+      he: "היי {{name}}, התור שלך ב-CASTEL STUDIO נקבע ✂️\nשירות: {{service}}\nמתי: {{date}} בשעה {{time}}\nלשינוי או ביטול אפשר להשיב להודעה הזו.",
+      en: "Hi {{name}}, your CASTEL STUDIO appointment is booked ✂️\nService: {{service}}\nWhen: {{date}} at {{time}}\nReply to this message to change or cancel.",
+    },
+  },
+  {
     key: "welcome",
     purpose: "transactional",
     name: { he: "ברוכים הבאים", en: "Welcome" },

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { requireApiUser } from "@/server/auth/session";
 import { notificationWhere } from "@/server/notify/visibility";
 import { autoCompletePastAppointments } from "@/server/services/bookings";
+import { commsTick } from "@/server/comms/messages";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export async function GET(req: Request) {
   if ("error" in r) return r.error;
   // While the app is open, past appointments complete themselves (throttled to once a minute).
   const completed = await autoCompletePastAppointments(r.user.businessId).catch(() => 0);
+  await commsTick(r.user.businessId).catch(() => null);
   const where = notificationWhere(r.user);
   const [unread, latest] = await Promise.all([
     db.notification.count({ where: { ...where, readAt: null } }),

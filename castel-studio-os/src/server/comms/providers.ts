@@ -5,6 +5,13 @@
  */
 import { logger } from "@/lib/logger";
 import { secret } from "@/server/secrets/store";
+import { WA_LANG, WA_TEMPLATES, templateComponents } from "./whatsapp-templates";
+
+function waPayload(to: string, body: string, templateKey?: string | null, vars?: Record<string, unknown>) {
+  const t = templateKey ? WA_TEMPLATES[templateKey] : undefined;
+  if (t) return { messaging_product: "whatsapp", to, type: "template", template: { name: t.name, language: { code: WA_LANG }, components: templateComponents(templateKey!, vars ?? {}) } };
+  return { messaging_product: "whatsapp", to, type: "text", text: { body, preview_url: false } };
+}
 
 export type SendResult = { ok: true; providerMessageId: string | null } | { ok: false; error: string; retryable: boolean };
 
@@ -12,7 +19,7 @@ export interface ChannelProvider {
   id: string;
   channel: "WHATSAPP" | "EMAIL";
   configured(): boolean;
-  send(msg: { to: string; subject?: string | null; body: string }): Promise<SendResult>;
+  send(msg: { to: string; subject?: string | null; body: string; templateKey?: string | null; vars?: Record<string, unknown> }): Promise<SendResult>;
 }
 
 /** Meta WhatsApp Business Cloud API. Note: business-initiated messages outside the 24h service window
@@ -25,14 +32,15 @@ const whatsapp: ChannelProvider = {
   configured: () =>
     process.env.WHATSAPP_SENDING_ENABLED === "true" &&
     Boolean(secret("WHATSAPP_CLOUD_ACCESS_TOKEN") && secret("WHATSAPP_PHONE_NUMBER_ID")),
-  async send({ to, body }) {
+  async send({ to, body, templateKey, vars }) {
     const phoneId = secret("WHATSAPP_PHONE_NUMBER_ID");
     const version = process.env.WHATSAPP_API_VERSION?.trim() || "v21.0";
     try {
       const res = await fetch(`https://graph.facebook.com/${version}/${encodeURIComponent(phoneId)}/messages`, {
         method: "POST",
         headers: { Authorization: `Bearer ${secret("WHATSAPP_CLOUD_ACCESS_TOKEN")}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ messaging_product: "whatsapp", to: to.replace(/^\+/, ""), type: "text", text: { body, preview_url: false } }),
+        // Business-initiated messages must use an approved template; free text works only inside the 24h service window.
+        body: JSON.stringify(waPayload(to.replace(/^\+/, ""), body, templateKey, vars)),
       });
       const data = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { message?: string } };
       if (!res.ok) return { ok: false, error: data.error?.message ?? `HTTP ${res.status}`, retryable: res.status >= 500 || res.status === 429 };

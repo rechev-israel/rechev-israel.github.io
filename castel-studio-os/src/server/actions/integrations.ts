@@ -84,3 +84,26 @@ export async function removeIntegrationSecretAction(_: ActionState, fd: FormData
     revalidatePath("/integrations");
   });
 }
+
+export async function createWhatsappTemplatesAction(_: ActionState, _fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("integrations.manage");
+    await hydrateSecrets(true);
+    const { createWhatsappTemplates } = await import("@/server/integrations/registry");
+    const r = await createWhatsappTemplates();
+    await audit({ businessId: user.businessId, userId: user.id, action: "whatsapp.templates_submitted", entityType: "Integration", entityId: "whatsapp", metadata: { ok: r.filter((x) => x.ok).length, failed: r.filter((x) => !x.ok).length } });
+    revalidatePath("/integrations");
+    const bad = r.filter((x) => !x.ok);
+    return bad.length ? { error: `נשלחו ${r.length - bad.length}/${r.length}. שגיאות: ${bad.map((b) => `${b.name}: ${b.error}`).join(" | ")}` } : { ok: true, message: `✓ ${r.length} התבניות נשלחו לאישור Meta. האישור לוקח בדרך כלל דקות עד כמה שעות.` };
+  });
+}
+
+export async function whatsappTestSendAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireUser("integrations.manage");
+    await hydrateSecrets(true);
+    const { whatsappTestSend } = await import("@/server/integrations/registry");
+    await whatsappTestSend(String(fd.get("phone") ?? ""));
+    return { ok: true, message: "✓ נשלחה הודעת בדיקה (Hello World באנגלית — תבנית הבדיקה של Meta). בדקו את הוואטסאפ בטלפון." };
+  });
+}

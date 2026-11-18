@@ -3,6 +3,7 @@ import type { IntegrationStatus, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { encrypt, decrypt, encryptionAvailable, fingerprint } from "@/server/secrets/crypto";
 import { redact, secret, secretSource } from "@/server/secrets/store";
+import { WA_LANG, WA_TEMPLATES } from "@/server/comms/whatsapp-templates";
 
 /**
  * Integration Setup Center catalog. "Connected" is shown ONLY after `verify()` succeeded against the real provider
@@ -176,9 +177,58 @@ async function verifyWhatsApp(): Promise<VerifyResult> {
     return httpFail("WhatsApp", r.status, r.body);
   }
   const sending = process.env.WHATSAPP_SENDING_ENABLED === "true";
+  const tpl = await whatsappTemplateStatus().catch(() => null);
   return ok(bi(`החיבור אומת (ללא שליחת הודעה). שליחה: ${sending ? "מופעלת" : "מושבתת (WHATSAPP_SENDING_ENABLED)"}.`, `Connection verified (no message sent). Sending: ${sending ? "enabled" : "disabled (WHATSAPP_SENDING_ENABLED)"}.`), {
     number: String(r.body.display_phone_number ?? ""), name: String(r.body.verified_name ?? ""), quality: String(r.body.quality_rating ?? "—"), sending: sending ? "on" : "off (kill switch)",
+    templates: tpl ? `${tpl.filter((x) => x.status === "APPROVED").length}/${tpl.length} approved` : "— (add WABA ID)",
   });
+}
+
+/** Status of our CASTEL templates in the owner's WhatsApp Business Account. */
+export async function whatsappTemplateStatus() {
+  const waba = secret("WHATSAPP_BUSINESS_ACCOUNT_ID");
+  if (!waba) return null;
+  const v = secret("WHATSAPP_API_VERSION") || "v21.0";
+  const r = await getJson(`https://graph.facebook.com/${v}/${encodeURIComponent(waba)}/message_templates?fields=name,status,category,language&limit=200`, { Authorization: `Bearer ${secret("WHATSAPP_CLOUD_ACCESS_TOKEN")}` });
+  if (r.status !== 200) throw new Error(upstreamError(r.body));
+  const ours = new Map(Object.entries(WA_TEMPLATES).map(([k, t]) => [t.name, k]));
+  const list = ((r.body.data as { name: string; status: string; category: string; language: string }[]) ?? []).filter((x) => ours.has(x.name));
+  return Object.entries(WA_TEMPLATES).map(([key, t]) => ({ key, name: t.name, status: list.find((x) => x.name === t.name)?.status ?? "MISSING", category: list.find((x) => x.name === t.name)?.category ?? t.category }));
+}
+
+/** Submit all CASTEL templates to Meta for approval (existing ones are left as they are). */
+export async function createWhatsappTemplates() {
+  const waba = secret("WHATSAPP_BUSINESS_ACCOUNT_ID");
+  if (!waba) throw new Error("WHATSAPP_BUSINESS_ACCOUNT_ID missing");
+  const v = secret("WHATSAPP_API_VERSION") || "v21.0";
+  const existing = new Set(((await whatsappTemplateStatus()) ?? []).filter((x) => x.status !== "MISSING").map((x) => x.name));
+  const out: { name: string; ok: boolean; error?: string }[] = [];
+  for (const t of Object.values(WA_TEMPLATES)) {
+    if (existing.has(t.name)) { out.push({ name: t.name, ok: true }); continue; }
+    const res = await fetch(`https://graph.facebook.com/${v}/${encodeURIComponent(waba)}/message_templates`, {
+      method: "POST", headers: { Authorization: `Bearer ${secret("WHATSAPP_CLOUD_ACCESS_TOKEN")}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: t.name, language: WA_LANG, category: t.category, allow_category_change: true, components: [{ type: "BODY", text: t.text, example: { body_text: [t.example] } }] }),
+      signal: AbortSignal.timeout(TIMEOUT),
+    });
+    const body = await res.json().catch(() => ({}));
+    out.push(res.ok ? { name: t.name, ok: true } : { name: t.name, ok: false, error: upstreamError(body) });
+  }
+  return out;
+}
+
+/** Real end-to-end send to the owner's phone using Meta's built-in "hello_world" template (always approved). */
+export async function whatsappTestSend(toRaw: string) {
+  const to = toRaw.replace(/\D/g, "").replace(/^0/, "972");
+  if (to.length < 11) throw new Error("bad phone");
+  const v = secret("WHATSAPP_API_VERSION") || "v21.0";
+  const res = await fetch(`https://graph.facebook.com/${v}/${encodeURIComponent(secret("WHATSAPP_PHONE_NUMBER_ID"))}/messages`, {
+    method: "POST", headers: { Authorization: `Bearer ${secret("WHATSAPP_CLOUD_ACCESS_TOKEN")}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to, type: "template", template: { name: "hello_world", language: { code: "en_US" } } }),
+    signal: AbortSignal.timeout(TIMEOUT),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(upstreamError(body));
+  return true;
 }
 
 // ── SMTP ─────────────────────────────────────────────────────────────────────
@@ -293,9 +343,15 @@ export const INTEGRATIONS: IntegrationDef[] = [
   },
   {
     provider: "whatsapp", name: "WhatsApp Cloud API", category: "communications", auth: "api_key",
-    fields: [F("WHATSAPP_CLOUD_ACCESS_TOKEN", "System User access token", "System User access token", { placeholder: "EAA…" }), F("WHATSAPP_PHONE_NUMBER_ID", "Phone number ID", "Phone number ID", { secret: false })],
-    purpose: bi("הודעות ללקוחות שאישרו קבלה, רק אחרי אישור בעלים. מתג השליחה: WHATSAPP_SENDING_ENABLED ב-Vercel.", "Messages to opted-in customers after owner approval. Sending switch: WHATSAPP_SENDING_ENABLED in Vercel."),
-    steps: [bi("business.facebook.com → Settings → System users → צרו משתמש והפיקו token עם whatsapp_business_messaging.", "business.facebook.com → Settings → System users → generate a token with whatsapp_business_messaging."), bi("WhatsApp Manager → Phone numbers: העתיקו Phone number ID.", "WhatsApp Manager → Phone numbers: copy the Phone number ID."), bi("הבדיקה רק קוראת את פרטי המספר — לא נשלחת הודעה.", "The test only reads number details — no message is sent.")],
+    fields: [F("WHATSAPP_CLOUD_ACCESS_TOKEN", "System User access token", "System User access token", { placeholder: "EAA…" }), F("WHATSAPP_PHONE_NUMBER_ID", "Phone number ID", "Phone number ID", { secret: false }), F("WHATSAPP_BUSINESS_ACCOUNT_ID", "WhatsApp Business Account ID (לתבניות)", "WhatsApp Business Account ID (templates)", { secret: false, required: false })],
+    purpose: bi("אישור קביעת תור, תזכורת יום לפני, תודה אחרי ביקור והודעות אקדמיה — נשלחים אוטומטית מהאוטומציות דרך תבניות מאושרות של Meta.", "Booking confirmation, day-before reminder, post-visit thanks and academy messages — sent automatically through Meta-approved templates."),
+    steps: [
+      bi("developers.facebook.com → My Apps → Create App (Business) → הוסיפו את המוצר WhatsApp.", "developers.facebook.com → My Apps → Create App (Business) → add WhatsApp."),
+      bi("WhatsApp → API Setup: הוסיפו ואמתו את מספר הטלפון של העסק, והעתיקו את Phone number ID ואת WhatsApp Business Account ID.", "WhatsApp → API Setup: add and verify the business number, copy the Phone number ID and the WhatsApp Business Account ID."),
+      bi("business.facebook.com → Settings → System users → Add (Admin) → Assign assets: האפליקציה + חשבון ה-WhatsApp → Generate token, תוקף Never, הרשאות whatsapp_business_messaging + whatsapp_business_management.", "business.facebook.com → Settings → System users → Add (Admin) → assign the app + WhatsApp account → Generate token (Never expires) with whatsapp_business_messaging + whatsapp_business_management."),
+      bi("הדביקו כאן את שלושת הערכים ולחצו ״שמירה ובדיקה״, ואז ״יצירת כל התבניות ב-Meta״.", "Paste the three values, click \"Save & test\", then \"Create all templates in Meta\"."),
+      bi("ב-Meta: WhatsApp Manager → אמצעי תשלום — נדרש כרטיס אשראי לשיחות עסקיות (התשלום ל-Meta, לפי הודעה).", "In Meta: WhatsApp Manager → payment method — a card is required for business conversations (billed by Meta per message)."),
+    ],
     links: [{ label: "business.facebook.com", href: "https://business.facebook.com/settings/system-users" }],
     cost: bi("הבדיקה חינמית. שיחות עסקיות בתשלום של Meta.", "Test is free. Business conversations are billed by Meta."),
     verify: verifyWhatsApp,
