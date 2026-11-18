@@ -61,14 +61,15 @@ describe("breaks and premium hours", () => {
     expect(rangeMinusBreaks("20:00", "09:00", [])).toBeNull();
     expect(rangeMinusBreaks("09:00", "12:00", [{ start: "08:00", end: "09:30" }])).toEqual([{ start: "09:30", end: "12:00" }]);
   });
-  it("no slot crosses a break; premium slots are flagged; premium-only services use premium hours only", () => {
+  it("no slot crosses a break; regular services skip premium hours; premium services use only them", () => {
     const H = 3_600_000;
     const staff = [{ id: "a", windows: [{ start: base, end: base + 2 * H }, { start: base + 3 * H, end: base + 4 * H }, { start: base + 4 * H, end: base + 5 * H, premium: true }], busy: [] }];
     const s = computeSlots({ staff, durationMin: 60, stepMin: 30, bufferMin: 0, now: 0, minNoticeMin: 0 });
-    expect(s.map((x) => (x.start - base) / H)).toEqual([0, 0.5, 1, 3, 4]); // nothing at 1.5–2.5 (break)
-    expect(s.find((x) => x.start === base + 4 * H)!.premium).toBe(true);
-    expect(s.find((x) => x.start === base)!.premium).toBe(false);
+    // nothing at 1.5–2.5 (break); premium hours (4–5) are reserved for premium appointments
+    expect(s.map((x) => (x.start - base) / H)).toEqual([0, 0.5, 1, 3]);
+    expect(s.every((x) => !x.premium)).toBe(true);
     const p = computeSlots({ staff, durationMin: 60, stepMin: 30, bufferMin: 0, now: 0, minNoticeMin: 0, premiumOnly: true });
     expect(p.map((x) => (x.start - base) / H)).toEqual([4]);
+    expect(p[0].premium).toBe(true);
   });
 });

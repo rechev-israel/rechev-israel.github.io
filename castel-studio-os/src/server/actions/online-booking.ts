@@ -13,7 +13,8 @@ import { runAction } from "./util";
 const PERM = "services.edit" as const;
 const bool = z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean());
 const int = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
-const done = () => { revalidatePath("/bookings/online"); revalidatePath("/hours"); revalidatePath("/bookings"); revalidatePath("/book"); };
+const done = () => { revalidatePath("/bookings/online"); revalidatePath("/hours"); revalidatePath("/bookings"); revalidatePath("/bookings/services"); revalidatePath("/book"); };
+const syncPremium = async (businessId: string) => { const { syncPremiumService } = await import("@/server/services/online-booking"); await syncPremiumService(businessId).catch(() => null); };
 
 export async function saveBookingSettingsAction(_: ActionState, fd: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {
@@ -112,7 +113,7 @@ export async function saveScheduleAction(_: ActionState, fd: FormData): Promise<
     const branch = await db.branch.findFirst({ where: { businessId: user.businessId, isActive: true }, orderBy: { createdAt: "asc" } });
     if (!branch) return { error: "no branch" };
     if (staffId && !(await db.user.findFirst({ where: { id: staffId, businessId: user.businessId } }))) return { error: "bad staff" };
-    if (staffId && fd.get("useShop") === "on") { await db.availabilityRule.deleteMany({ where: { branchId: branch.id, staffId } }); done(); return; }
+    if (staffId && fd.get("useShop") === "on") { await db.availabilityRule.deleteMany({ where: { branchId: branch.id, staffId } }); await syncPremium(user.businessId); done(); return; }
     const days = z.array(dayModel).length(7).parse(JSON.parse(String(fd.get("schedule") ?? "[]")));
     const DAYS = locale === "he" ? ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const rows: { weekday: number; startTime: string; endTime: string; kind: string }[] = [];
@@ -133,6 +134,7 @@ export async function saveScheduleAction(_: ActionState, fd: FormData): Promise<
       db.availabilityRule.deleteMany({ where: { branchId: branch.id, staffId } }),
       db.availabilityRule.createMany({ data: rows.map((r) => ({ ...r, branchId: branch.id, staffId })) }),
     ]);
+    await syncPremium(user.businessId);
     await audit({ businessId: user.businessId, userId: user.id, action: "booking.schedule", entityType: "AvailabilityRule", entityId: staffId ?? "shop" });
     done();
   });
@@ -162,6 +164,7 @@ export async function saveDateOverrideAction(_: ActionState, fd: FormData): Prom
     const data = { closed: d.mode === "closed", windows, note: d.note || null };
     if (existing) await db.dateOverride.update({ where: { id: existing.id }, data });
     else await db.dateOverride.create({ data: { businessId: user.businessId, staffId, date: d.date, ...data } });
+    await syncPremium(user.businessId);
     await audit({ businessId: user.businessId, userId: user.id, action: "booking.date_override", entityType: "DateOverride", metadata: { date: d.date, mode: d.mode } });
     done();
   });
@@ -170,6 +173,7 @@ export async function saveDateOverrideAction(_: ActionState, fd: FormData): Prom
 export async function removeDateOverrideAction(fd: FormData) {
   const user = await requireUser(PERM);
   await db.dateOverride.deleteMany({ where: { id: String(fd.get("id") ?? ""), businessId: user.businessId } });
+  await syncPremium(user.businessId);
   done();
 }
 

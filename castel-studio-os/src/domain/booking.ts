@@ -31,7 +31,8 @@ export function computeSlots(input: {
     // A busy block also occupies the buffer after it; a new booking needs its own buffer before the next block.
     const busy = s.busy.map((b) => ({ start: b.start, end: b.end + bufferMin * MIN }));
     for (const w of s.windows) {
-      if (input.premiumOnly && !w.premium) continue;
+      // Premium hours are reserved for premium appointments; regular services use regular hours only.
+      if (Boolean(input.premiumOnly) !== Boolean(w.premium)) continue;
       for (let t = w.start; t + dur <= w.end; t += step) {
         if (t < earliest) continue;
         const candidate = { start: t, end: t + dur + bufferMin * MIN };

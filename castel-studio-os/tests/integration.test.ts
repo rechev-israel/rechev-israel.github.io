@@ -491,24 +491,30 @@ d("online booking (PostgreSQL)", () => {
     expect((await db.outboundMessage.findUniqueOrThrow({ where: { id: m.id } })).status).toBe("CANCELLED");
   });
 
-  it("special date replaces weekly hours; premium hours add the surcharge to the price", async () => {
+  it("premium hours: an automatic ₪100 premium appointment, bookable only then; special dates replace the week", async () => {
     const branch = await db.branch.findFirstOrThrow({ where: { businessId: biz } });
-    await db.bookingSettings.update({ where: { businessId: biz }, data: { premiumSurcharge: 30 } });
-    // Tuesday 2027-04-06: weekly 09:00–11:00 + premium 11:00–12:00
     await db.availabilityRule.create({ data: { branchId: branch.id, weekday: 2, startTime: "11:00", endTime: "12:00", kind: "premium" } });
-    const d6 = "2027-03-23";
-    const all = (await ob.getSlots(biz, { serviceId, staffId: "any", date: d6 }, now)).slots;
-    const prem = all.filter((x) => x.premium);
-    expect(prem.length).toBe(2); // 11:00, 11:30
-    const r = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: d6, start: prem[0].start, name: "פרימיום", phone: "0538887777" }, now);
-    expect(Number(r.appointment.price)).toBe(130); // 100 + 30
+    await ob.syncPremiumService(biz);
+    const prem = await db.service.findFirstOrThrow({ where: { businessId: biz, externalRef: ob.PREMIUM_SERVICE_REF } });
+    expect(Number(prem.price)).toBe(100);
+    expect(prem.premiumOnly && prem.bookableOnline).toBe(true);
+    const d6 = "2027-03-30";
+    const regular = (await ob.getSlots(biz, { serviceId, staffId: "any", date: d6 }, now)).slots;
+    expect(regular.some((x) => x.premium)).toBe(false); // regular service never in premium hours
+    const ps = (await ob.getSlots(biz, { serviceId: prem.id, staffId: "any", date: d6 }, now)).slots;
+    expect(ps.length).toBe(2); // 11:00, 11:30
+    expect(ps.every((x) => x.premium)).toBe(true);
+    const r = await ob.createOnlineBooking(biz, { serviceId: prem.id, staffId: "any", date: d6, start: ps[0].start, name: "פרימיום", phone: "0538887777" }, now);
+    expect(Number(r.appointment.price)).toBe(100);
     expect(r.appointment.notes).toContain("פרימיום");
-    // special date: closed on a normally-open Tuesday, and special hours on a normally-closed Wednesday
+    await db.availabilityRule.deleteMany({ where: { branchId: branch.id, kind: "premium" } });
+    await ob.syncPremiumService(biz);
+    expect((await db.service.findUniqueOrThrow({ where: { id: prem.id } })).bookableOnline).toBe(false); // hidden without premium hours
+    // special dates
     await db.dateOverride.create({ data: { businessId: biz, date: "2027-03-23", closed: true } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date: "2027-03-23" }, now)).slots).toHaveLength(0);
     await db.dateOverride.create({ data: { businessId: biz, date: "2027-03-24", windows: [{ start: "10:00", end: "11:00", kind: "regular" }] } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date: "2027-03-24" }, now)).slots).toHaveLength(2);
-    await db.availabilityRule.deleteMany({ where: { branchId: branch.id, kind: "premium" } });
   });
 
   it("a blocked customer can't book online and 'My appointments' is closed", async () => {

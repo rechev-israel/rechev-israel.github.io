@@ -137,7 +137,7 @@ export async function availableDays(businessId: string, q: { serviceId: string; 
     const slots = computeSlots({ staff: daySchedule(day, ids, r), durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin, premiumOnly: service.premiumOnly });
     if (!q.withSlots) return { date: dates[i], free: slots.length };
     // Times for every day in one response, so the website can show them instantly (re-validated on booking).
-    return { date: dates[i], free: slots.length, slots: slots.map((x) => { const p = zonedParts(new Date(x.start)); return { start: x.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`, premium: x.premium, surcharge: x.premium ? settings.premiumSurcharge : 0 }; }) };
+    return { date: dates[i], free: slots.length, slots: slots.map((x) => { const p = zonedParts(new Date(x.start)); return { start: x.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`, premium: x.premium, surcharge: 0 }; }) };
   });
 }
 
@@ -151,7 +151,7 @@ export async function getSlots(businessId: string, q: { serviceId: string; staff
   const ids = q.staffId === "any" ? staff.map((s) => s.id) : staff.some((s) => s.id === q.staffId) ? [q.staffId] : [];
   if (!ids.length) throw new BookingError("staff");
   const days = await staffDays(businessId, q.date, ids);
-  return { service, surcharge: settings.premiumSurcharge, slots: computeSlots({ staff: days, durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin, premiumOnly: service.premiumOnly }) };
+  return { service, surcharge: 0, slots: computeSlots({ staff: days, durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin, premiumOnly: service.premiumOnly }) };
 }
 
 export type BookingInput = { serviceId: string; staffId: string; date: string; start: number; name: string; phone: string; notes?: string; marketingConsent?: boolean; locale?: string; deviceToken?: string };
@@ -211,8 +211,8 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
         return tx.appointment.create({
           data: {
             businessId, branchId: branch?.id, customerId: customer.id, serviceId: service.id, staffId, startsAt, endsAt,
-            status: settings.autoConfirm ? "CONFIRMED" : "SCHEDULED", price: toNumber(service.price) + (premium ? settings.premiumSurcharge : 0), source: "online",
-            notes: [premium ? "⭐ שעת פרימיום" : "", nameNote, input.notes?.trim().slice(0, 500)].filter(Boolean).join("\n") || null, manageTokenHash: hashManageToken(token),
+            status: settings.autoConfirm ? "CONFIRMED" : "SCHEDULED", price: service.price, source: "online",
+            notes: [premium || service.premiumOnly ? "⭐ תור פרימיום" : "", nameNote, input.notes?.trim().slice(0, 500)].filter(Boolean).join("\n") || null, manageTokenHash: hashManageToken(token),
           },
           include: { staff: { select: { name: true } } },
         });
@@ -260,3 +260,25 @@ export async function cancelByToken(token: string, now = new Date()) {
 }
 
 export const priceOf = (p: Prisma.Decimal | null) => toNumber(p);
+
+export const PREMIUM_SERVICE_REF = "auto:premium";
+
+/**
+ * Premium hours get their own bookable service: "⭐ תור פרימיום" (₪100 by default, editable in Services).
+ * Created automatically when premium hours exist; hidden from the website when there are none.
+ */
+export async function syncPremiumService(businessId: string) {
+  const branch = await db.branch.findFirst({ where: { businessId, isActive: true }, orderBy: { createdAt: "asc" }, select: { id: true } });
+  const weekly = branch ? await db.availabilityRule.count({ where: { branchId: branch.id, isActive: true, kind: "premium" } }) : 0;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+  const dated = (await db.dateOverride.findMany({ where: { businessId, closed: false, date: { gte: today } }, select: { windows: true } }))
+    .some((o) => Array.isArray(o.windows) && (o.windows as { kind?: string }[]).some((w) => w.kind === "premium"));
+  const has = weekly > 0 || dated;
+  const existing = await db.service.findFirst({ where: { businessId, externalRef: PREMIUM_SERVICE_REF } });
+  if (has && !existing) {
+    await db.service.create({ data: { businessId, nameHe: "תור פרימיום", nameEn: "Premium appointment", durationMin: 30, price: 100, premiumOnly: true, bookableOnline: true, isActive: true, sortOrder: 99, externalRef: PREMIUM_SERVICE_REF } });
+  } else if (existing && existing.bookableOnline !== has) {
+    await db.service.update({ where: { id: existing.id }, data: { bookableOnline: has, ...(has ? { isActive: true } : {}) } });
+  }
+  return has;
+}

@@ -5,7 +5,7 @@ import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
 import { toLocalInput } from "@/lib/dates";
 import { weekModel } from "@/lib/schedule-model";
-import { getBookingSettings } from "@/server/services/online-booking";
+import { getBookingSettings, syncPremiumService } from "@/server/services/online-booking";
 import { saveScheduleAction } from "@/server/actions/online-booking";
 import { WeekEditor } from "@/components/bookings/week-editor";
 import { AvailabilityExtras } from "@/components/bookings/availability-extras";
@@ -32,6 +32,8 @@ export default async function HoursPage() {
     db.timeOff.findMany({ where: { businessId: user.businessId, endsAt: { gt: new Date() } }, orderBy: { startsAt: "asc" }, include: { staff: { select: { name: true } } } }),
   ]);
   const shopRules = rules.filter((r) => !r.staffId);
+  await syncPremiumService(user.businessId).catch(() => null);
+  const premiumService = await db.service.findFirst({ where: { businessId: user.businessId, externalRef: "auto:premium" } });
   return (
     <>
       <PageHeader
@@ -44,10 +46,15 @@ export default async function HoursPage() {
           <CardTitle>{L("שבוע עבודה קבוע", "Weekly schedule")}</CardTitle>
           <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
             <span className="inline-flex items-center gap-1"><Coffee size={13} /> {L("הפסקה: בזמן הזה אי אפשר לקבוע תור", "Break: no bookings")}</span>
-            <span className="inline-flex items-center gap-1 text-gold"><Star size={13} /> {L(`שעות פרימיום: מחוץ לשעות הרגילות, בתוספת ₪${settings.premiumSurcharge}`, `Premium hours: outside regular hours, +₪${settings.premiumSurcharge}`)}</span>
+            <span className="inline-flex items-center gap-1 text-gold"><Star size={13} /> {L("שעות פרימיום: שמורות ל״תור פרימיום״ בלבד", "Premium hours: reserved for the premium appointment")}</span>
           </div>
           {edit ? <WeekEditor initial={weekModel(shopRules)} he={he} action={saveScheduleAction} /> : <p className="text-sm text-muted">{L("רק בעלים/מנהל יכולים לשנות שעות.", "Only owner/manager can edit hours.")}</p>}
-          {settings.premiumSurcharge === 0 && <p className="mt-3 text-xs text-muted">{L("את גובה התוספת לשעות פרימיום קובעים ב", "Set the premium surcharge in ")}<Link href="/bookings/online" className="text-gold underline">{L("הגדרות קביעת תורים", "booking settings")}</Link>.</p>}
+          <p className="mt-3 rounded-lg bg-gold/10 p-2.5 text-xs">
+            ⭐ {premiumService?.bookableOnline
+              ? L(`בשעות הפרימיום הלקוחות קובעים ״${premiumService.nameHe}״ — ₪${Number(premiumService.price)}, ${premiumService.durationMin} דק׳. `, `In premium hours customers book "${premiumService.nameEn}" — ₪${Number(premiumService.price)}, ${premiumService.durationMin} min. `)
+              : L("ברגע שתוסיפו שעות פרימיום, יתווסף אוטומטית שירות ״תור פרימיום״ (₪100) שאפשר לקבוע רק בהן. ", "Add premium hours and a \"Premium appointment\" service (₪100) is created automatically. ")}
+            <Link href="/bookings/services" className="text-gold underline">{L("שינוי מחיר/משך", "Change price/duration")}</Link>
+          </p>
         </Card>
         {staff.length > 1 && (
           <Card>

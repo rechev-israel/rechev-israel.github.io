@@ -80,7 +80,7 @@ export default async function OnlineBookingPage() {
               <div><Label>{L("הזמנה לפחות (שעות) מראש", "Min notice (hours)")}</Label><Select name="minNoticeMin" defaultValue={String(settings.minNoticeMin)}>{[0, 30, 60, 120, 180, 360, 720, 1440].map((n) => <option key={n} value={n}>{n < 60 ? `${n} ${L("דק׳", "min")}` : n / 60}</option>)}</Select></div>
               <div><Label>{L("כמה ימים קדימה", "Days ahead")}</Label><Select name="maxDaysAhead" defaultValue={String(settings.maxDaysAhead)}>{[7, 14, 21, 30, 45, 60, 90].map((n) => <option key={n} value={n}>{n}</option>)}</Select></div>
               <div><Label>{L("ביטול אונליין עד (שעות לפני)", "Online cancel until (h before)")}</Label><Select name="cancelNoticeMin" defaultValue={String(settings.cancelNoticeMin)}>{[0, 60, 120, 180, 360, 720, 1440, 2880].map((n) => <option key={n} value={n}>{n / 60}</option>)}</Select></div>
-              <div><Label>{L("תוספת מחיר בשעות פרימיום (₪)", "Premium hours surcharge (₪)")}</Label><Input type="number" name="premiumSurcharge" min={0} max={1000} step={5} defaultValue={settings.premiumSurcharge} dir="ltr" /></div>
+              <input type="hidden" name="premiumSurcharge" value="0" />
               <div><Label>{L("מקס׳ תורים פתוחים ללקוח", "Max open bookings per customer")}</Label><Select name="maxActivePerPhone" defaultValue={String(settings.maxActivePerPhone)}>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</Select></div>
             </div>
             <div><Label>{L("טלפון המספרה (מוצג ללקוחות)", "Shop phone (shown to customers)")}</Label><Input name="shopPhone" dir="ltr" inputMode="tel" maxLength={20} defaultValue={branch?.phone ?? ""} placeholder="050-0000000" /></div>
