@@ -16,7 +16,10 @@ export type CalAppt = {
 };
 export type CalBlock = { id: string; dayKey: string; startMin: number; endMin: number; reason: string | null; staff: string | null };
 
-const PX = 1.3; // pixels per minute
+/** Pixels per minute: tall enough that a 20-minute appointment shows name, phone and service. */
+const PX_BY_VIEW = { day: 3.6, "3day": 3.4, week: 2.6 } as const;
+/** +972501234567 → 050-1234567 */
+const localPhone = (p: string | null | undefined) => { if (!p) return ""; const d = p.replace(/\D/g, "").replace(/^972/, "0"); return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3)}` : p; };
 const pad = (n: number) => String(n).padStart(2, "0");
 const hm = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const STATUS_STYLE: Record<CalAppt["status"], string> = {
@@ -68,6 +71,7 @@ export function ScheduleCalendar(props: {
   const [blockAt, setBlockAt] = useState<{ dayKey: string; min: number } | null>(null);
   const selectedId = sp.get("appt");
   const selected = appts.find((a) => a.id === selectedId) ?? null;
+  const PX = PX_BY_VIEW[view];
   const height = (range[1] - range[0]) * PX;
 
   const go = (params: Record<string, string | null>) => {
@@ -176,14 +180,26 @@ export function ScheduleCalendar(props: {
                     </div>
                   ))}
                   {lanes(dayAppts).map(({ item: a, lane, lanesInGroup }) => {
-                    const h = Math.max(22, (a.endMin - a.startMin) * PX - 2);
+                    const h = Math.max(30, (a.endMin - a.startMin) * PX - 3);
+                    const narrow = lanesInGroup > 1 || view !== "day";
+                    const phone = localPhone(a.customer?.phone);
                     return (
                       <button key={a.id} type="button" data-appt onClick={() => go({ appt: a.id })}
-                        className={`absolute z-[2] overflow-hidden rounded-lg border border-s-[3px] px-2 py-1 text-start text-[11px] leading-tight shadow-[0_4px_14px_-8px_rgba(0,0,0,0.7)] transition-transform hover:z-[3] hover:-translate-y-px ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold ring-offset-1 ring-offset-[var(--surface)]" : ""}`}
+                        className={`absolute z-[2] flex flex-col overflow-hidden rounded-lg border border-s-[3px] px-2 py-1.5 text-start text-[12px] leading-snug shadow-[0_4px_14px_-8px_rgba(0,0,0,0.7)] transition-transform hover:z-[3] hover:-translate-y-px ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold ring-offset-1 ring-offset-[var(--surface)]" : ""}`}
                         style={{ top: (a.startMin - range[0]) * PX + 1, height: h, insetInlineStart: `calc(${(lane / lanesInGroup) * 100}% + 2px)`, width: `calc(${100 / lanesInGroup}% - 4px)` }}>
-                        <span className={`block font-semibold tabular-nums ${TIME_TONE[a.status]}`} dir="ltr">{a.start}–{a.end}</span>
-                        <span className="block truncate text-[12px] font-semibold">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
-                        {h > 44 && <span className="block truncate text-muted">{a.service}{a.paymentStatus === "PAID" ? " · ₪✓" : ""}</span>}
+                        {/* Name first and biggest; then time, phone, service — as much as the height allows. */}
+                        {narrow ? (<>
+                          {/* Narrow column: the name gets its own full line, the time goes under it. */}
+                          <span className="truncate text-[13px] font-bold">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
+                          <span className={`truncate text-[11px] font-semibold tabular-nums ${TIME_TONE[a.status]}`} dir="ltr">{a.start}–{a.end}</span>
+                        </>) : (
+                          <span className="flex min-w-0 items-baseline justify-between gap-2">
+                            <span className="truncate text-[15px] font-bold">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
+                            <span className={`shrink-0 text-[11px] font-semibold tabular-nums ${TIME_TONE[a.status]}`} dir="ltr">{a.start}–{a.end}</span>
+                          </span>
+                        )}
+                        {h >= (narrow ? 64 : 52) && <span className="truncate text-[12px] text-text/80">{[phone && <span key="p" dir="ltr">{phone}</span>, a.service].filter(Boolean).reduce<React.ReactNode[]>((acc, x, i) => (i ? [...acc, " · ", x] : [x]), [])}{a.paymentStatus === "PAID" ? " · ₪✓" : ""}</span>}
+                        {h >= 84 && a.notes && <span className="truncate text-[11px] text-muted">{a.notes.split("\n")[0]}</span>}
                       </button>
                     );
                   })}
