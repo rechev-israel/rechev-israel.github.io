@@ -478,6 +478,19 @@ d("online booking (PostgreSQL)", () => {
     }
   });
 
+  it("WhatsApp not connected: automatic confirmations are recorded as not sent and never delivered later", async () => {
+    delete process.env.WHATSAPP_SENDING_ENABLED; delete process.env.WHATSAPP_CLOUD_ACCESS_TOKEN; delete process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const date5 = "2027-03-30";
+    const sl = (await ob.getSlots(biz, { serviceId, staffId: "any", date: date5 }, now)).slots;
+    const r = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: date5, start: sl[0].start, name: "בלי וואטסאפ", phone: "0526667777" }, now);
+    const m = await db.outboundMessage.findFirstOrThrow({ where: { customerId: r.appointment.customerId!, templateKey: "booking_confirmation" } });
+    expect(m.status).toBe("CANCELLED");
+    expect(m.error).toBe("auto_skipped_channel_not_connected");
+    const msgs = await import("@/server/comms/messages");
+    await msgs.flushDueMessages();
+    expect((await db.outboundMessage.findUniqueOrThrow({ where: { id: m.id } })).status).toBe("CANCELLED");
+  });
+
   it("time off removes availability; closed booking refuses", async () => {
     await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);

@@ -86,7 +86,11 @@ export async function draftMessage(input: DraftInput) {
     // Marketing auto-send still requires explicit opt-in — contactDecision already refused anyone without it.
     autoApprove = purpose === "marketing" ? Boolean(s?.autoSendMarketing) : s ? s.autoSendTransactional : true;
   }
-  const status: MessageStatus = !decision.ok ? "BLOCKED_NO_CONSENT" : autoApprove ? "APPROVED" : "PENDING_APPROVAL";
+  // Automatic messages never pile up while the channel isn't connected (a confirmation sent days later is wrong):
+  // they are recorded as not sent and are never delivered later.
+  const providerReady = Boolean(providerFor(input.channel)?.configured());
+  const skipNoProvider = decision.ok && autoApprove && !providerReady;
+  const status: MessageStatus = !decision.ok ? "BLOCKED_NO_CONSENT" : skipNoProvider ? "CANCELLED" : autoApprove ? "APPROVED" : "PENDING_APPROVAL";
   const created = await db.outboundMessage.create({
     data: {
       businessId: input.businessId,
@@ -100,7 +104,7 @@ export async function draftMessage(input: DraftInput) {
       subject: input.subject ?? (tpl?.subject ? renderTemplate(tpl.subject, vars) : null),
       body,
       status,
-      error: decision.ok ? null : decision.reason,
+      error: decision.ok ? (skipNoProvider ? "auto_skipped_channel_not_connected" : null) : decision.reason,
       templateKey: input.templateKey ?? null,
       scheduledFor: input.scheduledFor ?? null,
       automationRunId: input.automationRunId ?? null,
@@ -109,7 +113,7 @@ export async function draftMessage(input: DraftInput) {
       approvedAt: autoApprove ? new Date() : null,
     },
   });
-  if (autoApprove && !created.scheduledFor) {
+  if (autoApprove && !skipNoProvider && !created.scheduledFor) {
     await sendApprovedMessage(created.id).catch(() => null);
     return (await db.outboundMessage.findUnique({ where: { id: created.id } })) ?? created;
   }
@@ -124,6 +128,12 @@ export async function sendApprovedMessage(id: string) {
   const m = await db.outboundMessage.findUnique({ where: { id } });
   if (!m || m.status !== "APPROVED") return m?.status ?? null;
   if (m.scheduledFor && m.scheduledFor > new Date()) return m.status; // will be sent by the scheduler
+  // Automation messages are time-sensitive: never deliver one more than 24h after it was due.
+  const dueAt = (m.scheduledFor ?? m.createdAt).getTime();
+  if (m.automationRunId && Date.now() - dueAt > 24 * 3600_000) {
+    await db.outboundMessage.update({ where: { id }, data: { status: "CANCELLED", error: "expired_not_sent_in_time" } });
+    return "CANCELLED" as const;
+  }
   const provider = providerFor(m.channel);
   if (!provider || !provider.configured() || !m.toAddress) {
     await db.outboundMessage.update({ where: { id }, data: { error: provider ? "provider_not_configured" : "channel_not_supported" } });
