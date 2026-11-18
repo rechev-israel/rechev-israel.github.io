@@ -2,10 +2,17 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getSlots, publicBusiness } from "@/server/services/online-booking";
 import { zonedParts } from "@/lib/dates";
 import { bookingErrorResponse, clientIp } from "../errors";
+import { preflight, withCors } from "../cors";
 
 export const dynamic = "force-dynamic";
 
+export const OPTIONS = preflight;
+
 export async function GET(req: Request) {
+  return withCors(req, await handle(req));
+}
+
+async function handle(req: Request) {
   if (!rateLimit(`slots:${clientIp(req)}`, 90, 60_000).ok) return Response.json({ error: "rate_limited" }, { status: 429 });
   const u = new URL(req.url);
   const serviceId = u.searchParams.get("serviceId") ?? "";

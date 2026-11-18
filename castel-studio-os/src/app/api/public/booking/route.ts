@@ -2,6 +2,7 @@ import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { createOnlineBooking, publicBusiness } from "@/server/services/online-booking";
 import { bookingErrorResponse, clientIp } from "./errors";
+import { preflight, withCors } from "./cors";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,13 @@ const schema = z.object({
 });
 
 /** Public online booking. Rate limited, honeypot-protected; availability is re-validated server-side. */
+export const OPTIONS = preflight;
+
 export async function POST(req: Request) {
+  return withCors(req, await handle(req));
+}
+
+async function handle(req: Request) {
   const ip = clientIp(req);
   if (!rateLimit(`book:${ip}`, 6, 10 * 60_000).ok) return Response.json({ error: "rate_limited" }, { status: 429 });
   let body: unknown;
@@ -30,7 +37,7 @@ export async function POST(req: Request) {
   if (!b) return Response.json({ error: "disabled" }, { status: 503 });
   try {
     const { token } = await createOnlineBooking(b.id, parsed.data);
-    return Response.json({ ok: true, manageUrl: `/book/m/${token}` }, { status: 201 });
+    return Response.json({ ok: true, token, manageUrl: `/book/m/${token}` }, { status: 201 });
   } catch (e) {
     return bookingErrorResponse(e);
   }

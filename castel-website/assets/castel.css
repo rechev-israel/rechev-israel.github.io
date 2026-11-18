@@ -835,3 +835,44 @@ html[dir="ltr"] .pp-num { text-align: start; }
 .booking-embed iframe { border-radius: 18px; }
 #book .s-head { grid-template-columns: 1fr; }
 #book .s-head p { max-width: 60ch; }
+/* ── Booking (native, talks to CASTEL STUDIO OS) ───────────────────── */
+.booking-embed { min-height: 0; }
+.bk-step, .bk-card { border: 1px solid var(--line); background: var(--charcoal); padding: clamp(18px, 3vw, 28px); margin-bottom: 14px; }
+.bk-card { border-color: var(--hair); }
+.bk-center { text-align: center; }
+.bk-h { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; font-weight: 400; font-size: 19px; }
+.bk-n { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--gold); color: var(--gold); font-size: 13px; font-family: var(--sans-en); border-radius: 50%; }
+.bk-chip { min-height: 48px; padding: 10px 16px; border: 1px solid var(--line); background: rgba(245,243,239,.03); color: var(--text); transition: border-color .25s var(--ease), background .25s var(--ease); text-align: start; }
+.bk-chip:hover { border-color: var(--hair); }
+.bk-chip.on { border-color: var(--gold); background: rgba(198,164,119,.12); color: var(--ivory); }
+.bk-grid2 { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.bk-grid2 .bk-chip { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bk-sname { font-weight: 400; }
+.bk-meta { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.bk-meta b { color: var(--gold); font-weight: 500; }
+.bk-wrap, .bk-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bk-days { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.bk-days .bk-chip { flex: 0 0 auto; white-space: nowrap; }
+.bk-times { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.bk-times .bk-chip { text-align: center; font-family: var(--sans-en); font-variant-numeric: tabular-nums; }
+.bk-muted { color: var(--muted); }
+.bk-small { font-size: 14px; }
+.bk-strong { font-weight: 500; font-size: 19px; margin: 0 0 6px; }
+.bk-note { color: var(--muted); text-align: center; margin: 0 0 14px; white-space: pre-line; }
+.bk-sum { border-inline-start: 2px solid var(--gold); padding: 8px 14px; background: rgba(245,243,239,.03); margin: 0 0 14px; }
+.bk-field { display: block; font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+.bk-field input, .bk-link { display: block; width: 100%; margin-top: 6px; min-height: 48px; padding: 0 14px; background: var(--black); border: 1px solid var(--line); color: var(--text); font: inherit; font-size: 16px; }
+.bk-field input:focus, .bk-link:focus { outline: none; border-color: var(--gold); }
+.bk-link { flex: 1 1 260px; margin: 0; font-size: 14px; }
+.bk-check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--muted); margin: 8px 0; }
+.bk-check input { accent-color: var(--gold); width: 18px; height: 18px; margin-top: 3px; flex: none; }
+.bk-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.bk-err { color: #e88; border: 1px solid rgba(232,136,136,.35); background: rgba(232,136,136,.08); padding: 10px 14px; margin: 12px 0 0; font-size: 15px; }
+.bk-submit { width: 100%; margin-top: 16px; justify-content: center; }
+.bk-submit[disabled] { opacity: .55; pointer-events: none; }
+.bk-title { font-family: var(--serif); font-size: clamp(30px, 4vw, 44px); line-height: 1.1; margin: 0 0 16px; color: var(--ivory); }
+.bk-ok { color: var(--gold); margin-inline-end: 12px; }
+.bk-list { list-style: none; padding: 0; margin: 0 0 18px; }
+.bk-list li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.bk-danger { color: #e88; border-color: rgba(232,136,136,.4); }
+.bk-again { margin-top: 18px; color: var(--gold); text-decoration: underline; text-underline-offset: 4px; }
