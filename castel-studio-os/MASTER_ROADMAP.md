@@ -19,6 +19,8 @@ Deployments are **live** (owner approved 2026-11-19): every push to the producti
 
 - **Booking upgrade** — customer month calendar, admin day/3-day/week scheduler with full appointment management, deduplicated owner notifications with live bell and deep links, Web Push, double-booking fix (completed/no-show keep the slot).
 
+- **Premium redesign** — brand tokens aligned with the website, refined base components, wrapping page actions, calendar polish + summary strip; 50-screen responsive audit clean.
+
 ## Next — Package 5: Hardening & go-live readiness
 1. External error monitoring (e.g. Sentry) + uptime alert on `/api/health`.
 2. Blob storage adapter (Vercel Blob / S3) for large video/3D assets instead of temporary provider links.

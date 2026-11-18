@@ -27,10 +27,10 @@ function HoursForm({ rules, staffId, he, allowShop }: { rules: { weekday: number
       {[0, 1, 2, 3, 4, 5, 6].map((w) => {
         const r = rules.find((x) => x.weekday === w);
         return (
-          <div key={w} className="grid grid-cols-[72px_1fr_1fr] items-center gap-2">
+          <div key={w} className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
             <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name={`open_${w}`} defaultChecked={Boolean(r)} className="h-4 w-4 accent-[var(--gold)]" />{(he ? DAYS_HE : DAYS_EN)[w]}</label>
-            <Input type="time" name={`start_${w}`} defaultValue={r?.startTime ?? "09:00"} dir="ltr" step={300} aria-label="start" />
-            <Input type="time" name={`end_${w}`} defaultValue={r?.endTime ?? "20:00"} dir="ltr" step={300} aria-label="end" />
+            <Input type="time" name={`start_${w}`} defaultValue={r?.startTime ?? "09:00"} dir="ltr" step={300} aria-label="start" className="min-w-0 px-2" />
+            <Input type="time" name={`end_${w}`} defaultValue={r?.endTime ?? "20:00"} dir="ltr" step={300} aria-label="end" className="min-w-0 px-2" />
           </div>
         );
       })}

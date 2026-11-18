@@ -19,12 +19,13 @@ const PX = 1.3; // pixels per minute
 const pad = (n: number) => String(n).padStart(2, "0");
 const hm = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const STATUS_STYLE: Record<CalAppt["status"], string> = {
-  CONFIRMED: "border-gold/70 bg-[color-mix(in_oklab,var(--gold)_18%,var(--surface))] text-text",
-  SCHEDULED: "border-sky-400/60 bg-sky-500/15 text-text",
-  COMPLETED: "border-emerald-400/50 bg-emerald-500/12 text-text/90",
-  NO_SHOW: "border-red-400/60 bg-red-500/12 text-text/80",
-  CANCELLED: "border-border bg-surface-2/60 text-muted line-through",
+  CONFIRMED: "border-gold/45 border-s-gold bg-[linear-gradient(180deg,color-mix(in_oklab,var(--gold)_22%,var(--surface)),color-mix(in_oklab,var(--gold)_12%,var(--surface)))] text-text",
+  SCHEDULED: "border-info/40 border-s-info bg-[color-mix(in_oklab,var(--info)_14%,var(--surface))] text-text",
+  COMPLETED: "border-success/35 border-s-success bg-[color-mix(in_oklab,var(--success)_11%,var(--surface))] text-text/90",
+  NO_SHOW: "border-danger/40 border-s-danger bg-[color-mix(in_oklab,var(--danger)_11%,var(--surface))] text-text/80",
+  CANCELLED: "border-border border-s-border bg-surface-2/70 text-muted line-through",
 };
+const TIME_TONE: Record<CalAppt["status"], string> = { CONFIRMED: "text-gold-strong", SCHEDULED: "text-info", COMPLETED: "text-success", NO_SHOW: "text-danger", CANCELLED: "text-muted" };
 const TONE = { COMPLETED: "success", CANCELLED: "neutral", NO_SHOW: "danger", SCHEDULED: "info", CONFIRMED: "gold" } as const;
 
 /** Side-by-side lanes for overlapping appointments in one day column. */
@@ -95,19 +96,19 @@ export function ScheduleCalendar(props: {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface">
+    <div className="lux-card overflow-hidden rounded-2xl border border-border">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={() => go({ date: props.prev, appt: null })} className={buttonClass("secondary", "sm")} aria-label={L("הקודם", "Previous")}><ChevronRight size={16} className="ltr:rotate-180" /></button>
           <button type="button" onClick={() => go({ date: null, appt: null })} className={buttonClass("ghost", "sm")}>{L("היום", "Today")}</button>
           <button type="button" onClick={() => go({ date: props.next, appt: null })} className={buttonClass("secondary", "sm")} aria-label={L("הבא", "Next")}><ChevronLeft size={16} className="ltr:rotate-180" /></button>
-          <p className="ms-2 font-display text-base font-bold sm:text-lg">{props.title}</p>
+          <p className="ms-2 font-display text-[17px] font-bold sm:text-xl">{props.title}</p>
         </div>
         <div className="flex items-center gap-2">
           <div role="tablist" className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5">
             {(["day", "3day", "week"] as const).map((v) => (
-              <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => go({ view: v })} className={`h-9 rounded-md px-3 text-sm transition-colors ${view === v ? "bg-gold text-black font-semibold" : "text-muted hover:text-text"}`}>
+              <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => go({ view: v })} className={`h-9 rounded-lg px-3.5 text-sm transition-colors ${view === v ? "btn-gold text-black font-semibold shadow" : "text-muted hover:text-text"}`}>
                 {v === "day" ? L("יום", "Day") : v === "3day" ? L("3 ימים", "3 days") : L("שבוע", "Week")}
               </button>
             ))}
@@ -116,12 +117,29 @@ export function ScheduleCalendar(props: {
         </div>
       </div>
 
+      {/* Summary of the visible period */}
+      {(() => {
+        const live = appts.filter((x) => x.status !== "CANCELLED");
+        const todays = live.filter((x) => x.dayKey === now.key);
+        const next = todays.filter((x) => x.endMin > now.min && x.status !== "COMPLETED").sort((x, y) => x.startMin - y.startMin)[0];
+        const revenue = live.reduce((sum, x) => sum + (x.price ?? 0), 0);
+        const chip = "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1 text-xs";
+        return (
+          <div className="flex flex-wrap gap-2 border-b border-border px-3 py-2.5">
+            <span className={chip}><b className="font-display text-sm text-gold">{live.length}</b> {L("תורים בתצוגה", "in view")}</span>
+            {days.some((d) => d.key === now.key) && <span className={chip}><b className="font-display text-sm text-gold">{todays.length}</b> {L("היום", "today")}</span>}
+            <span className={chip}>{L("הכנסה צפויה", "Expected")} <b className="font-display text-sm text-gold" dir="ltr">₪{revenue.toLocaleString("he-IL")}</b></span>
+            {next && <button type="button" onClick={() => go({ appt: next.id })} className={`${chip} border-gold/40 hover:border-gold`}>{L("הבא בתור", "Next up")}: <b dir="ltr">{next.start}</b> · {next.customer?.name ?? ""}</button>}
+          </div>
+        );
+      })()}
+
       {/* Grid */}
       <div ref={scroller} className="relative max-h-[72dvh] overflow-auto overscroll-contain">
         <div className="flex min-w-full" style={{ width: view === "day" ? "100%" : undefined }}>
           {/* Time axis */}
           <div className="sticky start-0 z-20 w-12 shrink-0 border-e border-border bg-surface sm:w-14">
-            <div className="sticky top-0 z-10 h-12 border-b border-border bg-surface" />
+            <div className="sticky top-0 z-10 h-14 border-b border-border bg-surface" />
             <div className="relative" style={{ height }}>
               {hours.map((m) => <span key={m} className="absolute end-1.5 -translate-y-1/2 text-[11px] tabular-nums text-muted" style={{ top: (m - range[0]) * PX }} dir="ltr">{hm(m)}</span>)}
             </div>
@@ -132,11 +150,11 @@ export function ScheduleCalendar(props: {
             const dayBlocks = blocks.filter((b) => b.dayKey === d.key);
             return (
               <div key={d.key} className={`relative flex-1 border-e border-border last:border-e-0 ${colMin}`}>
-                <button type="button" onClick={() => go({ view: "day", date: d.key, appt: null })} className={`sticky top-0 z-10 flex h-12 w-full flex-col items-center justify-center border-b border-border bg-surface text-xs ${isToday ? "text-gold" : ""}`}>
-                  <span className="font-semibold">{d.short}</span>
-                  <span className={`tabular-nums ${isToday ? "rounded-full bg-gold px-2 text-black" : "text-muted"}`}>{d.label}</span>
+                <button type="button" onClick={() => go({ view: "day", date: d.key, appt: null })} className={`sticky top-0 z-10 flex h-14 w-full items-center justify-center gap-2 border-b border-border bg-surface/95 backdrop-blur ${isToday ? "text-gold" : ""} ${!d.open ? "text-muted/70" : ""}`}>
+                  <span className="text-[11px] font-semibold tracking-wide">{d.short}</span>
+                  <span className={`grid h-8 min-w-8 place-items-center rounded-full px-1 font-display text-base font-bold tabular-nums ${isToday ? "btn-gold text-black" : ""}`}>{+d.label.slice(0, 2)}</span>
                 </button>
-                <div className="relative cursor-copy" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
+                <div className="relative cursor-copy" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${30 * PX}px, color-mix(in oklab, var(--border) 45%, transparent) ${30 * PX}px ${30 * PX + 1}px, transparent ${30 * PX + 1}px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
                   {/* closed hours */}
                   {!d.open ? <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.025)_8px_16px)]" /> : (<>
                     {d.open[0] > range[0] && <div className="absolute inset-x-0 top-0 bg-black/25" style={{ height: (d.open[0] - range[0]) * PX }} />}
@@ -152,10 +170,10 @@ export function ScheduleCalendar(props: {
                     const h = Math.max(22, (a.endMin - a.startMin) * PX - 2);
                     return (
                       <button key={a.id} type="button" data-appt onClick={() => go({ appt: a.id })}
-                        className={`absolute z-[2] overflow-hidden rounded-md border-s-[3px] border px-1.5 py-0.5 text-start text-[11px] leading-tight shadow-sm transition-transform hover:z-[3] hover:scale-[1.01] ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold" : ""}`}
+                        className={`absolute z-[2] overflow-hidden rounded-lg border border-s-[3px] px-2 py-1 text-start text-[11px] leading-tight shadow-[0_4px_14px_-8px_rgba(0,0,0,0.7)] transition-transform hover:z-[3] hover:-translate-y-px ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold ring-offset-1 ring-offset-[var(--surface)]" : ""}`}
                         style={{ top: (a.startMin - range[0]) * PX + 1, height: h, insetInlineStart: `calc(${(lane / lanesInGroup) * 100}% + 2px)`, width: `calc(${100 / lanesInGroup}% - 4px)` }}>
-                        <span className="block font-semibold tabular-nums" dir="ltr">{a.start}–{a.end}</span>
-                        <span className="block truncate font-medium">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
+                        <span className={`block font-semibold tabular-nums ${TIME_TONE[a.status]}`} dir="ltr">{a.start}–{a.end}</span>
+                        <span className="block truncate text-[12px] font-semibold">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
                         {h > 44 && <span className="block truncate text-muted">{a.service}{a.paymentStatus === "PAID" ? " · ₪✓" : ""}</span>}
                       </button>
                     );
