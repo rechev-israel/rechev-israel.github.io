@@ -23,19 +23,20 @@ enum Role {
 }
 
 model Business {
-  bookingSettings BookingSettings?
-  timeOff         TimeOff[]
-  id              String           @id @default(cuid())
-  name            String
-  category        String
-  city            String
-  country         String           @default("IL")
-  currency        String           @default("ILS")
-  timezone        String           @default("Asia/Jerusalem")
-  locale          String           @default("he")
-  instagram       String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  pushSubscriptions PushSubscription[]
+  bookingSettings   BookingSettings?
+  timeOff           TimeOff[]
+  id                String             @id @default(cuid())
+  name              String
+  category          String
+  city              String
+  country           String             @default("IL")
+  currency          String             @default("ILS")
+  timezone          String             @default("Asia/Jerusalem")
+  locale            String             @default("he")
+  instagram         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   branches         Branch[]
   users            User[]
@@ -83,25 +84,26 @@ model Branch {
 }
 
 model User {
+  pushSubscriptions PushSubscription[]
   /// Shown as a bookable barber on the public booking page.
-  acceptsBookings  Boolean   @default(false)
-  timeOff          TimeOff[] @relation("StaffTimeOff")
-  id               String    @id @default(cuid())
-  businessId       String
-  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  email            String    @unique
-  name             String
-  passwordHash     String
-  role             Role      @default(VIEWER)
-  isActive         Boolean   @default(true)
-  locale           String    @default("he")
-  failedLogins     Int       @default(0)
+  acceptsBookings   Boolean            @default(false)
+  timeOff           TimeOff[]          @relation("StaffTimeOff")
+  id                String             @id @default(cuid())
+  businessId        String
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email             String             @unique
+  name              String
+  passwordHash      String
+  role              Role               @default(VIEWER)
+  isActive          Boolean            @default(true)
+  locale            String             @default("he")
+  failedLogins      Int                @default(0)
   /// Per-user dashboard layout: ordered list of visible widget ids.
-  dashboardWidgets Json?
-  lockedUntil      DateTime?
-  lastLoginAt      DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  dashboardWidgets  Json?
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   sessions           Session[]
   auditLogs          AuditLog[]
@@ -276,6 +278,8 @@ enum AppointmentStatus {
 }
 
 model Appointment {
+  /// UNPAID | PAID — manual payment tracking from the calendar.
+  paymentStatus    String            @default("UNPAID")
   /// SHA-256 of the customer's private manage link token (online bookings only).
   manageTokenHash  String?           @unique
   id               String            @id @default(cuid())
@@ -749,6 +753,10 @@ model AutomationRun {
 }
 
 model Notification {
+  /// Prevents the same event from creating two notifications (e.g. "booking:<id>:created").
+  dedupeKey  String?   @unique
+  /// Related record (e.g. appointment id) for deep links.
+  entityId   String?
   id         String    @id @default(cuid())
   businessId String
   business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1043,4 +1051,23 @@ model TimeOff {
   createdAt  DateTime @default(now())
 
   @@index([businessId, startsAt])
+}
+
+/// Web Push subscription of a staff device (owner's phone, desktop browser). Keys are public per the Push API spec.
+model PushSubscription {
+  id            String    @id @default(cuid())
+  businessId    String
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  lastSuccessAt DateTime?
+  lastError     String?
+  failures      Int       @default(0)
+
+  @@index([businessId])
 }

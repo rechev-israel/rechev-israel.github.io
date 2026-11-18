@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Bell, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { LiveBell } from "@/components/shell/live-bell";
+import { notificationWhere } from "@/server/notify/visibility";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/auth/rbac";
 import { getI18n } from "@/i18n";
@@ -19,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { t, locale } = await getI18n();
   const [pendingApprovals, unread, pendingMessages] = await Promise.all([
     can(user.role, "approvals.view") ? db.approvalRequest.count({ where: { businessId: user.businessId, status: "PENDING" } }) : 0,
-    db.notification.count({ where: { businessId: user.businessId, readAt: null, OR: [{ userId: null }, { userId: user.id }] } }),
+    db.notification.count({ where: { ...notificationWhere(user), readAt: null } }),
     can(user.role, "comms.view") ? db.outboundMessage.count({ where: { businessId: user.businessId, status: "PENDING_APPROVAL" } }) : 0,
   ]);
 
@@ -56,10 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <div className="ms-auto flex items-center gap-2">
               <InstallButton label={locale === "he" ? "התקנת האפליקציה" : "Install app"} />
-              <Link href="/notifications" className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:border-gold/40 hover:text-text" aria-label={locale === "he" ? `התראות (${unread})` : `Notifications (${unread})`}>
-                <Bell size={15} />
-                {unread > 0 && <span className="absolute -end-1 -top-1 min-w-4 rounded-full bg-gold px-1 text-center text-[9px] font-bold leading-4 text-black">{unread > 99 ? "99+" : unread}</span>}
-              </Link>
+              <LiveBell initial={unread} he={locale === "he"} />
               <PreferenceToggles locale={locale} t={t} />
               <div className="hidden text-end sm:block">
                 <p className="text-sm font-medium leading-tight">{user.name}</p>

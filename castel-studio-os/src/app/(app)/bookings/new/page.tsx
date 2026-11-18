@@ -7,7 +7,7 @@ import { ActionForm, FieldError, SubmitButton } from "@/components/forms";
 import { Card, Input, Label, PageHeader, Select, Textarea } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
 
-export default async function NewAppointmentPage({ searchParams }: { searchParams: Promise<{ customerId?: string }> }) {
+export default async function NewAppointmentPage({ searchParams }: { searchParams: Promise<{ customerId?: string; startsAt?: string }> }) {
   const { user, t, locale, allowed } = await pageGuard("bookings.edit");
   if (!allowed) return <Forbidden message={t.errors.forbidden} />;
   const sp = await searchParams;
@@ -43,7 +43,7 @@ export default async function NewAppointmentPage({ searchParams }: { searchParam
           </div>
           <div>
             <Label>{t.bookings.startsAt} *</Label>
-            <Input type="datetime-local" name="startsAt" required defaultValue={toLocalInput(next)} step={300} />
+            <Input type="datetime-local" name="startsAt" required defaultValue={sp.startsAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(sp.startsAt) ? sp.startsAt : toLocalInput(next)} step={300} />
             <FieldError name="startsAt" />
           </div>
           <div>

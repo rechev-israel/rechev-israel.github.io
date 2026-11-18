@@ -1,0 +1,292 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Ban, CalendarClock, ChevronLeft, ChevronRight, CreditCard, Phone, Plus, X } from "lucide-react";
+import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
+import { Badge, Input, Label, Select, Textarea, buttonClass } from "@/components/ui";
+import { blockTimeAction, removeBlockAction, rescheduleAppointmentAction, setAppointmentStatusAction, setPaymentStatusAction, updateAppointmentDetailsAction } from "@/server/actions/bookings";
+
+export type CalDay = { key: string; weekday: number; label: string; short: string; open: [number, number] | null };
+export type CalAppt = {
+  id: string; dayKey: string; startMin: number; endMin: number; start: string; end: string; status: "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+  customer: { id: string; name: string; phone: string | null } | null; serviceId: string | null; service: string; staffId: string | null; staff: string | null;
+  price: number | null; paymentStatus: string; source: string; notes: string | null; startsAtLocal: string; durationMin: number; cancelReason: string | null;
+};
+export type CalBlock = { id: string; dayKey: string; startMin: number; endMin: number; reason: string | null; staff: string | null };
+
+const PX = 1.3; // pixels per minute
+const pad = (n: number) => String(n).padStart(2, "0");
+const hm = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const STATUS_STYLE: Record<CalAppt["status"], string> = {
+  CONFIRMED: "border-gold/70 bg-[color-mix(in_oklab,var(--gold)_18%,var(--surface))] text-text",
+  SCHEDULED: "border-sky-400/60 bg-sky-500/15 text-text",
+  COMPLETED: "border-emerald-400/50 bg-emerald-500/12 text-text/90",
+  NO_SHOW: "border-red-400/60 bg-red-500/12 text-text/80",
+  CANCELLED: "border-border bg-surface-2/60 text-muted line-through",
+};
+const TONE = { COMPLETED: "success", CANCELLED: "neutral", NO_SHOW: "danger", SCHEDULED: "info", CONFIRMED: "gold" } as const;
+
+/** Side-by-side lanes for overlapping appointments in one day column. */
+function lanes<T extends { startMin: number; endMin: number }>(items: T[]) {
+  const sorted = [...items].sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
+  const out: { item: T; lane: number; lanesInGroup: number }[] = [];
+  let group: { item: T; lane: number }[] = [], groupEnd = -1;
+  const flush = () => { const n = Math.max(1, ...group.map((g) => g.lane + 1)); group.forEach((g) => out.push({ ...g, lanesInGroup: n })); group = []; };
+  for (const it of sorted) {
+    if (it.startMin >= groupEnd && group.length) flush();
+    const used = new Set(group.filter((g) => g.item.endMin > it.startMin).map((g) => g.lane));
+    let lane = 0; while (used.has(lane)) lane++;
+    group.push({ item: it, lane }); groupEnd = Math.max(groupEnd, it.endMin);
+  }
+  if (group.length) flush();
+  return out;
+}
+
+function nowInJerusalem() {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  return { key: `${g("year")}-${g("month")}-${g("day")}`, min: +g("hour") * 60 + +g("minute") };
+}
+
+export function ScheduleCalendar(props: {
+  view: "day" | "3day" | "week"; explicitView: boolean; date: string; prev: string; next: string; title: string; locale: string; edit: boolean;
+  days: CalDay[]; appts: CalAppt[]; blocks: CalBlock[]; range: [number, number];
+  services: { id: string; name: string; durationMin: number; price: number }[]; staff: { id: string; name: string }[];
+}) {
+  const { view, days, appts, blocks, range, edit, locale } = props;
+  const he = locale === "he";
+  const L = (h: string, e: string) => (he ? h : e);
+  const router = useRouter();
+  const sp = useSearchParams();
+  const scroller = useRef<HTMLDivElement>(null);
+  const [now, setNow] = useState(nowInJerusalem);
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [pick, setPick] = useState<{ dayKey: string; min: number } | null>(null);
+  const [blockAt, setBlockAt] = useState<{ dayKey: string; min: number } | null>(null);
+  const selectedId = sp.get("appt");
+  const selected = appts.find((a) => a.id === selectedId) ?? null;
+  const height = (range[1] - range[0]) * PX;
+
+  const go = (params: Record<string, string | null>) => {
+    const q = new URLSearchParams(sp.toString());
+    for (const [k, v] of Object.entries(params)) v === null ? q.delete(k) : q.set(k, v);
+    router.push(`/bookings?${q.toString()}`, { scroll: false });
+  };
+
+  // Phones open on the day view unless a view was chosen explicitly.
+  useEffect(() => { if (!props.explicitView && window.innerWidth < 768 && view !== "day") go({ view: "day" }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { const t = setInterval(() => setNow(nowInJerusalem()), 60_000); return () => clearInterval(t); }, []);
+  // Scroll to "now" (or the selected appointment / opening time) on load.
+  useEffect(() => {
+    const el = scroller.current; if (!el) return;
+    const target = selected ? selected.startMin : days.some((d) => d.key === now.key) ? now.min : days.find((d) => d.open)?.open?.[0] ?? range[0];
+    el.scrollTop = Math.max(0, (target - range[0]) * PX - 120);
+  }, [props.date, view]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hours = useMemo(() => { const out: number[] = []; for (let m = Math.ceil(range[0] / 60) * 60; m < range[1]; m += 60) out.push(m); return out; }, [range]);
+  const colMin = view === "week" ? "min-w-[118px]" : view === "3day" ? "min-w-[104px]" : "min-w-0";
+
+  const onGridClick = (e: React.MouseEvent<HTMLDivElement>, dayKey: string) => {
+    if (!edit || (e.target as HTMLElement).closest("[data-appt],[data-block]")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const min = Math.floor((range[0] + (e.clientY - rect.top) / PX) / 15) * 15;
+    setPick({ dayKey, min });
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={() => go({ date: props.prev, appt: null })} className={buttonClass("secondary", "sm")} aria-label={L("הקודם", "Previous")}><ChevronRight size={16} className="ltr:rotate-180" /></button>
+          <button type="button" onClick={() => go({ date: null, appt: null })} className={buttonClass("ghost", "sm")}>{L("היום", "Today")}</button>
+          <button type="button" onClick={() => go({ date: props.next, appt: null })} className={buttonClass("secondary", "sm")} aria-label={L("הבא", "Next")}><ChevronLeft size={16} className="ltr:rotate-180" /></button>
+          <p className="ms-2 font-display text-base font-bold sm:text-lg">{props.title}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div role="tablist" className="inline-flex rounded-lg border border-border bg-surface-2 p-0.5">
+            {(["day", "3day", "week"] as const).map((v) => (
+              <button key={v} role="tab" aria-selected={view === v} type="button" onClick={() => go({ view: v })} className={`h-9 rounded-md px-3 text-sm transition-colors ${view === v ? "bg-gold text-black font-semibold" : "text-muted hover:text-text"}`}>
+                {v === "day" ? L("יום", "Day") : v === "3day" ? L("3 ימים", "3 days") : L("שבוע", "Week")}
+              </button>
+            ))}
+          </div>
+          {edit && <Link href={`/bookings/new?startsAt=${props.date}T${hm(Math.max(range[0], now.min - (now.min % 15) + 15))}`} className={buttonClass("primary", "sm")}><Plus size={14} /> <span className="hidden sm:inline">{L("תור חדש", "New")}</span></Link>}
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div ref={scroller} className="relative max-h-[72dvh] overflow-auto overscroll-contain">
+        <div className="flex min-w-full" style={{ width: view === "day" ? "100%" : undefined }}>
+          {/* Time axis */}
+          <div className="sticky start-0 z-20 w-12 shrink-0 border-e border-border bg-surface sm:w-14">
+            <div className="sticky top-0 z-10 h-12 border-b border-border bg-surface" />
+            <div className="relative" style={{ height }}>
+              {hours.map((m) => <span key={m} className="absolute end-1.5 -translate-y-1/2 text-[11px] tabular-nums text-muted" style={{ top: (m - range[0]) * PX }} dir="ltr">{hm(m)}</span>)}
+            </div>
+          </div>
+          {days.map((d) => {
+            const isToday = d.key === now.key;
+            const dayAppts = appts.filter((a) => a.dayKey === d.key && (showCancelled || a.status !== "CANCELLED"));
+            const dayBlocks = blocks.filter((b) => b.dayKey === d.key);
+            return (
+              <div key={d.key} className={`relative flex-1 border-e border-border last:border-e-0 ${colMin}`}>
+                <button type="button" onClick={() => go({ view: "day", date: d.key, appt: null })} className={`sticky top-0 z-10 flex h-12 w-full flex-col items-center justify-center border-b border-border bg-surface text-xs ${isToday ? "text-gold" : ""}`}>
+                  <span className="font-semibold">{d.short}</span>
+                  <span className={`tabular-nums ${isToday ? "rounded-full bg-gold px-2 text-black" : "text-muted"}`}>{d.label}</span>
+                </button>
+                <div className="relative cursor-copy" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
+                  {/* closed hours */}
+                  {!d.open ? <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.025)_8px_16px)]" /> : (<>
+                    {d.open[0] > range[0] && <div className="absolute inset-x-0 top-0 bg-black/25" style={{ height: (d.open[0] - range[0]) * PX }} />}
+                    {d.open[1] < range[1] && <div className="absolute inset-x-0 bottom-0 bg-black/25" style={{ top: (d.open[1] - range[0]) * PX }} />}
+                  </>)}
+                  {dayBlocks.map((b) => (
+                    <div key={b.id} data-block className="absolute inset-x-0.5 z-[1] overflow-hidden rounded-md border border-dashed border-border bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.04)_0_6px,transparent_6px_12px)] p-1 text-[10px] text-muted" style={{ top: (b.startMin - range[0]) * PX, height: Math.max(18, (b.endMin - b.startMin) * PX) }}>
+                      <div className="flex items-start justify-between gap-1"><span className="truncate"><Ban size={10} className="inline" /> {b.reason || L("חסום", "Blocked")}{b.staff ? ` · ${b.staff}` : ""}</span>
+                        {edit && <InlineAction action={removeBlockAction} fields={{ id: b.id }} confirm={L("לבטל את החסימה?", "Remove block?")} className="h-5 px-1 text-[10px]">✕</InlineAction>}</div>
+                    </div>
+                  ))}
+                  {lanes(dayAppts).map(({ item: a, lane, lanesInGroup }) => {
+                    const h = Math.max(22, (a.endMin - a.startMin) * PX - 2);
+                    return (
+                      <button key={a.id} type="button" data-appt onClick={() => go({ appt: a.id })}
+                        className={`absolute z-[2] overflow-hidden rounded-md border-s-[3px] border px-1.5 py-0.5 text-start text-[11px] leading-tight shadow-sm transition-transform hover:z-[3] hover:scale-[1.01] ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold" : ""}`}
+                        style={{ top: (a.startMin - range[0]) * PX + 1, height: h, insetInlineStart: `calc(${(lane / lanesInGroup) * 100}% + 2px)`, width: `calc(${100 / lanesInGroup}% - 4px)` }}>
+                        <span className="block font-semibold tabular-nums" dir="ltr">{a.start}–{a.end}</span>
+                        <span className="block truncate font-medium">{a.customer?.name ?? L("ללא לקוח", "Walk-in")}</span>
+                        {h > 44 && <span className="block truncate text-muted">{a.service}{a.paymentStatus === "PAID" ? " · ₪✓" : ""}</span>}
+                      </button>
+                    );
+                  })}
+                  {isToday && now.min >= range[0] && now.min <= range[1] && (
+                    <div className="pointer-events-none absolute inset-x-0 z-[4] flex items-center" style={{ top: (now.min - range[0]) * PX }}>
+                      <span className="-ms-1 h-2.5 w-2.5 rounded-full bg-red-500" /><span className="h-px flex-1 bg-red-500" />
+                    </div>
+                  )}
+                  {pick?.dayKey === d.key && (
+                    <div className="absolute inset-x-1 z-[5] rounded-lg border border-gold/60 bg-surface p-2 shadow-xl" style={{ top: Math.min((pick.min - range[0]) * PX, height - 96) }} onClick={(e) => e.stopPropagation()}>
+                      <p className="mb-1.5 text-xs font-semibold tabular-nums" dir="ltr">{hm(pick.min)}</p>
+                      <div className="flex flex-col gap-1">
+                        <Link href={`/bookings/new?startsAt=${d.key}T${hm(pick.min)}`} className={buttonClass("primary", "sm", "w-full")}><Plus size={13} /> {L("תור חדש", "New appointment")}</Link>
+                        <button type="button" className={buttonClass("secondary", "sm", "w-full")} onClick={() => { setBlockAt(pick); setPick(null); }}><Ban size={13} /> {L("חסימת זמן", "Block time")}</button>
+                        <button type="button" className="text-[11px] text-muted" onClick={() => setPick(null)}>{L("סגירה", "Close")}</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 border-t border-border p-3 text-[11px] text-muted">
+        {(["CONFIRMED", "SCHEDULED", "COMPLETED", "NO_SHOW"] as const).map((s) => <span key={s} className="inline-flex items-center gap-1"><i className={`inline-block h-2.5 w-2.5 rounded-sm border ${STATUS_STYLE[s]}`} />{({ CONFIRMED: L("מאושר", "Confirmed"), SCHEDULED: L("ממתין", "Pending"), COMPLETED: L("הושלם", "Completed"), NO_SHOW: L("לא הגיע", "No-show") })[s]}</span>)}
+        <label className="ms-auto inline-flex items-center gap-1.5"><input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} className="accent-[var(--gold)]" /> {L("הצגת מבוטלים", "Show cancelled")}</label>
+        {edit && <span>{L("לחיצה על משבצת ריקה: תור חדש או חסימה", "Tap an empty slot: new appointment or block")}</span>}
+      </div>
+
+      {selected && <AppointmentPanel a={selected} he={he} edit={edit} services={props.services} staff={props.staff} onClose={() => go({ appt: null })} />}
+      {blockAt && <BlockDialog at={blockAt} he={he} staff={props.staff} onClose={() => setBlockAt(null)} />}
+    </div>
+  );
+}
+
+function Sheet({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: React.ReactNode }) {
+  useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[2px] sm:items-stretch sm:justify-end" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-none sm:w-[420px] sm:rounded-none sm:border-y-0 sm:border-e-0" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0">{title}</div><button type="button" onClick={onClose} className={buttonClass("ghost", "sm")} aria-label="close"><X size={16} /></button></div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function AppointmentPanel({ a, he, edit, services, staff, onClose }: { a: CalAppt; he: boolean; edit: boolean; services: { id: string; name: string; durationMin: number; price: number }[]; staff: { id: string; name: string }[]; onClose: () => void }) {
+  const L = (h: string, e: string) => (he ? h : e);
+  const statusLabel = { CONFIRMED: L("מאושר", "Confirmed"), SCHEDULED: L("ממתין לאישור", "Pending"), COMPLETED: L("הושלם", "Completed"), NO_SHOW: L("לא הגיע", "No-show"), CANCELLED: L("בוטל", "Cancelled") }[a.status];
+  const active = a.status === "SCHEDULED" || a.status === "CONFIRMED";
+  const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-3 border-b border-border py-2 text-sm"><dt className="text-muted">{k}</dt><dd className="text-end">{v}</dd></div>;
+  return (
+    <Sheet onClose={onClose} title={<>
+      <p className="font-display text-xl font-bold">{a.customer ? <Link href={`/crm/${a.customer.id}`} className="hover:text-gold">{a.customer.name}</Link> : L("ללא לקוח", "Walk-in")}</p>
+      <div className="mt-1 flex flex-wrap gap-1.5"><Badge tone={TONE[a.status]}>{statusLabel}</Badge><Badge tone={a.paymentStatus === "PAID" ? "success" : "neutral"}>{a.paymentStatus === "PAID" ? L("שולם", "Paid") : L("לא שולם", "Unpaid")}</Badge>{a.source === "online" && <Badge tone="info">{L("נקבע באתר", "Booked online")}</Badge>}</div>
+    </>}>
+      <dl className="mb-4">
+        {row(L("מועד", "When"), <span dir="ltr" className="tabular-nums">{a.startsAtLocal.slice(8, 10)}.{a.startsAtLocal.slice(5, 7)} · {a.start}–{a.end}</span>)}
+        {row(L("משך", "Duration"), `${a.durationMin} ${L("דק׳", "min")}`)}
+        {row(L("שירות", "Service"), a.service || "—")}
+        {row(L("מחיר", "Price"), a.price != null ? `₪${a.price}` : "—")}
+        {a.staff && row(L("ספר", "Barber"), a.staff)}
+        {a.customer?.phone && row(L("טלפון", "Phone"), <a href={`tel:${a.customer.phone}`} className="inline-flex items-center gap-1 text-gold" dir="ltr"><Phone size={12} /> {a.customer.phone}</a>)}
+        {a.notes && row(L("הערות", "Notes"), <span className="whitespace-pre-wrap">{a.notes}</span>)}
+        {a.cancelReason && row(L("סיבת ביטול", "Cancel reason"), a.cancelReason === "customer_online" ? L("בוטל ע״י הלקוח באתר", "Cancelled by customer online") : a.cancelReason)}
+      </dl>
+      {edit && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {a.status === "SCHEDULED" && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CONFIRMED" }} variant="primary" size="md">{L("אישור התור", "Confirm")}</InlineAction>}
+            {active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "COMPLETED" }} variant="secondary" size="md" className="text-success">{L("הושלם", "Completed")}</InlineAction>}
+            {active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "NO_SHOW" }} variant="secondary" size="md" className="text-danger">{L("לא הגיע", "No-show")}</InlineAction>}
+            {!active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "SCHEDULED" }} variant="secondary" size="md">↺ {L("החזרה לפעיל", "Reactivate")}</InlineAction>}
+            <InlineAction action={setPaymentStatusAction} fields={{ id: a.id, paymentStatus: a.paymentStatus === "PAID" ? "UNPAID" : "PAID" }} variant="secondary" size="md"><CreditCard size={14} /> {a.paymentStatus === "PAID" ? L("סימון כלא שולם", "Mark unpaid") : L("סימון כשולם", "Mark paid")}</InlineAction>
+          </div>
+          {active && (
+            <details className="rounded-xl border border-border p-3" open={false}>
+              <summary className="cursor-pointer text-sm font-semibold text-gold"><CalendarClock size={14} className="inline" /> {L("הזזת התור", "Reschedule")}</summary>
+              <ActionForm action={rescheduleAppointmentAction} className="mt-3 space-y-2">
+                <input type="hidden" name="id" value={a.id} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="col-span-2"><Label>{L("מועד חדש", "New time")}</Label><Input type="datetime-local" name="startsAt" defaultValue={a.startsAtLocal} step={300} dir="ltr" required /></div>
+                  <div><Label>{L("משך (דק׳)", "Duration")}</Label><Input type="number" name="durationMin" min={5} max={600} defaultValue={a.durationMin} /></div>
+                  {staff.length > 1 && <div><Label>{L("ספר", "Barber")}</Label><Select name="staffId" defaultValue={a.staffId ?? ""}><option value="">—</option>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></div>}
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="allowOverlap" className="accent-[var(--gold)]" /> {L("לאפשר חפיפה עם תור אחר", "Allow overlap")}</label>
+                <SubmitButton size="sm">{L("שמירת המועד", "Save")}</SubmitButton>
+              </ActionForm>
+            </details>
+          )}
+          <details className="rounded-xl border border-border p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-gold">{L("עריכת פרטים", "Edit details")}</summary>
+            <ActionForm action={updateAppointmentDetailsAction} className="mt-3 space-y-2">
+              <input type="hidden" name="id" value={a.id} />
+              <div><Label>{L("שירות", "Service")}</Label><Select name="serviceId" defaultValue={a.serviceId ?? ""}><option value="">—</option>{services.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.durationMin}′ · ₪{s.price}</option>)}</Select></div>
+              <div><Label>{L("מחיר (₪)", "Price (₪)")}</Label><Input type="number" name="price" min={0} step="1" defaultValue={a.price ?? ""} /></div>
+              <div><Label>{L("הערות", "Notes")}</Label><Textarea name="notes" rows={3} defaultValue={a.notes ?? ""} maxLength={1000} /></div>
+              <SubmitButton size="sm">{L("שמירה", "Save")}</SubmitButton>
+            </ActionForm>
+          </details>
+          {active && (
+            <details className="rounded-xl border border-danger/30 p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-danger">{L("ביטול התור", "Cancel appointment")}</summary>
+              <form action={setAppointmentStatusAction} className="mt-3 space-y-2" onSubmit={(e) => { if (!window.confirm(L("לבטל את התור?", "Cancel this appointment?"))) e.preventDefault(); }}>
+                <input type="hidden" name="id" value={a.id} /><input type="hidden" name="status" value="CANCELLED" />
+                <Input name="reason" maxLength={300} placeholder={L("סיבה (לא חובה)", "Reason (optional)")} />
+                <SubmitButton size="sm" variant="danger">{L("ביטול התור", "Cancel appointment")}</SubmitButton>
+              </form>
+            </details>
+          )}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+function BlockDialog({ at, he, staff, onClose }: { at: { dayKey: string; min: number }; he: boolean; staff: { id: string; name: string }[]; onClose: () => void }) {
+  const L = (h: string, e: string) => (he ? h : e);
+  return (
+    <Sheet onClose={onClose} title={<p className="font-display text-xl font-bold">{L("חסימת זמן ביומן", "Block time")}</p>}>
+      <p className="mb-3 text-xs text-muted">{L("בזמן חסום לא ניתן לקבוע תורים באתר.", "Customers can't book during blocked time.")}</p>
+      <ActionForm action={async (s, fd) => { const r = await blockTimeAction(s, fd); if (r?.ok) onClose(); return r; }} className="space-y-2">
+        <div><Label>{L("מ-", "From")}</Label><Input type="datetime-local" name="from" defaultValue={`${at.dayKey}T${hm(at.min)}`} step={300} dir="ltr" required /></div>
+        <div><Label>{L("למשך", "For")}</Label><Select name="minutes" defaultValue="60">{[15, 30, 45, 60, 90, 120, 180, 240, 480, 720].map((m) => <option key={m} value={m}>{m < 60 ? `${m} ${L("דק׳", "min")}` : `${m / 60} ${L("שעות", "h")}`}</option>)}</Select></div>
+        {staff.length > 1 && <div><Label>{L("למי", "Who")}</Label><Select name="staffId"><option value="">{L("כל המספרה", "Whole shop")}</option>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></div>}
+        <div><Label>{L("סיבה", "Reason")}</Label><Input name="reason" maxLength={120} placeholder={L("הפסקה / סידור", "Break / errand")} /></div>
+        <SubmitButton size="sm">{L("חסימה", "Block")}</SubmitButton>
+      </ActionForm>
+    </Sheet>
+  );
+}

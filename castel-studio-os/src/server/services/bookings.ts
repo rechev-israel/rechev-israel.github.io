@@ -27,7 +27,7 @@ export async function createAppointment(actor: Actor, input: z.infer<typeof appo
 
   if (input.staffId && !opts.allowOverlap) {
     const overlap = await db.appointment.findFirst({
-      where: { businessId: actor.businessId, staffId: input.staffId, status: { in: ["SCHEDULED", "CONFIRMED"] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt } },
+      where: { businessId: actor.businessId, staffId: input.staffId, status: { in: ["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW"] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt } },
     });
     if (overlap) throw new DomainError("bookings.overlap", "startsAt");
   }
@@ -116,4 +116,33 @@ export async function bookingAnalytics(businessId: string, days = 30) {
     completedRevenue,
     avgTicket: count("COMPLETED") ? Math.round(completedRevenue / count("COMPLETED")) : null,
   };
+}
+
+const OCCUPY: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW"];
+
+/** Move an appointment (and optionally change its length/barber). Refuses overlaps unless explicitly allowed. */
+export async function rescheduleAppointment(actor: Actor, id: string, input: { startsAt: string; durationMin?: number; staffId?: string | null }, opts: { allowOverlap?: boolean } = {}) {
+  const a = await db.appointment.findFirst({ where: { id, businessId: actor.businessId } });
+  if (!a) throw new DomainError("errors.notFound");
+  if (a.status === "CANCELLED") throw new DomainError("errors.validation");
+  const startsAt = parseLocalDateTime(input.startsAt);
+  const duration = input.durationMin ?? Math.round((a.endsAt.getTime() - a.startsAt.getTime()) / 60000);
+  const endsAt = new Date(startsAt.getTime() + duration * 60_000);
+  const staffId = input.staffId === undefined ? a.staffId : input.staffId || null;
+  if (staffId && !(await db.user.findFirst({ where: { id: staffId, businessId: actor.businessId } }))) throw new DomainError("errors.notFound", "staffId");
+  if (!opts.allowOverlap) {
+    const singleChair = (await db.user.count({ where: { businessId: actor.businessId, isActive: true, acceptsBookings: true } })) <= 1;
+    const overlap = await db.appointment.findFirst({
+      where: { businessId: actor.businessId, id: { not: id }, status: { in: OCCUPY }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt },
+        ...(staffId ? { OR: [{ staffId }, ...(singleChair ? [{ staffId: null }] : [])] } : singleChair ? {} : { staffId: null }) },
+    });
+    if (overlap) throw new DomainError("bookings.overlap", "startsAt");
+  }
+  const updated = await db.appointment.update({ where: { id }, data: { startsAt, endsAt, staffId } });
+  await audit({ businessId: actor.businessId, userId: actor.id, action: "appointment.reschedule", entityType: "Appointment", entityId: id, metadata: { from: a.startsAt.toISOString(), to: startsAt.toISOString() } });
+  if (a.startsAt.getTime() !== startsAt.getTime()) {
+    const { notifyAppointmentEvent } = await import("@/server/notify/owner");
+    await notifyAppointmentEvent("booking_rescheduled", id, { dedupeSuffix: String(startsAt.getTime()), previousStartsAt: a.startsAt, actorUserId: actor.id });
+  }
+  return updated;
 }

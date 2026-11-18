@@ -19,6 +19,9 @@
       copy: "העתקת קישור", copied: "הועתק", closed: "קביעת תורים אונליין תיפתח בקרוב.", contact: "בינתיים אפשר לפנות אלינו:",
       tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", cancelUntil: "ביטול אונליין אפשרי עד {h} שעות לפני התור.",
       min: "דק׳", err: "משהו השתבש. נסו שוב.", notFound: "התור לא נמצא.",
+      wd: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"], prevM: "החודש הקודם", nextM: "החודש הבא", free: "פנוי", full: "אין שעות פנויות",
+      legendFree: "יש שעות פנויות", legendNone: "סגור / מלא", customer: "שם", service: "שירות", date: "תאריך", timeL: "שעה", duration: "משך", status: "סטטוס",
+      st: { CONFIRMED: "מאושר", SCHEDULED: "ממתין לאישור", CANCELLED: "בוטל", COMPLETED: "הושלם", NO_SHOW: "לא הגיע" }, noDays: "אין כרגע ימים פנויים. נסו שוב מאוחר יותר או צרו קשר.",
       e: { slot_taken: "השעה הזאת נתפסה הרגע. בחרו שעה אחרת.", phone: "מספר הטלפון לא תקין.", limit: "כבר יש לכם תורים פתוחים. לשינוי צרו קשר עם המספרה.", rate_limited: "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.", validation: "נא למלא שם וטלפון ולאשר.", disabled: "קביעת תורים סגורה כרגע." }
     },
     en: {
@@ -30,6 +33,9 @@
       copy: "Copy link", copied: "Copied", closed: "Online booking opens soon.", contact: "Meanwhile, reach us:",
       tooLate: "Too late to cancel online. Please call the shop.", cancelUntil: "Online cancellation up to {h}h before.",
       min: "min", err: "Something went wrong. Please try again.", notFound: "Booking not found.",
+      wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], prevM: "Previous month", nextM: "Next month", free: "free", full: "No free times",
+      legendFree: "Available", legendNone: "Closed / full", customer: "Name", service: "Service", date: "Date", timeL: "Time", duration: "Duration", status: "Status",
+      st: { CONFIRMED: "Confirmed", SCHEDULED: "Awaiting confirmation", CANCELLED: "Cancelled", COMPLETED: "Completed", NO_SHOW: "No-show" }, noDays: "No available days right now. Please try later or contact us.",
       e: { slot_taken: "That time was just taken. Pick another.", phone: "Invalid phone number.", limit: "You already have upcoming bookings. Contact the shop to change.", rate_limited: "Too many attempts. Try again in a few minutes.", validation: "Please fill name and phone and accept.", disabled: "Booking is closed right now." }
     }
   };
@@ -42,11 +48,54 @@
   var svcName = function (s) { return lang() === "en" ? (s.en || s.he) : s.he; };
   var manageLink = function (token) { return location.origin + location.pathname + "?booking=" + encodeURIComponent(token) + "#book"; };
 
-  var S = { cfg: null, service: "", staff: "any", date: "", slots: null, start: null, busy: false, error: "", manage: null, token: "" };
+  var S = { cfg: null, service: "", staff: "any", date: "", slots: null, start: null, busy: false, error: "", manage: null, token: "", days: null, month: "" };
 
   // title is trusted markup built here (static strings + escaped values)
   function step(n, title, inner) { return '<div class="bk-step"><h3 class="bk-h"><span class="bk-n">' + n + "</span><span>" + title + "</span></h3>" + inner + "</div>"; }
   function chip(on, attrs, inner) { return '<button type="button" class="bk-chip' + (on ? " on" : "") + '" aria-pressed="' + on + '" ' + attrs + ">" + inner + "</button>"; }
+
+  // ── Month calendar (Sunday-first, Israel) ──
+  function ym(d) { return d.slice(0, 7); }
+  function calendar() {
+    var L = t();
+    if (S.days === null) return '<p class="bk-muted">' + L.loading + "</p>";
+    var map = {}; S.days.forEach(function (d) { map[d.date] = d.free; });
+    var months = []; S.days.forEach(function (d) { if (months.indexOf(ym(d.date)) < 0) months.push(ym(d.date)); });
+    if (!S.days.some(function (d) { return d.free > 0; })) return '<p class="bk-muted">' + L.noDays + "</p>";
+    var m = S.month || months[0], mi = months.indexOf(m);
+    var y = +m.slice(0, 4), mo = +m.slice(5, 7);
+    var first = new Date(Date.UTC(y, mo - 1, 1)), startWd = first.getUTCDay(), dim = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    var today = S.days[0].date;
+    var title = new Intl.DateTimeFormat(lang() === "he" ? "he-IL" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(first);
+    var h = '<div class="bk-cal"><div class="bk-cal-head">' +
+      '<button type="button" class="bk-nav" data-month="' + (months[mi - 1] || "") + '" aria-label="' + L.prevM + '"' + (mi > 0 ? "" : " disabled") + '><span aria-hidden="true">' + (lang() === "he" ? "›" : "‹") + "</span></button>" +
+      '<p class="bk-cal-title">' + esc(title) + "</p>" +
+      '<button type="button" class="bk-nav" data-month="' + (months[mi + 1] || "") + '" aria-label="' + L.nextM + '"' + (mi < months.length - 1 ? "" : " disabled") + '><span aria-hidden="true">' + (lang() === "he" ? "‹" : "›") + "</span></button></div>" +
+      '<div class="bk-cal-grid" role="grid">' + L.wd.map(function (w) { return '<span class="bk-wd" role="columnheader">' + w + "</span>"; }).join("");
+    for (var i = 0; i < startWd; i++) h += '<span class="bk-day bk-empty" aria-hidden="true"></span>';
+    for (var d = 1; d <= dim; d++) {
+      var ds = m + "-" + String(d).padStart(2, "0");
+      var inRange = ds in map, free = map[ds] || 0, sel = S.date === ds;
+      var cls = "bk-day" + (inRange ? (free > 0 ? " avail" : " none") : " out") + (sel ? " on" : "") + (ds === today ? " today" : "");
+      var lbl = new Intl.DateTimeFormat(lang() === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(ds + "T12:00:00Z")) + " · " + (free > 0 ? free + " " + L.free : L.full);
+      h += free > 0 ? '<button type="button" class="' + cls + '" data-date="' + ds + '" aria-pressed="' + sel + '" aria-label="' + esc(lbl) + '"><b>' + d + "</b><i></i></button>"
+        : '<span class="' + cls + '"' + (inRange ? ' aria-label="' + esc(lbl) + '"' : "") + "><b>" + d + "</b></span>";
+    }
+    h += '</div><div class="bk-legend"><span><i class="dot avail"></i>' + L.legendFree + '</span><span><i class="dot none"></i>' + L.legendNone + "</span></div></div>";
+    return h;
+  }
+  function loadDays() {
+    if (!S.service) return;
+    S.days = null; S.date = ""; S.slots = null; S.start = null; render();
+    var key = S.service + S.staff;
+    get("/days?serviceId=" + S.service + "&staffId=" + S.staff).then(function (d) {
+      if (key !== S.service + S.staff) return;
+      S.days = d.days || [];
+      var firstFree = S.days.filter(function (x) { return x.free > 0; })[0];
+      S.month = firstFree ? ym(firstFree.date) : (S.days[0] ? ym(S.days[0].date) : "");
+      render();
+    }).catch(function () { S.days = []; render(); });
+  }
 
   function render() {
     var L = t();
@@ -65,7 +114,7 @@
       return chip(S.service === s.id, 'data-svc="' + esc(s.id) + '"', '<span class="bk-sname">' + esc(svcName(s)) + '</span><span class="bk-meta">' + s.durationMin + " " + L.min + " · <b>₪" + s.price + "</b></span>");
     }).join("") + "</div>");
     if (c.staff.length > 1) h += step(n++, esc(L.barber), '<div class="bk-wrap">' + chip(S.staff === "any", 'data-staff="any"', L.any) + c.staff.map(function (p) { return chip(S.staff === p.id, 'data-staff="' + esc(p.id) + '"', esc(p.name)); }).join("") + "</div>");
-    if (S.service) h += step(n++, esc(L.day), '<div class="bk-days">' + c.dates.map(function (d) { return chip(S.date === d, 'data-date="' + d + '"', esc(dayLabel(d))); }).join("") + "</div>");
+    if (S.service) h += step(n++, esc(L.day), calendar());
     if (S.service && S.date) {
       var inner = S.slots === null ? '<p class="bk-muted">' + L.loading + "</p>" : !S.slots.length ? '<p class="bk-muted">' + L.noTimes + "</p>"
         : '<div class="bk-times">' + S.slots.map(function (x) { return chip(S.start === x.start, 'data-start="' + x.start + '" dir="ltr"', x.label); }).join("") + "</div>";
@@ -75,7 +124,7 @@
       var svc = c.services.filter(function (s) { return s.id === S.service; })[0];
       var slot = (S.slots || []).filter(function (x) { return x.start === S.start; })[0];
       h += '<form class="bk-step" id="bkForm" novalidate><h3 class="bk-h"><span class="bk-n">' + n + "</span>" + L.details + "</h3>" +
-        '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span> · ₪" + svc.price + "</p>" +
+        '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span> · " + svc.durationMin + " " + L.min + " · ₪" + svc.price + "</p>" +
         '<div class="bk-grid2"><label class="bk-field">' + L.name + '<input name="name" autocomplete="name" maxlength="80" required></label>' +
         '<label class="bk-field">' + L.phone + '<input name="phone" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="050-0000000" maxlength="20" required></label></div>' +
         '<label class="bk-field">' + L.note + '<input name="notes" maxlength="500"></label>' +
@@ -95,7 +144,14 @@
     var title = cancelled ? L.cancelled : m.status === "CONFIRMED" ? L.booked + (m.firstName ? ", " + esc(m.firstName) : "") + "!" : L.pending;
     var link = manageLink(S.token);
     var h = '<div class="bk-card"><p class="bk-title">' + (cancelled ? "" : '<span class="bk-ok">✓</span>') + title + "</p>" +
-      '<ul class="bk-list"><li>' + esc(m.service ? svcName(m.service) : "") + (m.price ? " · ₪" + m.price : "") + "</li><li>" + esc(dayLabel(m.date, true)) + ' · <span dir="ltr">' + m.time + "</span></li>" + (m.staff ? "<li>" + esc(m.staff) + "</li>" : "") + "</ul>";
+      '<dl class="bk-dl">' +
+        (m.name ? "<dt>" + L.customer + "</dt><dd>" + esc(m.name) + "</dd>" : "") +
+        "<dt>" + L.service + "</dt><dd>" + esc(m.service ? svcName(m.service) : "") + (m.price ? " · ₪" + m.price : "") + "</dd>" +
+        "<dt>" + L.date + "</dt><dd>" + esc(dayLabel(m.date, true)) + "</dd>" +
+        "<dt>" + L.timeL + '</dt><dd><span dir="ltr" class="bk-num">' + m.time + "</span></dd>" +
+        "<dt>" + L.duration + "</dt><dd>" + (m.durationMin || "") + " " + L.min + "</dd>" +
+        (m.staff ? "<dt>" + (lang() === "he" ? "ספר" : "Barber") + "</dt><dd>" + esc(m.staff) + "</dd>" : "") +
+        "<dt>" + L.status + '</dt><dd><span class="bk-badge s-' + m.status + '">' + (L.st[m.status] || m.status) + "</span></dd></dl>";
     if (!cancelled && !m.past) {
       h += '<div class="bk-row"><a class="btn ghost sm" href="' + API + "/ics?t=" + encodeURIComponent(S.token) + '">' + L.cal + "</a>" +
         (m.canCancel ? '<button type="button" class="btn ghost sm bk-danger" data-cancel>' + L.cancel + "</button>" : "") + "</div>";
@@ -125,9 +181,10 @@
 
   root.addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
-    if (b.dataset.svc) { S.service = b.dataset.svc; S.start = null; S.error = ""; S.date ? loadSlots() : render(); }
-    else if (b.dataset.staff) { S.staff = b.dataset.staff; S.date ? loadSlots() : render(); }
-    else if (b.dataset.date) { S.date = b.dataset.date; loadSlots(); }
+    if (b.dataset.svc) { S.service = b.dataset.svc; S.start = null; S.error = ""; loadDays(); }
+    else if (b.dataset.staff) { S.staff = b.dataset.staff; loadDays(); }
+    else if (b.dataset.month !== undefined && b.classList.contains("bk-nav")) { if (b.dataset.month) { S.month = b.dataset.month; render(); } }
+    else if (b.dataset.date) { S.date = b.dataset.date; loadSlots(); setTimeout(function () { var tt = root.querySelector(".bk-times, .bk-step:last-child"); if (tt) tt.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 350); }
     else if (b.dataset.start) { S.start = Number(b.dataset.start); S.error = ""; render(); var f = document.getElementById("bkForm"); if (f) f.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
     else if (b.hasAttribute("data-cancel")) {
       if (!confirm(t().cancelQ)) return;
@@ -180,6 +237,7 @@
       if (d.open && d.services.length === 1) S.service = d.services[0].id;
       if (d.open && d.staff.length === 1) S.staff = d.staff[0].id;
       render();
+      if (S.service) loadDays();
     }).catch(function () { S.cfg = { open: false }; render(); });
   }
 

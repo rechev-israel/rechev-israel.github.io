@@ -311,6 +311,8 @@ d("online booking (PostgreSQL)", () => {
   });
 
   const input = (start: number, phone: string) => ({ serviceId, staffId: "any", date, start, name: "Test Customer", phone });
+  const date2 = "2027-03-09"; // the following Tuesday
+  const input2 = (start: number, phone: string) => ({ serviceId, staffId: "any", date: date2, start, name: "Test Customer", phone });
 
   it("offers slots from opening hours", async () => {
     const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
@@ -338,6 +340,54 @@ d("online booking (PostgreSQL)", () => {
     expect(c.status).toBe("CANCELLED");
     const again = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
     expect(again.slots.map((s) => s.start)).toContain(slots[0].start);
+  });
+
+  it("a completed (or no-show) appointment keeps its slot blocked — no double booking at the same time", async () => {
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    const r = await ob.createOnlineBooking(biz, input(slots[2].start, "0541112233"), now);
+    await db.appointment.update({ where: { id: r.appointment.id }, data: { status: "COMPLETED" } });
+    const after = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    expect(after.slots.map((s) => s.start)).not.toContain(slots[2].start);
+    await expect(ob.createOnlineBooking(biz, input(slots[2].start, "0547778899"), now)).rejects.toMatchObject({ code: "slot_taken" });
+  });
+
+  it("calendar days report free-slot counts consistent with the day view", async () => {
+    const days = await ob.availableDays(biz, { serviceId, staffId: "any" }, now);
+    const tue = days.find((d) => d.date === date)!;
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date }, now);
+    expect(tue.free).toBe(slots.length);
+    expect(days.find((d) => d.date === "2027-03-03")!.free).toBe(0); // Wednesday: closed (no hours)
+  });
+
+  it("owner gets exactly one notification per booking and per cancellation (deduplicated)", async () => {
+    const { notifyAppointmentEvent } = await import("@/server/notify/owner");
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date: date2 }, now);
+    const r = await ob.createOnlineBooking(biz, { ...input2(slots[3].start, "0531234567"), name: "לקוח התראה" }, now);
+    const created = await db.notification.findMany({ where: { businessId: biz, entityId: r.appointment.id } });
+    expect(created).toHaveLength(1);
+    expect(created[0].kind).toBe("booking_created");
+    expect(created[0].body).toContain("לקוח: לקוח התראה");
+    expect(created[0].body).toContain("משך: 30 דקות");
+    expect(created[0].link).toContain(`appt=${r.appointment.id}`);
+    // Re-sending the same event (e.g. a retry) must not duplicate.
+    await notifyAppointmentEvent("booking_created", r.appointment.id);
+    expect(await db.notification.count({ where: { entityId: r.appointment.id, kind: "booking_created" } })).toBe(1);
+    await ob.cancelByToken(r.token, now);
+    await ob.cancelByToken(r.token, now); // second cancel is a no-op
+    expect(await db.notification.count({ where: { entityId: r.appointment.id, kind: "booking_cancelled" } })).toBe(1);
+  });
+
+  it("staff reschedule refuses overlaps and notifies once per new time", async () => {
+    const bookings = await import("@/server/services/bookings");
+    const owner = await db.user.create({ data: { businessId: biz, email: "owner@book.local", name: "Owner", passwordHash: "x", role: "OWNER" } });
+    const { slots } = await ob.getSlots(biz, { serviceId, staffId: "any", date: date2 }, now);
+    const a1 = await ob.createOnlineBooking(biz, input2(slots[0].start, "0521000001"), now);
+    const a2 = await ob.createOnlineBooking(biz, input2(slots[slots.length - 1].start, "0521000002"), now);
+    const toLocal = (ms: number) => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ms)); const g = (t: string) => p.find((x) => x.type === t)!.value; return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`; };
+    await expect(bookings.rescheduleAppointment({ id: owner.id, businessId: biz }, a2.appointment.id, { startsAt: toLocal(a1.appointment.startsAt.getTime()) })).rejects.toMatchObject({ code: "bookings.overlap" });
+    const free = (await ob.getSlots(biz, { serviceId, staffId: "any", date: date2 }, now)).slots[0].start;
+    await bookings.rescheduleAppointment({ id: owner.id, businessId: biz }, a2.appointment.id, { startsAt: toLocal(free) });
+    expect(await db.notification.count({ where: { entityId: a2.appointment.id, kind: "booking_rescheduled" } })).toBe(1);
   });
 
   it("time off removes availability; closed booking refuses", async () => {

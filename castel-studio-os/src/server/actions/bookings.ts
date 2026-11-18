@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/server/auth/session";
 import { audit } from "@/server/audit";
 import { appointmentSchema, formToObject, serviceSchema, type ActionState } from "@/lib/validation";
-import { createAppointment, setAppointmentStatus } from "@/server/services/bookings";
+import { createAppointment, rescheduleAppointment, setAppointmentStatus } from "@/server/services/bookings";
+import { z } from "zod";
+import { parseLocalDateTime } from "@/lib/dates";
+import { toNumber } from "@/lib/utils";
 import { csvToCaliEvents } from "@/server/integrations/cali/csv";
 import { applyCaliEvents } from "@/server/integrations/cali/sync";
 import { getI18n } from "@/i18n";
@@ -72,4 +75,59 @@ export async function importBookingCsvAction(_: ActionState, fd: FormData): Prom
         : `Processed ${r.received} rows: ${r.created} new, ${r.updated} updated, ${r.unchanged} unchanged (no duplicates), ${r.failed + errors.length} invalid.`,
     };
   });
+}
+
+const revalidateCalendar = () => { revalidatePath("/bookings"); revalidatePath("/dashboard"); };
+
+export async function rescheduleAppointmentAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("bookings.edit");
+    const d = z.object({ id: z.string().min(1), startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/), durationMin: z.coerce.number().int().min(5).max(600).optional(), staffId: z.string().optional() }).parse(formToObject(fd));
+    await rescheduleAppointment(user, d.id, { startsAt: d.startsAt, durationMin: d.durationMin, staffId: d.staffId === undefined ? undefined : d.staffId || null }, { allowOverlap: fd.get("allowOverlap") === "on" });
+    revalidateCalendar();
+  });
+}
+
+export async function updateAppointmentDetailsAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("bookings.edit");
+    const d = z.object({ id: z.string().min(1), serviceId: z.string().optional(), price: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(0).max(100000).optional()), notes: z.string().trim().max(1000).optional() }).parse(formToObject(fd));
+    const a = await db.appointment.findFirst({ where: { id: d.id, businessId: user.businessId } });
+    if (!a) throw new Error("not found");
+    const service = d.serviceId ? await db.service.findFirst({ where: { id: d.serviceId, businessId: user.businessId } }) : null;
+    await db.appointment.update({ where: { id: a.id }, data: {
+      serviceId: d.serviceId === "" ? null : service?.id ?? a.serviceId,
+      price: d.price ?? (service && service.id !== a.serviceId ? toNumber(service.price) : a.price),
+      notes: d.notes ?? a.notes,
+    } });
+    await audit({ businessId: user.businessId, userId: user.id, action: "appointment.update", entityType: "Appointment", entityId: a.id });
+    revalidateCalendar();
+  });
+}
+
+export async function setPaymentStatusAction(fd: FormData) {
+  const user = await requireUser("bookings.edit");
+  const status = String(fd.get("paymentStatus"));
+  if (status !== "PAID" && status !== "UNPAID") return;
+  await db.appointment.updateMany({ where: { id: String(fd.get("id")), businessId: user.businessId }, data: { paymentStatus: status } });
+  await audit({ businessId: user.businessId, userId: user.id, action: `appointment.payment_${status.toLowerCase()}`, entityType: "Appointment", entityId: String(fd.get("id")) });
+  revalidateCalendar();
+}
+
+export async function blockTimeAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("bookings.edit");
+    const d = z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/), minutes: z.coerce.number().int().min(5).max(24 * 60), staffId: z.string().optional(), reason: z.string().trim().max(120).optional() }).parse(formToObject(fd));
+    const startsAt = parseLocalDateTime(d.from);
+    if (d.staffId && !(await db.user.findFirst({ where: { id: d.staffId, businessId: user.businessId } }))) throw new Error("bad staff");
+    await db.timeOff.create({ data: { businessId: user.businessId, staffId: d.staffId || null, startsAt, endsAt: new Date(startsAt.getTime() + d.minutes * 60_000), reason: d.reason || null } });
+    await audit({ businessId: user.businessId, userId: user.id, action: "timeoff.create", entityType: "TimeOff" });
+    revalidateCalendar();
+  });
+}
+
+export async function removeBlockAction(fd: FormData) {
+  const user = await requireUser("bookings.edit");
+  await db.timeOff.deleteMany({ where: { id: String(fd.get("id")), businessId: user.businessId } });
+  revalidateCalendar();
 }

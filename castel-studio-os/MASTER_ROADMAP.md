@@ -17,6 +17,8 @@ Deployments are **live** (owner approved 2026-11-19): every push to the producti
 
 - **Online booking** — own booking system replacing the external app: public `/book`, slot engine, race-safe booking, manage link, owner settings, site block. (Cali sync/import kept for the transition.)
 
+- **Booking upgrade** — customer month calendar, admin day/3-day/week scheduler with full appointment management, deduplicated owner notifications with live bell and deep links, Web Push, double-booking fix (completed/no-show keep the slot).
+
 ## Next — Package 5: Hardening & go-live readiness
 1. External error monitoring (e.g. Sentry) + uptime alert on `/api/health`.
 2. Blob storage adapter (Vercel Blob / S3) for large video/3D assets instead of temporary provider links.

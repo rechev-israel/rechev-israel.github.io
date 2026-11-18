@@ -1,4 +1,5 @@
 "use server";
+import { notificationWhere } from "@/server/notify/visibility";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -95,7 +96,7 @@ export async function markNotificationsReadAction(fd: FormData) {
   const user = await requireUser();
   const id = fd.get("id") ? String(fd.get("id")) : null;
   await db.notification.updateMany({
-    where: { businessId: user.businessId, readAt: null, OR: [{ userId: null }, { userId: user.id }], ...(id ? { id } : {}) },
+    where: { ...notificationWhere(user), readAt: null, ...(id ? { id } : {}) },
     data: { readAt: new Date() },
   });
   revalidatePath("/", "layout");

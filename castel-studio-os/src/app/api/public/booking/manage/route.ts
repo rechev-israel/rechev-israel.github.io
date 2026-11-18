@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const p = zonedParts(a.startsAt);
   const active = a.status === "SCHEDULED" || a.status === "CONFIRMED";
   return withCors(req, Response.json({
-    status: a.status, firstName: a.customer?.firstName ?? "",
+    status: a.status, firstName: a.customer?.firstName ?? "", name: [a.customer?.firstName, a.customer?.lastName].filter(Boolean).join(" "), durationMin: Math.round((a.endsAt.getTime() - a.startsAt.getTime()) / 60000),
     service: a.service ? { he: a.service.nameHe, en: a.service.nameEn } : null, price: toNumber(a.price),
     startsAt: a.startsAt.getTime(), date: `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`, time: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`,
     staff: a.staff?.name ?? null, past: a.startsAt.getTime() < Date.now(),

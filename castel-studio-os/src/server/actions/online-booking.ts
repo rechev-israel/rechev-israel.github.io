@@ -87,7 +87,7 @@ export async function addTimeOffAction(_: ActionState, fd: FormData): Promise<Ac
     if (endsAt <= startsAt) return { error: locale === "he" ? "הסיום חייב להיות אחרי ההתחלה" : "End must be after start", fieldErrors: { to: "✕" } };
     if (d.staffId && !(await db.user.findFirst({ where: { id: d.staffId, businessId: user.businessId } }))) return { error: "bad staff" };
     await db.timeOff.create({ data: { businessId: user.businessId, staffId: d.staffId || null, startsAt, endsAt, reason: d.reason || null } });
-    const clashes = await db.appointment.count({ where: { businessId: user.businessId, status: { in: ["SCHEDULED", "CONFIRMED"] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt }, ...(d.staffId ? { staffId: d.staffId } : {}) } });
+    const clashes = await db.appointment.count({ where: { businessId: user.businessId, status: { in: ["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW"] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt }, ...(d.staffId ? { staffId: d.staffId } : {}) } });
     done();
     if (clashes) return { ok: true, message: locale === "he" ? `נשמר. שימו לב: ${clashes} תורים קיימים בטווח הזה — יש לטפל בהם ידנית.` : `Saved. Note: ${clashes} existing bookings fall in this range — handle them manually.` };
   });
