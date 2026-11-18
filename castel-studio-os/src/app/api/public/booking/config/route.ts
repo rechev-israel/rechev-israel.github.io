@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
-import { bookableDates, bookableStaff, getBookingSettings, publicBusiness } from "@/server/services/online-booking";
+import { bookableDates, bookableStaff, getBookingSettings, publicBusiness, syncPremiumService } from "@/server/services/online-booking";
 import { clientIp } from "../errors";
 import { preflight, withCors } from "../cors";
 import { after } from "next/server";
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   const b = await publicBusiness();
   if (!b) return withCors(req, Response.json({ open: false, reason: "disabled" }));
   // Website visits also keep the business running (after the response, never slowing it down).
-  after(async () => { await autoCompletePastAppointments(b.id).catch(() => 0); await commsTick(b.id).catch(() => null); });
+  after(async () => { await syncPremiumService(b.id).catch(() => false); await autoCompletePastAppointments(b.id).catch(() => 0); await commsTick(b.id).catch(() => null); });
   const s = await getBookingSettings(b.id);
   const branch = await db.branch.findFirst({ where: { businessId: b.id, isActive: true }, orderBy: { createdAt: "asc" }, select: { phone: true } });
   const base = { phone: branch?.phone ?? null, note: { he: s.noteHe ?? "", en: s.noteEn ?? "" }, cancelNoticeMin: s.cancelNoticeMin };
