@@ -7,7 +7,7 @@
 const CONFIG = {
   phone: "055-571-1239",
   tel: "tel:+972555711239",
-  bookingUrl: "/#book",   // מערכת התורים של CASTEL STUDIO (מוטמעת באתר, סעיף #book)
+  bookingUrl: "/book/",   // עמוד קביעת התור הייעודי (/book/)
   whatsappNumber: "972555711239",                           // מספר הוואטסאפ (בלי + ובלי 0). כל כפתור שולח הודעה מוכנה משלו
   whatsappUrl: "https://wa.me/message/UFGRSWV4FNL2M1",      // הקישור הקצר הישן (לא תומך בהודעה שונה לכל כפתור)
   instagramUrl: "https://www.instagram.com/castel.cutzz?srtk=ZDBiYXB6MTQ5MjZo&utm_source=qr",

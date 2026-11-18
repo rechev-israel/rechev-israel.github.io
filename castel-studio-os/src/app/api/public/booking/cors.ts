@@ -1,9 +1,12 @@
 /** Cross-origin access for the business's own website(s) to the public booking API. Anything else gets no CORS headers. */
 const ORIGINS = new Set(["https://remarkable-sfogliatella-b3c7b4.netlify.app", ...(process.env.EMBED_ALLOWED_ORIGINS ?? "").split(/[\s,]+/).filter((o) => /^https:\/\/[a-z0-9.-]+$/i.test(o) || (!process.env.VERCEL && /^http:\/\/localhost:\d+$/.test(o)))]);
 
+/** Netlify deploy previews of the same site (unpublished drafts the owner reviews before going live). */
+const PREVIEW = /^https:\/\/[a-f0-9]{24}--remarkable-sfogliatella-b3c7b4\.netlify\.app$/;
+
 export function cors(req: Request): Record<string, string> {
   const o = req.headers.get("origin");
-  if (!o || !ORIGINS.has(o)) return {};
+  if (!o || !(ORIGINS.has(o) || PREVIEW.test(o))) return {};
   return { "Access-Control-Allow-Origin": o, "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "600", Vary: "Origin" };
 }
 

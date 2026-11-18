@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release the CASTEL STUDIO website (castel-website/) to Netlify.
+"""Release the CASTEL STUDIO website (add --draft for a private preview that does not touch the live site) (castel-website/) to Netlify.
 
 1. Stamps every asset reference with a content hash (?v=…) so phones never run stale files.
 2. Writes the site version into <meta name="castel-version"> and /version.json — the installed app
@@ -11,8 +11,8 @@ import hashlib, json, os, re, sys, time, urllib.request
 
 SITE_ID = "f8ec0200-590a-42a6-8a9b-b4023f14c146"
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "castel-website")
-PAGES = [("index.html", ""), ("academy/index.html", "../"), ("privacy/index.html", "/"), ("accessibility/index.html", "/")]
-ASSETS = ["assets/castel.css", "assets/castel.js", "assets/booking.js", "assets/account.js"]
+PAGES = [("index.html", ""), ("academy/index.html", "../"), ("privacy/index.html", "/"), ("accessibility/index.html", "/"), ("book/index.html", "/")]
+ASSETS = ["assets/castel.css", "assets/castel.js", "assets/booking.js", "assets/account.js", "assets/book.css", "assets/book.js"]
 API = "https://api.netlify.com/api/v1"
 
 def sha1(path): return hashlib.sha1(open(path, "rb").read()).hexdigest()
@@ -48,7 +48,8 @@ for dirpath, _, files in os.walk("."):
         local["/" + p] = sha1(p)
 files = dict(live)
 files.update(local)  # local files win; files that exist only on Netlify (e.g. _headers) are kept
-dep = api("POST", f"/sites/{SITE_ID}/deploys", json.dumps({"files": files}).encode())
+draft = "--draft" in sys.argv  # a private preview URL; the live site is not changed
+dep = api("POST", f"/sites/{SITE_ID}/deploys", json.dumps({"files": files, "draft": draft}).encode())
 need = set(dep.get("required", []))
 for path, h in local.items():
     if h in need:
@@ -59,3 +60,4 @@ for _ in range(40):
     if st in ("ready", "error"): break
     time.sleep(3)
 print("deploy", st)
+if draft: print("preview", api("GET", f"/deploys/{dep['id']}")["deploy_ssl_url"])
