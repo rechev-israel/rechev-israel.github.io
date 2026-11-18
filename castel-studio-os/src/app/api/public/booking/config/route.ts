@@ -29,7 +29,8 @@ export async function GET(req: Request) {
   const reason = !services.length ? "no_services" : !staff.length ? "no_staff" : "";
   return withCors(req, Response.json({
     open: !reason, reason, ...base,
-    services: services.map((x) => ({ id: x.id, he: x.nameHe, en: x.nameEn, durationMin: x.durationMin, price: toNumber(x.price) })),
+    services: services.map((x) => ({ id: x.id, he: x.nameHe, en: x.nameEn, durationMin: x.durationMin, price: toNumber(x.price), premiumOnly: x.premiumOnly })),
+    premiumSurcharge: s.premiumSurcharge,
     staff, dates: bookableDates(s.maxDaysAhead),
   }, { headers: { "Cache-Control": "no-store" } }));
 }

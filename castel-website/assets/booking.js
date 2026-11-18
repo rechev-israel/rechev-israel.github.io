@@ -19,6 +19,7 @@
       copy: "העתקת קישור", copied: "הועתק", closed: "קביעת תורים אונליין תיפתח בקרוב.", contact: "בינתיים אפשר לפנות אלינו:",
       tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", cancelUntil: "ביטול אונליין אפשרי עד {h} שעות לפני התור.",
       min: "דק׳", err: "משהו השתבש. נסו שוב.", notFound: "התור לא נמצא.",
+      premNote: "שעות פרימיום, מחוץ לשעות הרגילות, בתוספת מחיר.", premIncl: "כולל ₪{n} פרימיום", premOnly: "פרימיום",
       hello: "שלום {n}, הפרטים שלך מולאו אוטומטית.", notMe: "לא אני", hi: "שלום {n} 👋", quickNote: "התור יישמר על שמך ובטלפון שלך. בלחיצה על קביעת התור את/ה מאשר/ת שימוש בפרטים לניהול התור.", remember: "לזכור את השם והטלפון במכשיר הזה (נשמר רק בטלפון שלך)",
       wd: ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"], prevM: "החודש הקודם", nextM: "החודש הבא", free: "פנוי", full: "אין שעות פנויות",
       legendFree: "יש שעות פנויות", legendNone: "סגור / מלא", customer: "שם", service: "שירות", date: "תאריך", timeL: "שעה", duration: "משך", status: "סטטוס",
@@ -34,6 +35,7 @@
       copy: "Copy link", copied: "Copied", closed: "Online booking opens soon.", contact: "Meanwhile, reach us:",
       tooLate: "Too late to cancel online. Please call the shop.", cancelUntil: "Online cancellation up to {h}h before.",
       min: "min", err: "Something went wrong. Please try again.", notFound: "Booking not found.",
+      premNote: "Premium hours, outside regular hours, with a surcharge.", premIncl: "incl. ₪{n} premium", premOnly: "Premium",
       hello: "Hi {n}, your details were filled in automatically.", notMe: "Not me", hi: "Hi {n} 👋", quickNote: "Booked under your saved name and phone. By confirming you agree they are used to manage this booking.", remember: "Remember my name and phone on this device (stored only on your phone)",
       wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], prevM: "Previous month", nextM: "Next month", free: "free", full: "No free times",
       legendFree: "Available", legendNone: "Closed / full", customer: "Name", service: "Service", date: "Date", timeL: "Time", duration: "Duration", status: "Status",
@@ -87,7 +89,10 @@
 
   // title is trusted markup built here (static strings + escaped values)
   function step(n, title, inner, key) { return '<div class="bk-step" data-step="' + key + '"><h3 class="bk-h"><span class="bk-n">' + n + "</span><span>" + title + "</span></h3>" + inner + "</div>"; }
-  function chip(on, attrs, inner) { return '<button type="button" class="bk-chip' + (on ? " on" : "") + '" aria-pressed="' + on + '" ' + attrs + ">" + inner + "</button>"; }
+  function chip(on, attrs, inner) {
+    var extra = ""; attrs = attrs.replace(/ class="([^"]*)"/, function (_, c) { extra = " " + c; return ""; });
+    return '<button type="button" class="bk-chip' + extra + (on ? " on" : "") + '" aria-pressed="' + on + '" ' + attrs + ">" + inner + "</button>";
+  }
 
   // ── Month calendar (Sunday-first, Israel) ──
   function ym(d) { return d.slice(0, 7); }
@@ -164,20 +169,22 @@
     var note = c.note && c.note[lang()];
     if (note) h += '<p class="bk-note">' + esc(note) + "</p>";
     h += step(n++, esc(L.svc), '<div class="bk-grid2">' + c.services.map(function (s) {
-      return chip(S.service === s.id, 'data-svc="' + esc(s.id) + '"', '<span class="bk-sname">' + esc(svcName(s)) + '</span><span class="bk-meta">' + s.durationMin + " " + L.min + " · <b>₪" + s.price + "</b></span>");
+      return chip(S.service === s.id, 'data-svc="' + esc(s.id) + '"', '<span class="bk-sname">' + esc(svcName(s)) + (s.premiumOnly ? ' <small class="bk-star">⭐ ' + L.premOnly + "</small>" : "") + '</span><span class="bk-meta">' + s.durationMin + " " + L.min + " · <b>₪" + s.price + "</b></span>");
     }).join("") + "</div>", "svc");
     if (c.staff.length > 1) h += step(n++, esc(L.barber), '<div class="bk-wrap">' + chip(S.staff === "any", 'data-staff="any"', L.any) + c.staff.map(function (p) { return chip(S.staff === p.id, 'data-staff="' + esc(p.id) + '"', esc(p.name)); }).join("") + "</div>", "barber");
     if (S.service) h += step(n++, esc(L.day), calendar(), "day");
     if (S.service && S.date) {
       var inner = S.slots === null ? '<p class="bk-muted">' + L.loading + "</p>" : !S.slots.length ? '<p class="bk-muted">' + L.noTimes + "</p>"
-        : '<div class="bk-times">' + S.slots.map(function (x) { return chip(S.start === x.start, 'data-start="' + x.start + '" dir="ltr"', x.label); }).join("") + "</div>";
+        : '<div class="bk-times">' + S.slots.map(function (x) { return chip(S.start === x.start, 'data-start="' + x.start + '" dir="ltr"' + (x.premium ? ' class="bk-prem"' : ""), x.label + (x.premium ? '<small class="bk-star">⭐' + (x.surcharge ? " +₪" + x.surcharge : "") + "</small>" : "")); }).join("") + "</div>" +
+          (S.slots.some(function (x) { return x.premium; }) ? '<p class="bk-muted bk-small bk-prem-note">⭐ ' + L.premNote + "</p>" : "");
       h += step(n++, esc(L.time) + ' <span class="bk-muted bk-small">· ' + esc(dayLabel(S.date, true)) + "</span>", inner, "time");
     }
     if (S.service && S.date && S.start != null) {
       var svc = c.services.filter(function (s) { return s.id === S.service; })[0];
       var slot = (S.slots || []).filter(function (x) { return x.start === S.start; })[0];
       var me = S.me;
-      var sum = '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span> · " + svc.durationMin + " " + L.min + " · ₪" + svc.price + "</p>";
+      var extra = slot && slot.premium ? (slot.surcharge || 0) : 0;
+      var sum = '<p class="bk-sum"><b>' + esc(svcName(svc)) + "</b> · " + esc(dayLabel(S.date, true)) + ' · <span dir="ltr">' + (slot ? slot.label : "") + "</span>" + (extra || (slot && slot.premium) ? " ⭐" : "") + " · " + svc.durationMin + " " + L.min + " · ₪" + (svc.price + extra) + (extra ? ' <small class="bk-muted">(' + L.premIncl.replace("{n}", extra) + ")</small>" : "") + "</p>";
       var err = S.error ? '<p class="bk-err" role="alert">' + esc(S.error) + "</p>" : "";
       var btn = '<button class="btn bk-submit" type="submit"' + (S.busy ? " disabled" : "") + ">" + (S.busy ? L.loading : L.book) + "</button>";
       var hp = '<input name="website" tabindex="-1" autocomplete="off" class="bk-hp" aria-hidden="true">';

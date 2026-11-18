@@ -988,3 +988,9 @@ html[dir="ltr"] .acc-sheet { transform: translateX(100%); }
 .inst-arrow { display: block; color: var(--gold); font-size: 26px; animation: instBob 1.2s ease-in-out infinite; }
 @keyframes instBob { 50% { transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .inst-pop, .acc-panel, .acc-sheet { transition: none; } .inst-arrow { animation: none; } }
+/* Premium hours */
+.bk-chip.bk-prem { border-color: var(--hair); background: linear-gradient(180deg, rgba(198,164,119,.10), rgba(198,164,119,.03)); }
+.bk-star { display: block; font-size: 11px; color: var(--gold); line-height: 1.2; font-family: var(--sans); }
+.bk-sname .bk-star { display: inline; margin-inline-start: 6px; }
+.bk-chip.on .bk-star { color: var(--ivory); }
+.bk-prem-note { margin: 10px 0 0; }

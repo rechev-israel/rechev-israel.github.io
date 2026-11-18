@@ -23,6 +23,7 @@ enum Role {
 }
 
 model Business {
+  dateOverrides     DateOverride[]
   pushSubscriptions PushSubscription[]
   bookingSettings   BookingSettings?
   timeOff           TimeOff[]
@@ -252,6 +253,8 @@ model Interaction {
 // ───────────────────────── Booking ─────────────────────────
 
 model Service {
+  /// Bookable only during premium hours (e.g. VIP service).
+  premiumOnly    Boolean  @default(false)
   /// Offered on the public booking page.
   bookableOnline Boolean  @default(true)
   id             String   @id @default(cuid())
@@ -314,6 +317,8 @@ model Appointment {
 }
 
 model AvailabilityRule {
+  /// regular | premium (premium = extra hours with a surcharge)
+  kind      String  @default("regular")
   id        String  @id @default(cuid())
   branchId  String
   branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -1025,6 +1030,8 @@ model IntegrationSecret {
 
 /// Public online booking (replaces the external booking app). One row per business.
 model BookingSettings {
+  /// Added to the service price for appointments in premium hours (₪).
+  premiumSurcharge      Int      @default(0)
   /// Service messages (confirmation, reminder, post-visit, academy) from automations are sent without manual approval.
   autoSendTransactional Boolean  @default(true)
   /// Marketing messages (e.g. birthday) are sent automatically — only to customers who opted in.
@@ -1090,4 +1097,22 @@ model CustomerDevice {
   lastSeenAt DateTime?
 
   @@index([customerId])
+}
+
+/// Hours for one specific date (holiday eve, extra day…) replacing the weekly schedule. staffId null = whole shop.
+model DateOverride {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  staffId    String?
+  /// YYYY-MM-DD (business timezone)
+  date       String
+  closed     Boolean  @default(false)
+  /// [{ start: "09:00", end: "13:00", kind: "regular" | "premium" }]
+  windows    Json     @default("[]")
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, staffId, date])
+  @@index([businessId, date])
 }

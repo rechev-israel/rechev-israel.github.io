@@ -22,8 +22,8 @@ async function handle(req: Request) {
   const b = await publicBusiness();
   if (!b) return Response.json({ error: "disabled" }, { status: 503 });
   try {
-    const { slots } = await getSlots(b.id, { serviceId, staffId, date });
-    return Response.json({ slots: slots.map((s) => { const p = zonedParts(new Date(s.start)); return { start: s.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}` }; }) }, { headers: { "Cache-Control": "no-store" } });
+    const { slots, surcharge } = await getSlots(b.id, { serviceId, staffId, date });
+    return Response.json({ slots: slots.map((s) => { const p = zonedParts(new Date(s.start)); return { start: s.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`, premium: s.premium, surcharge: s.premium ? surcharge : 0 }; }) }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return bookingErrorResponse(e);
   }

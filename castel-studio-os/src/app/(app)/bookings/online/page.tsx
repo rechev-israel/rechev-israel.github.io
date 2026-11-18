@@ -6,7 +6,9 @@ import { db } from "@/lib/db";
 import { toLocalInput } from "@/lib/dates";
 import { formatDateTime, formatILS } from "@/lib/utils";
 import { getBookingSettings } from "@/server/services/online-booking";
-import { addTimeOffAction, removeTimeOffAction, saveBookingSettingsAction, saveHoursAction, setServiceOnlineAction, setStaffBookableAction } from "@/server/actions/online-booking";
+import { addTimeOffAction, removeDateOverrideAction, removeTimeOffAction, saveBookingSettingsAction, saveDateOverrideAction, saveScheduleAction, setServiceOnlineAction, setServicePremiumOnlyAction, setStaffBookableAction } from "@/server/actions/online-booking";
+import { WeekEditor, type DayModel } from "@/components/bookings/week-editor";
+import { windowsToRange } from "@/domain/booking";
 import { appOrigin } from "@/server/integrations/origin";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, Input, Label, Notice, PageHeader, Select, Textarea, buttonClass } from "@/components/ui";
@@ -18,25 +20,13 @@ export const dynamic = "force-dynamic";
 const DAYS_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 const DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function HoursForm({ rules, staffId, he, allowShop }: { rules: { weekday: number; startTime: string; endTime: string }[]; staffId?: string; he: boolean; allowShop?: boolean }) {
-  const L = (h: string, e: string) => (he ? h : e);
-  return (
-    <ActionForm action={saveHoursAction} className="space-y-2">
-      {staffId && <input type="hidden" name="staffId" value={staffId} />}
-      {allowShop && <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="useShop" className="h-4 w-4 accent-[var(--gold)]" /> {L("להשתמש בשעות המספרה (מחיקת שעות אישיות)", "Use shop hours (remove personal hours)")}</label>}
-      {[0, 1, 2, 3, 4, 5, 6].map((w) => {
-        const r = rules.find((x) => x.weekday === w);
-        return (
-          <div key={w} className="grid grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
-            <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" name={`open_${w}`} defaultChecked={Boolean(r)} className="h-4 w-4 accent-[var(--gold)]" />{(he ? DAYS_HE : DAYS_EN)[w]}</label>
-            <Input type="time" name={`start_${w}`} defaultValue={r?.startTime ?? "09:00"} dir="ltr" step={300} aria-label="start" className="min-w-0 px-2" />
-            <Input type="time" name={`end_${w}`} defaultValue={r?.endTime ?? "20:00"} dir="ltr" step={300} aria-label="end" className="min-w-0 px-2" />
-          </div>
-        );
-      })}
-      <SubmitButton size="sm">{L("שמירת שעות", "Save hours")}</SubmitButton>
-    </ActionForm>
-  );
+function weekModel(rules: { weekday: number; startTime: string; endTime: string; kind: string }[]): DayModel[] {
+  return [0, 1, 2, 3, 4, 5, 6].map((w) => {
+    const reg = rules.filter((r) => r.weekday === w && r.kind !== "premium").map((r) => ({ start: r.startTime, end: r.endTime }));
+    const prem = rules.filter((r) => r.weekday === w && r.kind === "premium").map((r) => ({ start: r.startTime, end: r.endTime })).sort((x, y) => x.start.localeCompare(y.start));
+    const range = windowsToRange(reg);
+    return range ? { weekday: w, open: true, start: range.open, end: range.close, breaks: range.breaks, premium: prem } : { weekday: w, open: false, start: "09:00", end: "20:00", breaks: [], premium: prem };
+  });
 }
 
 export default async function OnlineBookingPage() {
@@ -54,6 +44,9 @@ export default async function OnlineBookingPage() {
     db.timeOff.findMany({ where: { businessId: user.businessId, endsAt: { gt: new Date() } }, orderBy: { startsAt: "asc" }, include: { staff: { select: { name: true } } } }),
     db.appointment.count({ where: { businessId: user.businessId, source: "online", startsAt: { gt: new Date() }, status: { in: ["SCHEDULED", "CONFIRMED"] } } }),
   ]);
+  const todayKey = toLocalInput(new Date(), false);
+  const overrides = await db.dateOverride.findMany({ where: { businessId: user.businessId, date: { gte: todayKey } }, orderBy: { date: "asc" } });
+  const staffName = (id: string | null) => (id ? staff.find((x) => x.id === id)?.name ?? "—" : null);
   const link = `${appOrigin()}/book`;
   const shopRules = rules.filter((r) => !r.staffId);
   const bookableCount = staff.filter((s) => s.acceptsBookings).length;
@@ -95,6 +88,7 @@ export default async function OnlineBookingPage() {
               <div><Label>{L("הזמנה לפחות (שעות) מראש", "Min notice (hours)")}</Label><Select name="minNoticeMin" defaultValue={String(settings.minNoticeMin)}>{[0, 30, 60, 120, 180, 360, 720, 1440].map((n) => <option key={n} value={n}>{n < 60 ? `${n} ${L("דק׳", "min")}` : n / 60}</option>)}</Select></div>
               <div><Label>{L("כמה ימים קדימה", "Days ahead")}</Label><Select name="maxDaysAhead" defaultValue={String(settings.maxDaysAhead)}>{[7, 14, 21, 30, 45, 60, 90].map((n) => <option key={n} value={n}>{n}</option>)}</Select></div>
               <div><Label>{L("ביטול אונליין עד (שעות לפני)", "Online cancel until (h before)")}</Label><Select name="cancelNoticeMin" defaultValue={String(settings.cancelNoticeMin)}>{[0, 60, 120, 180, 360, 720, 1440, 2880].map((n) => <option key={n} value={n}>{n / 60}</option>)}</Select></div>
+              <div><Label>{L("תוספת מחיר בשעות פרימיום (₪)", "Premium hours surcharge (₪)")}</Label><Input type="number" name="premiumSurcharge" min={0} max={1000} step={5} defaultValue={settings.premiumSurcharge} dir="ltr" /></div>
               <div><Label>{L("מקס׳ תורים פתוחים ללקוח", "Max open bookings per customer")}</Label><Select name="maxActivePerPhone" defaultValue={String(settings.maxActivePerPhone)}>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</Select></div>
             </div>
             <div><Label>{L("טלפון המספרה (מוצג ללקוחות)", "Shop phone (shown to customers)")}</Label><Input name="shopPhone" dir="ltr" inputMode="tel" maxLength={20} defaultValue={branch?.phone ?? ""} placeholder="050-0000000" /></div>
@@ -105,8 +99,9 @@ export default async function OnlineBookingPage() {
         </Card>
 
         <Card>
-          <CardTitle>{L("2. שעות פתיחה של המספרה", "2. Shop opening hours")}</CardTitle>
-          {edit ? <HoursForm rules={shopRules} he={he} /> : <p className="text-sm text-muted">—</p>}
+          <CardTitle>{L("2. ימים ושעות עבודה", "2. Working days & hours")}</CardTitle>
+          <p className="mb-3 text-xs text-muted">{L("פתיחה וסגירה לכל יום, הפסקות (בזמן הפסקה לא ניתן לקבוע) ושעות פרימיום (שעות נוספות בתוספת מחיר, מסומנות ⭐ באתר).", "Open/close per day, breaks (no bookings) and premium hours (extra hours with a surcharge, marked ⭐ on the site).")}</p>
+          {edit ? <WeekEditor initial={weekModel(shopRules)} he={he} action={saveScheduleAction} /> : <p className="text-sm text-muted">—</p>}
         </Card>
 
         <Card>
@@ -126,13 +121,47 @@ export default async function OnlineBookingPage() {
                   {edit && s.acceptsBookings && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-xs text-gold">{own.length ? L("שעות אישיות (מוגדרות)", "Personal hours (set)") : L("שעות אישיות — כרגע לפי שעות המספרה", "Personal hours — currently shop hours")}</summary>
-                      <div className="mt-2"><HoursForm rules={own.length ? own : shopRules} staffId={s.id} he={he} allowShop={own.length > 0} /></div>
+                      <div className="mt-2"><WeekEditor initial={weekModel(own.length ? own : shopRules)} staffId={s.id} he={he} action={saveScheduleAction} allowShop={own.length > 0} /></div>
                     </details>
                   )}
                 </div>
               );
             })}
           </div>
+        </Card>
+
+        <Card>
+          <CardTitle>{L("3ב. תאריכים מיוחדים", "3b. Special dates")}</CardTitle>
+          <p className="mb-3 text-xs text-muted">{L("שעות אחרות ליום מסוים (ערב חג, יום ארוך) או סגירה, בלי לשנות את השבוע הקבוע.", "Different hours for one date (holiday eve, long day) or closed, without changing the weekly schedule.")}</p>
+          {edit && (
+            <ActionForm action={saveDateOverrideAction} className="space-y-2" resetOnSuccess>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>{L("תאריך", "Date")}</Label><Input type="date" name="date" required dir="ltr" min={todayKey} /></div>
+                <div><Label>{L("מה קורה ביום הזה", "That day")}</Label><Select name="mode" defaultValue="hours"><option value="hours">{L("שעות מיוחדות", "Special hours")}</option><option value="closed">{L("סגור", "Closed")}</option></Select></div>
+                <div><Label>{L("פתיחה", "Open")}</Label><Input type="time" name="start" defaultValue="09:00" dir="ltr" step={300} /></div>
+                <div><Label>{L("סגירה", "Close")}</Label><Input type="time" name="end" defaultValue="14:00" dir="ltr" step={300} /></div>
+                <div><Label>{L("הפסקה מ- (לא חובה)", "Break from (optional)")}</Label><Input type="time" name="breakStart" dir="ltr" step={300} /></div>
+                <div><Label>{L("עד", "to")}</Label><Input type="time" name="breakEnd" dir="ltr" step={300} /></div>
+                <div><Label>{L("⭐ פרימיום מ- (לא חובה)", "⭐ Premium from (optional)")}</Label><Input type="time" name="premiumStart" dir="ltr" step={300} /></div>
+                <div><Label>{L("עד", "to")}</Label><Input type="time" name="premiumEnd" dir="ltr" step={300} /></div>
+                <div><Label>{L("למי", "Who")}</Label><Select name="staffId"><option value="">{L("כל המספרה", "Whole shop")}</option>{staff.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select></div>
+                <div><Label>{L("הערה", "Note")}</Label><Input name="note" maxLength={120} placeholder={L("ערב חג", "Holiday eve")} /></div>
+              </div>
+              <SubmitButton size="sm">{L("שמירת התאריך", "Save date")}</SubmitButton>
+            </ActionForm>
+          )}
+          <ul className="mt-3 space-y-2">
+            {overrides.length === 0 && <li className="text-sm text-muted">{L("אין תאריכים מיוחדים.", "No special dates.")}</li>}
+            {overrides.map((o) => {
+              const ws = (Array.isArray(o.windows) ? o.windows : []) as { start: string; end: string; kind?: string }[];
+              return (
+                <li key={o.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+                  <span className="min-w-0"><b dir="ltr">{o.date.split("-").reverse().join(".")}</b> · {staffName(o.staffId) ?? L("כל המספרה", "Whole shop")} · {o.closed ? <span className="text-danger">{L("סגור", "Closed")}</span> : <span dir="ltr">{ws.map((w) => `${w.kind === "premium" ? "⭐" : ""}${w.start}–${w.end}`).join(", ")}</span>}{o.note ? ` · ${o.note}` : ""}</span>
+                  {edit && <InlineAction action={removeDateOverrideAction} fields={{ id: o.id }} confirm={L("למחוק?", "Delete?")}>✕</InlineAction>}
+                </li>
+              );
+            })}
+          </ul>
         </Card>
 
         <Card>
@@ -166,7 +195,10 @@ export default async function OnlineBookingPage() {
               {services.map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
                   <span className="min-w-0 truncate">{he ? s.nameHe : s.nameEn} · {s.durationMin}′ · {formatILS(s.price, locale)}</span>
-                  {edit ? <InlineAction action={setServiceOnlineAction} fields={{ id: s.id, on: s.bookableOnline ? "0" : "1" }}>{s.bookableOnline ? L("✓ מוצג", "✓ Shown") : L("מוסתר", "Hidden")}</InlineAction> : <Badge>{s.bookableOnline ? "✓" : "—"}</Badge>}
+                  {edit ? <span className="flex shrink-0 gap-1">
+                    <InlineAction action={setServicePremiumOnlyAction} fields={{ id: s.id, on: s.premiumOnly ? "0" : "1" }} className={s.premiumOnly ? "text-gold" : ""}>{s.premiumOnly ? L("⭐ פרימיום בלבד", "⭐ Premium only") : L("רגיל", "Regular")}</InlineAction>
+                    <InlineAction action={setServiceOnlineAction} fields={{ id: s.id, on: s.bookableOnline ? "0" : "1" }}>{s.bookableOnline ? L("✓ מוצג", "✓ Shown") : L("מוסתר", "Hidden")}</InlineAction>
+                  </span> : <Badge>{s.bookableOnline ? "✓" : "—"}</Badge>}
                 </div>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCustomerCancel, computeSlots, hhmm, icsEvent, pickStaff } from "@/domain/booking";
+import { canCustomerCancel, computeSlots, hhmm, icsEvent, pickStaff, rangeMinusBreaks, windowsToRange } from "@/domain/booking";
 import { zonedDate } from "@/lib/dates";
 
 const H = 3_600_000, M = 60_000;
@@ -50,5 +50,25 @@ describe("slot computation", () => {
     expect(ics).toContain("BEGIN:VEVENT");
     expect(ics).toContain("DTSTART:20270104T070000Z");
     expect(ics).toContain("תספורת\\, זקן");
+  });
+});
+
+describe("breaks and premium hours", () => {
+  it("open range minus breaks → windows, and back", () => {
+    const ws = rangeMinusBreaks("09:00", "20:00", [{ start: "13:00", end: "14:00" }, { start: "17:00", end: "17:30" }]);
+    expect(ws).toEqual([{ start: "09:00", end: "13:00" }, { start: "14:00", end: "17:00" }, { start: "17:30", end: "20:00" }]);
+    expect(windowsToRange(ws!)).toEqual({ open: "09:00", close: "20:00", breaks: [{ start: "13:00", end: "14:00" }, { start: "17:00", end: "17:30" }] });
+    expect(rangeMinusBreaks("20:00", "09:00", [])).toBeNull();
+    expect(rangeMinusBreaks("09:00", "12:00", [{ start: "08:00", end: "09:30" }])).toEqual([{ start: "09:30", end: "12:00" }]);
+  });
+  it("no slot crosses a break; premium slots are flagged; premium-only services use premium hours only", () => {
+    const H = 3_600_000;
+    const staff = [{ id: "a", windows: [{ start: base, end: base + 2 * H }, { start: base + 3 * H, end: base + 4 * H }, { start: base + 4 * H, end: base + 5 * H, premium: true }], busy: [] }];
+    const s = computeSlots({ staff, durationMin: 60, stepMin: 30, bufferMin: 0, now: 0, minNoticeMin: 0 });
+    expect(s.map((x) => (x.start - base) / H)).toEqual([0, 0.5, 1, 3, 4]); // nothing at 1.5–2.5 (break)
+    expect(s.find((x) => x.start === base + 4 * H)!.premium).toBe(true);
+    expect(s.find((x) => x.start === base)!.premium).toBe(false);
+    const p = computeSlots({ staff, durationMin: 60, stepMin: 30, bufferMin: 0, now: 0, minNoticeMin: 0, premiumOnly: true });
+    expect(p.map((x) => (x.start - base) / H)).toEqual([4]);
   });
 });

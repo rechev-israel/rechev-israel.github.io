@@ -491,6 +491,26 @@ d("online booking (PostgreSQL)", () => {
     expect((await db.outboundMessage.findUniqueOrThrow({ where: { id: m.id } })).status).toBe("CANCELLED");
   });
 
+  it("special date replaces weekly hours; premium hours add the surcharge to the price", async () => {
+    const branch = await db.branch.findFirstOrThrow({ where: { businessId: biz } });
+    await db.bookingSettings.update({ where: { businessId: biz }, data: { premiumSurcharge: 30 } });
+    // Tuesday 2027-04-06: weekly 09:00–11:00 + premium 11:00–12:00
+    await db.availabilityRule.create({ data: { branchId: branch.id, weekday: 2, startTime: "11:00", endTime: "12:00", kind: "premium" } });
+    const d6 = "2027-03-23";
+    const all = (await ob.getSlots(biz, { serviceId, staffId: "any", date: d6 }, now)).slots;
+    const prem = all.filter((x) => x.premium);
+    expect(prem.length).toBe(2); // 11:00, 11:30
+    const r = await ob.createOnlineBooking(biz, { serviceId, staffId: "any", date: d6, start: prem[0].start, name: "פרימיום", phone: "0538887777" }, now);
+    expect(Number(r.appointment.price)).toBe(130); // 100 + 30
+    expect(r.appointment.notes).toContain("פרימיום");
+    // special date: closed on a normally-open Tuesday, and special hours on a normally-closed Wednesday
+    await db.dateOverride.create({ data: { businessId: biz, date: "2027-03-23", closed: true } });
+    expect((await ob.getSlots(biz, { serviceId, staffId: "any", date: "2027-03-23" }, now)).slots).toHaveLength(0);
+    await db.dateOverride.create({ data: { businessId: biz, date: "2027-03-24", windows: [{ start: "10:00", end: "11:00", kind: "regular" }] } });
+    expect((await ob.getSlots(biz, { serviceId, staffId: "any", date: "2027-03-24" }, now)).slots).toHaveLength(2);
+    await db.availabilityRule.deleteMany({ where: { branchId: branch.id, kind: "premium" } });
+  });
+
   it("time off removes availability; closed booking refuses", async () => {
     await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);

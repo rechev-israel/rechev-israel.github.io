@@ -45,21 +45,24 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     }),
     bookingAnalytics(user.businessId),
     branch ? db.availabilityRule.findMany({ where: { branchId: branch.id, staffId: null, isActive: true } }) : [],
+    // (shop-wide special dates are loaded below)
     db.timeOff.findMany({ where: { businessId: user.businessId, startsAt: { lt: end }, endsAt: { gt: start } }, include: { staff: { select: { name: true } } } }),
     db.service.findMany({ where: { businessId: user.businessId, isActive: true }, orderBy: [{ sortOrder: "asc" }, { price: "asc" }] }),
     db.user.findMany({ where: { businessId: user.businessId, isActive: true, role: { in: ["OWNER", "MANAGER", "BARBER"] } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
   ]);
   const edit = can(user.role, "bookings.edit");
+  const overrides = await db.dateOverride.findMany({ where: { businessId: user.businessId, staffId: null, date: { gte: keyOf(start), lte: keyOf(addDays(start, count - 1)) } } });
   const dayNamesHe = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
   const dayNamesEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const days: CalDay[] = Array.from({ length: count }, (_, i) => {
     const d = addDays(start, i);
     const p = zonedParts(addDays(d, 0));
-    const r = rules.filter((x) => x.weekday === p.weekday);
-    const opens = r.map((x) => hhmm(x.startTime)).filter((x): x is number => x != null);
-    const closes = r.map((x) => hhmm(x.endTime)).filter((x): x is number => x != null);
-    return { key: `${p.year}-${pad(p.month)}-${pad(p.day)}`, weekday: p.weekday, short: (he ? dayNamesHe : dayNamesEn)[p.weekday], label: `${pad(p.day)}.${pad(p.month)}`, open: opens.length && closes.length ? [Math.min(...opens), Math.max(...closes)] : null };
+    const key = `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+    const ov = overrides.find((o) => o.date === key);
+    const src = ov ? (ov.closed ? [] : ((Array.isArray(ov.windows) ? ov.windows : []) as { start: string; end: string; kind?: string }[]).map((w) => ({ startTime: w.start, endTime: w.end, kind: w.kind ?? "regular" }))) : rules.filter((x) => x.weekday === p.weekday);
+    const windows = src.map((x) => [hhmm(x.startTime), hhmm(x.endTime), x.kind === "premium"] as const).filter((w): w is readonly [number, number, boolean] => w[0] != null && w[1] != null).map((w) => [w[0], w[1], w[2]] as [number, number, boolean]);
+    return { key, weekday: p.weekday, short: (he ? dayNamesHe : dayNamesEn)[p.weekday], label: `${pad(p.day)}.${pad(p.month)}`, open: windows.length ? [Math.min(...windows.map((w) => w[0])), Math.max(...windows.map((w) => w[1]))] : null, windows, special: ov ? ov.note || (ov.closed ? (he ? "סגור" : "Closed") : (he ? "שעות מיוחדות" : "Special hours")) : null };
   });
   const dayKeys = new Set(days.map((d) => d.key));
 

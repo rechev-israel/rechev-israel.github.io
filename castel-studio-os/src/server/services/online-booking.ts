@@ -5,7 +5,9 @@ import { logger } from "@/lib/logger";
 import { audit } from "@/server/audit";
 import { zonedDate, zonedParts } from "@/lib/dates";
 import { normalizeIsraeliPhone } from "@/domain/crm";
-import { canCustomerCancel, computeSlots, hhmm, pickStaff, type Interval, type StaffDay } from "@/domain/booking";
+import { canCustomerCancel, computeSlots, hhmm, pickStaff, type Interval, type StaffDay, type Window } from "@/domain/booking";
+
+const dayKey = (d: Date) => { const p = zonedParts(d); return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`; };
 import { toNumber } from "@/lib/utils";
 import { emitAppointment } from "./bookings";
 import { recomputeCustomerStats } from "./crm";
@@ -55,7 +57,8 @@ export function bookableDates(maxDaysAhead: number, now = new Date()) {
 }
 
 type RangeData = {
-  rules: { staffId: string | null; weekday: number; startTime: string; endTime: string }[];
+  rules: { staffId: string | null; weekday: number; startTime: string; endTime: string; kind: string }[];
+  overrides: { staffId: string | null; date: string; closed: boolean; windows: unknown }[];
   appts: { staffId: string | null; startsAt: Date; endsAt: Date }[];
   off: { staffId: string | null; startsAt: Date; endsAt: Date }[];
   totalBookable: number;
@@ -65,30 +68,41 @@ type RangeData = {
 async function loadRange(businessId: string, staffIds: string[], from: number, to: number, excludeAppointmentId?: string): Promise<RangeData | null> {
   const branch = await db.branch.findFirst({ where: { businessId, isActive: true }, orderBy: { createdAt: "asc" }, select: { id: true } });
   if (!branch) return null;
-  const [rules, appts, off, totalBookable] = await Promise.all([
-    db.availabilityRule.findMany({ where: { branchId: branch.id, isActive: true, OR: [{ staffId: null }, { staffId: { in: staffIds } }] }, select: { staffId: true, weekday: true, startTime: true, endTime: true } }),
+  const fromKey = dayKey(new Date(from)), toKey = dayKey(new Date(to - 1));
+  const [rules, appts, off, totalBookable, overrides] = await Promise.all([
+    db.availabilityRule.findMany({ where: { branchId: branch.id, isActive: true, OR: [{ staffId: null }, { staffId: { in: staffIds } }] }, select: { staffId: true, weekday: true, startTime: true, endTime: true, kind: true } }),
     db.appointment.findMany({
       where: { businessId, status: { in: [...OCCUPYING] }, startsAt: { lt: new Date(to) }, endsAt: { gt: new Date(from) }, ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}) },
       select: { staffId: true, startsAt: true, endsAt: true },
     }),
     db.timeOff.findMany({ where: { businessId, startsAt: { lt: new Date(to) }, endsAt: { gt: new Date(from) } }, select: { staffId: true, startsAt: true, endsAt: true } }),
     db.user.count({ where: { businessId, isActive: true, acceptsBookings: true } }),
+    db.dateOverride.findMany({ where: { businessId, date: { gte: fromKey, lte: toKey }, OR: [{ staffId: null }, { staffId: { in: staffIds } }] }, select: { staffId: true, date: true, closed: true, windows: true } }),
   ]);
-  return { rules, appts, off, totalBookable };
+  return { rules, appts, off, totalBookable, overrides };
 }
 
 function daySchedule(day: NonNullable<ReturnType<typeof parseDay>>, staffIds: string[], r: RangeData): StaffDay[] {
-  const toWindow = (x: { startTime: string; endTime: string }): Interval | null => {
+  const toWindow = (x: { startTime: string; endTime: string; kind?: string }): Window | null => {
     const a = hhmm(x.startTime), b = hhmm(x.endTime);
     if (a == null || b == null || b <= a) return null;
-    return { start: zonedDate(day.y, day.mo, day.d, Math.floor(a / 60), a % 60).getTime(), end: zonedDate(day.y, day.mo, day.d, Math.floor(b / 60), b % 60).getTime() };
+    return { start: zonedDate(day.y, day.mo, day.d, Math.floor(a / 60), a % 60).getTime(), end: zonedDate(day.y, day.mo, day.d, Math.floor(b / 60), b % 60).getTime(), premium: x.kind === "premium" };
   };
+  const key = `${day.y}-${String(day.mo).padStart(2, "0")}-${String(day.d).padStart(2, "0")}`;
   const inDay = <T extends { startsAt: Date; endsAt: Date }>(x: T) => x.startsAt.getTime() < day.end && x.endsAt.getTime() > day.start;
   return staffIds.map((id) => {
-    const own = r.rules.filter((x) => x.staffId === id);
-    // A barber with their own schedule uses only it (days without rows are days off); otherwise shop hours.
-    const source = own.length ? own : r.rules.filter((x) => x.staffId === null);
-    const windows = source.filter((x) => x.weekday === day.weekday).map(toWindow).filter((w): w is Interval => Boolean(w));
+    // Priority: this barber's special date → shop special date → barber's weekly hours → shop weekly hours.
+    const ov = r.overrides.find((o) => o.date === key && o.staffId === id) ?? r.overrides.find((o) => o.date === key && o.staffId === null);
+    let windows: Window[];
+    if (ov) {
+      const list = ov.closed ? [] : ((Array.isArray(ov.windows) ? ov.windows : []) as { start: string; end: string; kind?: string }[]);
+      windows = list.map((w) => toWindow({ startTime: w.start, endTime: w.end, kind: w.kind })).filter((w): w is Window => Boolean(w));
+    } else {
+      const own = r.rules.filter((x) => x.staffId === id);
+      // A barber with their own schedule uses only it (days without rows are days off); otherwise shop hours.
+      const source = own.length ? own : r.rules.filter((x) => x.staffId === null);
+      windows = source.filter((x) => x.weekday === day.weekday).map(toWindow).filter((w): w is Window => Boolean(w));
+    }
     const busy: Interval[] = [
       // Unassigned appointments (entered manually or imported) block the chair when there is only one bookable barber.
       ...r.appts.filter(inDay).filter((a) => a.staffId === id || (a.staffId === null && r.totalBookable <= 1)).map((a) => ({ start: a.startsAt.getTime(), end: a.endsAt.getTime() })),
@@ -120,10 +134,10 @@ export async function availableDays(businessId: string, q: { serviceId: string; 
   const r = await loadRange(businessId, ids, days[0].start, days[days.length - 1].end);
   if (!r) return [];
   return days.map((day, i) => {
-    const slots = computeSlots({ staff: daySchedule(day, ids, r), durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin });
+    const slots = computeSlots({ staff: daySchedule(day, ids, r), durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin, premiumOnly: service.premiumOnly });
     if (!q.withSlots) return { date: dates[i], free: slots.length };
     // Times for every day in one response, so the website can show them instantly (re-validated on booking).
-    return { date: dates[i], free: slots.length, slots: slots.map((x) => { const p = zonedParts(new Date(x.start)); return { start: x.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}` }; }) };
+    return { date: dates[i], free: slots.length, slots: slots.map((x) => { const p = zonedParts(new Date(x.start)); return { start: x.start, label: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`, premium: x.premium, surcharge: x.premium ? settings.premiumSurcharge : 0 }; }) };
   });
 }
 
@@ -137,7 +151,7 @@ export async function getSlots(businessId: string, q: { serviceId: string; staff
   const ids = q.staffId === "any" ? staff.map((s) => s.id) : staff.some((s) => s.id === q.staffId) ? [q.staffId] : [];
   if (!ids.length) throw new BookingError("staff");
   const days = await staffDays(businessId, q.date, ids);
-  return { service, slots: computeSlots({ staff: days, durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin }) };
+  return { service, surcharge: settings.premiumSurcharge, slots: computeSlots({ staff: days, durationMin: service.durationMin, stepMin: settings.slotStepMin, bufferMin: settings.bufferMin, now: now.getTime(), minNoticeMin: settings.minNoticeMin, premiumOnly: service.premiumOnly }) };
 }
 
 export type BookingInput = { serviceId: string; staffId: string; date: string; start: number; name: string; phone: string; notes?: string; marketingConsent?: boolean; locale?: string; deviceToken?: string };
@@ -155,6 +169,7 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
   const token = randomBytes(24).toString("base64url");
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
 
+  let premium = false;
   for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const appt = await db.$transaction(async (tx) => {
@@ -168,7 +183,10 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
           const clash = await tx.appointment.findFirst({ where: { businessId, status: { in: [...OCCUPYING] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt }, OR: [{ staffId: sid }, ...(singleChair ? [{ staffId: null }] : [])] }, select: { id: true } });
           if (!clash) free.push(sid);
         }
-        const staffId = pickStaff(free, load);
+        // Prefer a barber who offers this time at the regular price.
+        const regularFree = free.filter((id) => slot.regularStaffIds.includes(id));
+        const staffId = pickStaff(regularFree.length ? regularFree : free, load);
+        premium = !!staffId && !slot.regularStaffIds.includes(staffId);
         if (!staffId) throw new BookingError("slot_taken");
 
         let customer = await tx.customer.findUnique({ where: { businessId_phone: { businessId, phone } } });
@@ -193,8 +211,8 @@ export async function createOnlineBooking(businessId: string, input: BookingInpu
         return tx.appointment.create({
           data: {
             businessId, branchId: branch?.id, customerId: customer.id, serviceId: service.id, staffId, startsAt, endsAt,
-            status: settings.autoConfirm ? "CONFIRMED" : "SCHEDULED", price: service.price, source: "online",
-            notes: [nameNote, input.notes?.trim().slice(0, 500)].filter(Boolean).join("\n") || null, manageTokenHash: hashManageToken(token),
+            status: settings.autoConfirm ? "CONFIRMED" : "SCHEDULED", price: toNumber(service.price) + (premium ? settings.premiumSurcharge : 0), source: "online",
+            notes: [premium ? "⭐ שעת פרימיום" : "", nameNote, input.notes?.trim().slice(0, 500)].filter(Boolean).join("\n") || null, manageTokenHash: hashManageToken(token),
           },
           include: { staff: { select: { name: true } } },
         });

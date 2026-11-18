@@ -8,7 +8,7 @@ import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Input, Label, Select, Textarea, buttonClass } from "@/components/ui";
 import { blockTimeAction, removeBlockAction, rescheduleAppointmentAction, setAppointmentStatusAction, setPaymentStatusAction, updateAppointmentDetailsAction } from "@/server/actions/bookings";
 
-export type CalDay = { key: string; weekday: number; label: string; short: string; open: [number, number] | null };
+export type CalDay = { key: string; weekday: number; label: string; short: string; open: [number, number] | null; windows?: [number, number, boolean][]; special?: string | null };
 export type CalAppt = {
   id: string; dayKey: string; startMin: number; endMin: number; start: string; end: string; status: "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   customer: { id: string; name: string; phone: string | null } | null; serviceId: string | null; service: string; staffId: string | null; staff: string | null;
@@ -154,13 +154,21 @@ export function ScheduleCalendar(props: {
                 <button type="button" onClick={() => go({ view: "day", date: d.key, appt: null })} className={`sticky top-0 z-10 flex h-14 w-full items-center justify-center gap-2 border-b border-border bg-surface/95 backdrop-blur ${isToday ? "text-gold" : ""} ${!d.open ? "text-muted/70" : ""}`}>
                   <span className="text-[11px] font-semibold tracking-wide">{d.short}</span>
                   <span className={`grid h-8 min-w-8 place-items-center rounded-full px-1 font-display text-base font-bold tabular-nums ${isToday ? "btn-gold text-black" : ""}`}>{+d.label.slice(0, 2)}</span>
+                  {d.special && <span className="text-[10px] text-gold" title={d.special}>★</span>}
                 </button>
                 <div className="relative cursor-copy" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${30 * PX}px, color-mix(in oklab, var(--border) 45%, transparent) ${30 * PX}px ${30 * PX + 1}px, transparent ${30 * PX + 1}px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
                   {/* closed hours */}
-                  {!d.open ? <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.025)_8px_16px)]" /> : (<>
-                    {d.open[0] > range[0] && <div className="absolute inset-x-0 top-0 bg-black/25" style={{ height: (d.open[0] - range[0]) * PX }} />}
-                    {d.open[1] < range[1] && <div className="absolute inset-x-0 bottom-0 bg-black/25" style={{ top: (d.open[1] - range[0]) * PX }} />}
-                  </>)}
+                  {!d.open ? <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.025)_8px_16px)]" /> : (() => {
+                    // Shade everything outside working windows (before opening, breaks, after closing); tint premium hours.
+                    const ws = [...(d.windows ?? [[d.open[0], d.open[1], false]] as [number, number, boolean][])].sort((x, y) => x[0] - y[0]);
+                    const gaps: [number, number][] = []; let cur = range[0];
+                    for (const [s0, e0] of ws) { if (s0 > cur) gaps.push([cur, s0]); cur = Math.max(cur, e0); }
+                    if (cur < range[1]) gaps.push([cur, range[1]]);
+                    return (<>
+                      {gaps.map(([a, b], k) => <div key={`g${k}`} className="absolute inset-x-0 bg-black/30" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }} />)}
+                      {ws.filter((w) => w[2]).map(([a, b], k) => <div key={`p${k}`} className="pointer-events-none absolute inset-x-0 border-y border-gold/25 bg-gold/[0.07]" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }}><span className="absolute end-1 top-0.5 text-[10px] text-gold">⭐</span></div>)}
+                    </>);
+                  })()}
                   {dayBlocks.map((b) => (
                     <div key={b.id} data-block className="absolute inset-x-0.5 z-[1] overflow-hidden rounded-md border border-dashed border-border bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.04)_0_6px,transparent_6px_12px)] p-1 text-[10px] text-muted" style={{ top: (b.startMin - range[0]) * PX, height: Math.max(18, (b.endMin - b.startMin) * PX) }}>
                       <div className="flex items-start justify-between gap-1"><span className="truncate"><Ban size={10} className="inline" /> {b.reason || L("חסום", "Blocked")}{b.staff ? ` · ${b.staff}` : ""}</span>
