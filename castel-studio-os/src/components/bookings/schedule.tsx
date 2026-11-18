@@ -160,16 +160,16 @@ export function ScheduleCalendar(props: {
                   <span className={`grid h-8 min-w-8 place-items-center rounded-full px-1 font-display text-base font-bold tabular-nums ${isToday ? "btn-gold text-black" : ""}`}>{+d.label.slice(0, 2)}</span>
                   {d.special && <span className="text-[10px] text-gold" title={d.special}>★</span>}
                 </button>
-                <div className="relative cursor-copy" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${30 * PX}px, color-mix(in oklab, var(--border) 45%, transparent) ${30 * PX}px ${30 * PX + 1}px, transparent ${30 * PX + 1}px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
+                <div className="relative cursor-copy bg-[#070707]" style={{ height, backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${30 * PX}px, color-mix(in oklab, var(--border) 45%, transparent) ${30 * PX}px ${30 * PX + 1}px, transparent ${30 * PX + 1}px ${60 * PX}px)`, backgroundPositionY: `${((Math.ceil(range[0] / 60) * 60 - range[0]) * PX)}px` }} onClick={(e) => onGridClick(e, d.key)}>
                   {/* closed hours */}
-                  {!d.open ? <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.025)_8px_16px)]" /> : (() => {
+                  {!d.open ? <div className="absolute inset-0 bg-[#2c2b29] bg-[repeating-linear-gradient(135deg,transparent_0_8px,rgba(255,255,255,0.035)_8px_16px)]" /> : (() => {
                     // Shade everything outside working windows (before opening, breaks, after closing); tint premium hours.
                     const ws = [...(d.windows ?? [[d.open[0], d.open[1], false]] as [number, number, boolean][])].sort((x, y) => x[0] - y[0]);
                     const gaps: [number, number][] = []; let cur = range[0];
                     for (const [s0, e0] of ws) { if (s0 > cur) gaps.push([cur, s0]); cur = Math.max(cur, e0); }
                     if (cur < range[1]) gaps.push([cur, range[1]]);
                     return (<>
-                      {gaps.map(([a, b], k) => <div key={`g${k}`} className="absolute inset-x-0 bg-black/30" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }} />)}
+                      {gaps.map(([a, b], k) => <div key={`g${k}`} className="absolute inset-x-0 bg-[#2c2b29]" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }} />)}
                       {ws.filter((w) => w[2]).map(([a, b], k) => <div key={`p${k}`} className="pointer-events-none absolute inset-x-0 border-y border-gold/25 bg-gold/[0.07]" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }}><span className="absolute end-1 top-0.5 text-[10px] text-gold">⭐</span></div>)}
                     </>);
                   })()}
