@@ -5,6 +5,7 @@ import { ensureBuiltinAutomations } from "@/server/automation/defaults";
 import { processRetries, runScheduled } from "@/server/automation/engine";
 import { flushDueMessages } from "@/server/comms/messages";
 import { refreshCreativeJobs } from "@/server/creative/service";
+import { autoCompletePastAppointments } from "@/server/services/bookings";
 import { hydrateSecrets } from "@/server/secrets/store";
 import { recordCronRun } from "@/server/integrations/registry";
 
@@ -22,12 +23,13 @@ export async function GET(req: Request) {
   }
   await hydrateSecrets(true);
   const started = Date.now();
-  for (const b of await db.business.findMany({ select: { id: true } })) await ensureBuiltinAutomations(db, b.id);
+  let autoCompleted = 0;
+  for (const b of await db.business.findMany({ select: { id: true } })) { await ensureBuiltinAutomations(db, b.id); autoCompleted += await autoCompletePastAppointments(b.id, { force: true }); }
   const scheduled = await runScheduled();
   const retried = await processRetries();
   const messages = await flushDueMessages();
   const creative = await refreshCreativeJobs();
-  const result = { scheduled, retried, messages, creative, ms: Date.now() - started };
+  const result = { scheduled, retried, messages, creative, autoCompleted, ms: Date.now() - started };
   logger.info("cron.daily", result);
   await recordCronRun(result, req.headers.get("user-agent")).catch((e) => logger.warn("cron.record_failed", { err: String(e) }));
   return Response.json(result);

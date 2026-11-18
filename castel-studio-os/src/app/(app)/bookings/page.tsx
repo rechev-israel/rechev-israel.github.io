@@ -5,7 +5,7 @@ import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
 import { addDays, toLocalInput, zonedDate, zonedParts } from "@/lib/dates";
 import { formatILS, fullName, toNumber } from "@/lib/utils";
-import { bookingAnalytics } from "@/server/services/bookings";
+import { autoCompletePastAppointments, bookingAnalytics } from "@/server/services/bookings";
 import { hhmm } from "@/domain/booking";
 import { ScheduleCalendar, type CalAppt, type CalBlock, type CalDay } from "@/components/bookings/schedule";
 import { PageHeader, Stat, buttonClass } from "@/components/ui";
@@ -35,6 +35,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const end = addDays(start, count);
   const step = view === "week" ? 7 : count;
 
+  await autoCompletePastAppointments(user.businessId);
   const branch = await db.branch.findFirst({ where: { businessId: user.businessId, isActive: true }, orderBy: { createdAt: "asc" }, select: { id: true } });
   const [appts, analytics, rules, offs, services, staff] = await Promise.all([
     db.appointment.findMany({

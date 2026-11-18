@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const { user, t, locale, allowed } = await pageGuard("dashboard.view");
+  if (allowed) await (await import("@/server/services/bookings")).autoCompletePastAppointments(user.businessId).catch(() => 0);
   if (!allowed) return <Forbidden message={t.errors.forbidden} />;
   const L = (he: string, en: string) => (locale === "he" ? he : en);
   const me = await db.user.findUnique({ where: { id: user.id }, select: { dashboardWidgets: true } });

@@ -11,7 +11,7 @@ import hashlib, json, os, re, sys, time, urllib.request
 
 SITE_ID = "f8ec0200-590a-42a6-8a9b-b4023f14c146"
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "castel-website")
-PAGES = [("index.html", ""), ("academy/index.html", "../")]
+PAGES = [("index.html", ""), ("academy/index.html", "../"), ("privacy/index.html", "/"), ("accessibility/index.html", "/")]
 ASSETS = ["assets/castel.css", "assets/castel.js", "assets/booking.js", "assets/account.js"]
 API = "https://api.netlify.com/api/v1"
 

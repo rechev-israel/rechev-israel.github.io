@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Ban, CalendarClock, ChevronLeft, ChevronRight, CreditCard, Phone, Plus, X } from "lucide-react";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
@@ -211,15 +212,28 @@ export function ScheduleCalendar(props: {
   );
 }
 
+/** Rendered into <body> (portal): an animated/transformed page ancestor would otherwise pin a "fixed" panel to the
+ * bottom of the page instead of the screen. Locks background scrolling while open. */
 function Sheet({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: React.ReactNode }) {
-  useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[2px] sm:items-stretch sm:justify-end" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-none sm:w-[420px] sm:rounded-none sm:border-y-0 sm:border-e-0" onClick={(e) => e.stopPropagation()}>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", k); document.body.style.overflow = prev; };
+  }, [onClose]);
+  if (!mounted) return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-[2px] animate-[sheet-fade_.2s_ease-out] sm:items-stretch sm:justify-end" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="max-h-[86dvh] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-border bg-surface p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl animate-[sheet-up_.28s_cubic-bezier(.2,.7,.1,1)] sm:max-h-none sm:w-[420px] sm:rounded-none sm:border-y-0 sm:border-e-0" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border sm:hidden" aria-hidden />
         <div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0">{title}</div><button type="button" onClick={onClose} className={buttonClass("ghost", "sm")} aria-label="close"><X size={16} /></button></div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -249,6 +263,7 @@ function AppointmentPanel({ a, he, edit, services, staff, onClose }: { a: CalApp
             {a.status === "SCHEDULED" && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "CONFIRMED" }} variant="primary" size="md">{L("אישור התור", "Confirm")}</InlineAction>}
             {active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "COMPLETED" }} variant="secondary" size="md" className="text-success">{L("הושלם", "Completed")}</InlineAction>}
             {active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "NO_SHOW" }} variant="secondary" size="md" className="text-danger">{L("לא הגיע", "No-show")}</InlineAction>}
+            {a.status === "COMPLETED" && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "NO_SHOW" }} variant="secondary" size="md" className="text-danger">{L("בעצם לא הגיע", "Actually a no-show")}</InlineAction>}
             {!active && <InlineAction action={setAppointmentStatusAction} fields={{ id: a.id, status: "SCHEDULED" }} variant="secondary" size="md">↺ {L("החזרה לפעיל", "Reactivate")}</InlineAction>}
             <InlineAction action={setPaymentStatusAction} fields={{ id: a.id, paymentStatus: a.paymentStatus === "PAID" ? "UNPAID" : "PAID" }} variant="secondary" size="md"><CreditCard size={14} /> {a.paymentStatus === "PAID" ? L("סימון כלא שולם", "Mark unpaid") : L("סימון כשולם", "Mark paid")}</InlineAction>
           </div>

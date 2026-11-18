@@ -13,7 +13,7 @@
     he: {
       loading: "טוען…", svc: "בחירת שירות", barber: "בחירת ספר", any: "כל ספר פנוי", day: "בחירת יום", time: "בחירת שעה",
       noTimes: "אין שעות פנויות ביום הזה. נסו יום אחר.", details: "פרטים ואישור", name: "שם מלא", phone: "טלפון נייד", note: "הערה (לא חובה)",
-      terms: "אני מאשר/ת שמירת הפרטים לצורך ניהול התור וקבלת אישור ותזכורת.", mkt: "אשמח לקבל עדכונים ומבצעים (לא חובה).",
+      terms: "אני מאשר/ת שמירת הפרטים לצורך ניהול התור וקבלת אישור ותזכורת (<a href=\"/privacy/\" target=\"_blank\">מדיניות פרטיות</a>).", mkt: "אשמח לקבל עדכונים ומבצעים (לא חובה).",
       book: "קביעת התור", booked: "התור נקבע", pending: "הבקשה התקבלה. נאשר בהקדם", cal: "הוספה ליומן", cancel: "ביטול התור",
       cancelQ: "לבטל את התור?", cancelled: "התור בוטל", again: "קביעת תור נוסף", save: "שמרו את הקישור הזה כדי לנהל את התור:",
       copy: "העתקת קישור", copied: "הועתק", closed: "קביעת תורים אונליין תיפתח בקרוב.", contact: "בינתיים אפשר לפנות אלינו:",
@@ -28,7 +28,7 @@
     en: {
       loading: "Loading…", svc: "Choose a service", barber: "Choose a barber", any: "Any available", day: "Choose a day", time: "Choose a time",
       noTimes: "No free times on this day. Try another day.", details: "Your details", name: "Full name", phone: "Mobile phone", note: "Note (optional)",
-      terms: "I agree my details are stored to manage this booking and to receive a confirmation and reminder.", mkt: "Send me news and offers (optional).",
+      terms: "I agree my details are stored to manage this booking and to receive a confirmation and reminder (<a href=\"/privacy/\" target=\"_blank\">privacy policy</a>).", mkt: "Send me news and offers (optional).",
       book: "Confirm booking", booked: "You're booked", pending: "Request received. We'll confirm soon", cal: "Add to calendar", cancel: "Cancel booking",
       cancelQ: "Cancel this booking?", cancelled: "Booking cancelled", again: "Book another", save: "Keep this link to manage your booking:",
       copy: "Copy link", copied: "Copied", closed: "Online booking opens soon.", contact: "Meanwhile, reach us:",

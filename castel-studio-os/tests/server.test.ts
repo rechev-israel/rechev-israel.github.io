@@ -33,7 +33,9 @@ describe("RBAC", () => {
 describe("appointment state machine", () => {
   it("allows valid transitions only", () => {
     expect(canTransition("SCHEDULED", "COMPLETED")).toBe(true);
-    expect(canTransition("COMPLETED", "NO_SHOW")).toBe(false);
+    // Auto-completed appointments can be corrected to a no-show, but a completed visit is never "cancelled".
+    expect(canTransition("COMPLETED", "NO_SHOW")).toBe(true);
+    expect(canTransition("COMPLETED", "CANCELLED")).toBe(false);
     expect(canTransition("CANCELLED", "SCHEDULED")).toBe(true);
   });
 });

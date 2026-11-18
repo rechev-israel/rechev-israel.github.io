@@ -421,6 +421,34 @@ d("online booking (PostgreSQL)", () => {
     expect(await portal.customerOverviewByPhone("not a phone")).toBeNull();
   });
 
+  it("past appointments complete themselves once (income recorded once), and a no-show can still be corrected", async () => {
+    const bookings = await import("@/server/services/bookings");
+    const cust = await db.customer.create({ data: { businessId: biz, firstName: "עבר", phone: "+972540001111" } });
+    const past = await db.appointment.create({ data: { businessId: biz, customerId: cust.id, serviceId, startsAt: new Date(Date.now() - 3 * 3600_000), endsAt: new Date(Date.now() - 2.5 * 3600_000), status: "CONFIRMED", price: 100 } });
+    const future = await db.appointment.create({ data: { businessId: biz, customerId: cust.id, serviceId, startsAt: new Date(Date.now() + 3600_000), endsAt: new Date(Date.now() + 5400_000), status: "CONFIRMED", price: 100 } });
+    expect(await bookings.autoCompletePastAppointments(biz, { force: true })).toBeGreaterThanOrEqual(1);
+    expect((await db.appointment.findUniqueOrThrow({ where: { id: past.id } })).status).toBe("COMPLETED");
+    expect((await db.appointment.findUniqueOrThrow({ where: { id: future.id } })).status).toBe("CONFIRMED");
+    await bookings.autoCompletePastAppointments(biz, { force: true });
+    expect(await db.transaction.count({ where: { businessId: biz, description: `appointment:${past.id}` } })).toBe(1);
+    expect((await db.customer.findUniqueOrThrow({ where: { id: cust.id } })).visitCount).toBe(1);
+    await bookings.setAppointmentStatus({ id: null, businessId: biz }, past.id, "NO_SHOW");
+    expect(await db.transaction.count({ where: { businessId: biz, description: `appointment:${past.id}` } })).toBe(0);
+  });
+
+  it("demo purge removes only [DEMO] records (incl. income from auto-completed demo appointments)", async () => {
+    const bookings = await import("@/server/services/bookings");
+    const owner = await db.user.findFirstOrThrow({ where: { businessId: biz, role: "OWNER" } });
+    const demoCust = await db.customer.create({ data: { businessId: biz, firstName: "[DEMO] א", tags: ["DEMO"] } });
+    const realCust = await db.customer.create({ data: { businessId: biz, firstName: "אמיתי", phone: "+972549990000" } });
+    const demoAppt = await db.appointment.create({ data: { businessId: biz, customerId: demoCust.id, startsAt: new Date(Date.now() - 7200_000), endsAt: new Date(Date.now() - 5400_000), status: "COMPLETED", notes: "[DEMO]", price: 50 } });
+    await db.transaction.create({ data: { businessId: biz, type: "INCOME", kind: "ACTUAL", category: "services", amount: 50, occurredAt: new Date(), description: `appointment:${demoAppt.id}` } });
+    expect((await bookings.demoDataCounts(biz)).appointments).toBe(1);
+    await bookings.purgeDemoData({ id: owner.id, businessId: biz });
+    expect(await bookings.demoDataCounts(biz)).toEqual({ appointments: 0, transactions: 0, customers: 0, services: 0, leads: 0 });
+    expect(await db.customer.count({ where: { id: realCust.id } })).toBe(1);
+  });
+
   it("time off removes availability; closed booking refuses", async () => {
     await db.timeOff.create({ data: { businessId: biz, startsAt: new Date(Date.UTC(2027, 2, 2, 0, 0)), endsAt: new Date(Date.UTC(2027, 2, 2, 22, 0)), reason: "holiday" } });
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date }, now)).slots).toHaveLength(0);

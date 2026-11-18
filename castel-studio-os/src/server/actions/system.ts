@@ -78,3 +78,14 @@ export async function updateUserAction(fd: FormData) {
   await audit({ businessId: me.businessId, userId: me.id, action: "user.update", entityType: "User", entityId: id, metadata: { role: data.role ?? null, isActive: data.isActive ?? null } });
   revalidatePath("/settings");
 }
+
+export async function purgeDemoDataAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireUser("settings.users"); // owner only
+    if (fd.get("confirm") !== "DEMO") return { error: "הקלידו DEMO כדי לאשר" };
+    const { purgeDemoData } = await import("@/server/services/bookings");
+    const r = await purgeDemoData(user);
+    revalidatePath("/", "layout");
+    return { ok: true, message: `נמחקו: ${r.appointments} תורים, ${r.customers} לקוחות, ${r.transactions} תנועות כספיות, ${r.services} שירותים, ${r.leads} לידים (נתוני הדגמה בלבד).` };
+  });
+}

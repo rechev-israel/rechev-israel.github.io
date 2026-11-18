@@ -53,7 +53,7 @@ export async function createAppointment(actor: Actor, input: z.infer<typeof appo
 const ALLOWED: Record<AppointmentStatus, AppointmentStatus[]> = {
   SCHEDULED: ["CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW"],
   CONFIRMED: ["COMPLETED", "CANCELLED", "NO_SHOW", "SCHEDULED"],
-  COMPLETED: ["SCHEDULED"],
+  COMPLETED: ["SCHEDULED", "NO_SHOW"],
   CANCELLED: ["SCHEDULED"],
   NO_SHOW: ["SCHEDULED", "COMPLETED"],
 };
@@ -62,7 +62,7 @@ export function canTransition(from: AppointmentStatus, to: AppointmentStatus) {
   return ALLOWED[from].includes(to);
 }
 
-export async function setAppointmentStatus(actor: Actor, id: string, status: AppointmentStatus, reason?: string) {
+export async function setAppointmentStatus(actor: { id: string | null; businessId: string }, id: string, status: AppointmentStatus, reason?: string) {
   const a = await db.appointment.findFirst({ where: { id, businessId: actor.businessId } });
   if (!a) throw new DomainError("errors.notFound");
   if (!canTransition(a.status, status)) throw new DomainError("errors.validation");
@@ -88,7 +88,7 @@ export async function setAppointmentStatus(actor: Actor, id: string, status: App
   if (a.customerId) await recomputeCustomerStats(actor.businessId, a.customerId);
   if (status === "COMPLETED") await emitAppointment(actor.businessId, "appointment.completed", id);
   if (status === "NO_SHOW") await emitAppointment(actor.businessId, "appointment.no_show", id);
-  await audit({ businessId: actor.businessId, userId: actor.id, action: `appointment.${status.toLowerCase()}`, entityType: "Appointment", entityId: id, metadata: reason ? { reason } : undefined });
+  await audit({ businessId: actor.businessId, userId: actor.id || null, action: actor.id ? `appointment.${status.toLowerCase()}` : `appointment.auto_${status.toLowerCase()}`, entityType: "Appointment", entityId: id, metadata: reason ? { reason } : undefined });
 }
 
 export async function emitAppointment(businessId: string, trigger: "appointment.created" | "appointment.completed" | "appointment.no_show", id: string) {
@@ -145,4 +145,52 @@ export async function rescheduleAppointment(actor: Actor, id: string, input: { s
     await notifyAppointmentEvent("booking_rescheduled", id, { dedupeSuffix: String(startsAt.getTime()), previousStartsAt: a.startsAt, actorUserId: actor.id });
   }
   return updated;
+}
+
+const lastAutoComplete = new Map<string, number>();
+
+/**
+ * Appointments whose end time has passed are marked COMPLETED automatically (records the income once, updates the
+ * customer's visits). Runs at most once a minute per business; called when the calendar/dashboard load, while the
+ * app is open (notification polling) and by the daily cron. A no-show can still be corrected from the calendar.
+ */
+export async function autoCompletePastAppointments(businessId: string, opts: { force?: boolean } = {}) {
+  if (!opts.force && Date.now() - (lastAutoComplete.get(businessId) ?? 0) < 60_000) return 0;
+  lastAutoComplete.set(businessId, Date.now());
+  const due = await db.appointment.findMany({ where: { businessId, status: { in: ["SCHEDULED", "CONFIRMED"] }, endsAt: { lte: new Date() }, OR: [{ notes: null }, { notes: { not: "[DEMO]" } }] }, select: { id: true }, orderBy: { endsAt: "asc" }, take: 200 });
+  let n = 0;
+  for (const a of due) {
+    try { await setAppointmentStatus({ id: null, businessId }, a.id, "COMPLETED"); n++; } catch { /* already changed concurrently */ }
+  }
+  return n;
+}
+
+/** Demo-seed records (marked [DEMO]) for the owner's "remove demo data" button. */
+async function demoWhere(businessId: string) {
+  const appts = await db.appointment.findMany({ where: { businessId, notes: "[DEMO]" }, select: { id: true } });
+  return {
+    apptIds: appts.map((a) => a.id),
+    tx: { businessId, OR: [{ description: { startsWith: "[DEMO]" } }, { description: { in: appts.map((a) => `appointment:${a.id}`) } }] },
+    customers: { businessId, tags: { has: "DEMO" } },
+    services: { businessId, nameEn: { startsWith: "[DEMO]" } },
+    leads: { businessId, name: { startsWith: "[DEMO]" } },
+  };
+}
+export async function demoDataCounts(businessId: string) {
+  const w = await demoWhere(businessId);
+  const [transactions, customers, services, leads] = await Promise.all([db.transaction.count({ where: w.tx }), db.customer.count({ where: w.customers }), db.service.count({ where: w.services }), db.lead.count({ where: w.leads })]);
+  return { appointments: w.apptIds.length, transactions, customers, services, leads };
+}
+export async function purgeDemoData(actor: { id: string; businessId: string }) {
+  const w = await demoWhere(actor.businessId);
+  const r = await db.$transaction([
+    db.notification.deleteMany({ where: { businessId: actor.businessId, entityId: { in: w.apptIds } } }),
+    db.transaction.deleteMany({ where: w.tx }),
+    db.appointment.deleteMany({ where: { id: { in: w.apptIds } } }),
+    db.lead.deleteMany({ where: w.leads }),
+    db.customer.deleteMany({ where: w.customers }),
+    db.service.deleteMany({ where: { ...w.services, appointments: { none: {} } } }),
+  ]);
+  await audit({ businessId: actor.businessId, userId: actor.id, action: "demo.purge", entityType: "Business", entityId: actor.businessId, metadata: { notifications: r[0].count, transactions: r[1].count, appointments: r[2].count, leads: r[3].count, customers: r[4].count, services: r[5].count } });
+  return { transactions: r[1].count, appointments: r[2].count, leads: r[3].count, customers: r[4].count, services: r[5].count };
 }
