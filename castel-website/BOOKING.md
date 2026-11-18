@@ -1,6 +1,6 @@
 # CASTEL STUDIO website (Netlify)
 
-Static site served at https://remarkable-sfogliatella-b3c7b4.netlify.app (imported from the live site on 2026-11-19).
+Static site served at https://remarkable-sfogliatella-b3c7b4.netlify.app (Netlify site id f8ec0200-590a-42a6-8a9b-b4023f14c146). Deployed via the Netlify API (digest deploy; unchanged files reused).
 
 Online booking is embedded in the `#book` section (index.html) through the CASTEL STUDIO OS widget:
 
