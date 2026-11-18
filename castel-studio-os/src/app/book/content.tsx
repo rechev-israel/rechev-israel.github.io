@@ -20,6 +20,8 @@ export async function BookingPageContent({ embed = false }: { embed?: boolean })
       ])
     : [[], []];
   const ready = Boolean(settings?.enabled && services.length && staff.length);
+  // Non-sensitive reason, visible only in the page source, to diagnose why booking is closed.
+  const closedReason = !settings?.enabled ? "disabled" : !services.length ? "no_services" : !staff.length ? "no_staff" : "";
   const dates = settings ? bookableDates(settings.maxDaysAhead) : [];
   const note = settings ? (he ? settings.noteHe : settings.noteEn) : null;
   const branch = b ? await db.branch.findFirst({ where: { businessId: b.id, isActive: true }, orderBy: { createdAt: "asc" }, select: { phone: true } }) : null;
@@ -50,7 +52,7 @@ export async function BookingPageContent({ embed = false }: { embed?: boolean })
             embed={embed}
           />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface p-6 text-center">
+          <div className="rounded-2xl border border-border bg-surface p-6 text-center" data-closed-reason={closedReason}>
             <p className="font-semibold">{L("קביעת תורים אונליין תיפתח בקרוב.", "Online booking opens soon.")}</p>
             <p className="mt-1 text-sm text-muted">{L("בינתיים אפשר לפנות אלינו בטלפון או בוואטסאפ.", "Meanwhile, contact us by phone or WhatsApp.")}</p>
             {phone && (
