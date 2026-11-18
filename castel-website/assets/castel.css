@@ -906,3 +906,9 @@ html[dir="ltr"] .pp-num { text-align: start; }
 .bk-badge { display: inline-block; padding: 2px 10px; border: 1px solid var(--hair); font-size: 13px; color: var(--gold); }
 .bk-badge.s-CANCELLED { color: #e88; border-color: rgba(232,136,136,.4); }
 @media (max-width: 380px) { .bk-cal-grid { gap: 4px; } .bk-day { font-size: 15px; } }
+/* Guided booking flow */
+@keyframes bkEnter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.bk-enter { animation: bkEnter .5s var(--ease) both; }
+.bk-hello { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--hair); background: rgba(198,164,119,.07); color: var(--ivory); font-size: 15px; }
+.bk-link-btn { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; margin-inline-start: 8px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .bk-enter { animation: none; } }
