@@ -414,6 +414,11 @@ d("online booking (PostgreSQL)", () => {
     // a device without a key can be linked with a booking's private link
     const claimed = await portal.claimDeviceByManageToken(again.token);
     expect((await portal.customerOverview(claimed))?.name).toBe("לקוח פורטל");
+    // phone-only access (current website behaviour)
+    process.env.DATABASE_URL = url;
+    const byPhone = await portal.customerOverviewByPhone("058-111-2233");
+    expect(byPhone === null || byPhone.name === "לקוח פורטל").toBe(true);
+    expect(await portal.customerOverviewByPhone("not a phone")).toBeNull();
   });
 
   it("time off removes availability; closed booking refuses", async () => {

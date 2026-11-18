@@ -4,6 +4,7 @@ import { audit } from "@/server/audit";
 import { zonedParts } from "@/lib/dates";
 import { toNumber } from "@/lib/utils";
 import { canCustomerCancel } from "@/domain/booking";
+import { normalizeIsraeliPhone } from "@/domain/crm";
 import { loyaltyTier, nextMilestone } from "@/domain/loyalty";
 import { notifyAppointmentEvent } from "@/server/notify/owner";
 import { recomputeCustomerStats } from "./crm";
@@ -88,4 +89,59 @@ export async function cancelFromPortal(token: unknown, appointmentId: unknown) {
 export async function forgetDevice(token: unknown) {
   if (!validToken(token)) return;
   await db.customerDevice.deleteMany({ where: { tokenHash: hash(token) } });
+}
+
+/** Owner's choice: "My appointments" is opened by phone number only (no device key). */
+export async function customerByPhone(phoneRaw: unknown) {
+  const phone = typeof phoneRaw === "string" ? normalizeIsraeliPhone(phoneRaw) : null;
+  if (!phone) return null;
+  const business = await db.business.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
+  if (!business) return null;
+  const c = await db.customer.findUnique({ where: { businessId_phone: { businessId: business.id, phone } } });
+  if (!c || c.status === "BLOCKED" || c.archivedAt) return null;
+  return c;
+}
+
+async function overviewFor(c: NonNullable<Awaited<ReturnType<typeof customerByPhone>>>) {
+  const [settings, appts] = await Promise.all([
+    getBookingSettings(c.businessId),
+    db.appointment.findMany({ where: { customerId: c.id }, orderBy: { startsAt: "desc" }, take: 60, include: { service: true, staff: { select: { name: true } } } }),
+  ]);
+  const now = Date.now();
+  const isUp = (a: (typeof appts)[number]) => a.startsAt.getTime() >= now && (a.status === "SCHEDULED" || a.status === "CONFIRMED");
+  const map = (a: (typeof appts)[number]) => {
+    const p = zonedParts(a.startsAt);
+    return {
+      id: a.id, status: a.status, service: a.service ? { he: a.service.nameHe, en: a.service.nameEn } : null,
+      date: `${p.year}-${pad(p.month)}-${pad(p.day)}`, time: `${pad(p.hour)}:${pad(p.minute)}`,
+      durationMin: Math.round((a.endsAt.getTime() - a.startsAt.getTime()) / 60000), price: toNumber(a.price), staff: a.staff?.name ?? null,
+      canCancel: isUp(a) && canCustomerCancel(a.startsAt.getTime(), now, settings.cancelNoticeMin),
+    };
+  };
+  const visits = c.visitCount, spent = toNumber(c.totalSpent);
+  return {
+    name: [c.firstName, c.lastName].filter(Boolean).join(" "), firstName: c.firstName,
+    tier: loyaltyTier(visits, spent), visits, memberSince: c.createdAt.toISOString().slice(0, 10), next: nextMilestone(visits),
+    cancelNoticeMin: settings.cancelNoticeMin, upcoming: appts.filter(isUp).reverse().map(map), history: appts.filter((a) => !isUp(a)).map(map),
+  };
+}
+
+export async function customerOverviewByPhone(phone: unknown) {
+  const c = await customerByPhone(phone);
+  return c ? overviewFor(c) : null;
+}
+
+export async function cancelByPhone(phone: unknown, appointmentId: unknown) {
+  const c = await customerByPhone(phone);
+  if (!c || typeof appointmentId !== "string") return { ok: false as const, error: "not_found" };
+  const a = await db.appointment.findFirst({ where: { id: appointmentId, customerId: c.id } });
+  if (!a) return { ok: false as const, error: "not_found" };
+  if (a.status !== "SCHEDULED" && a.status !== "CONFIRMED") return { ok: true as const };
+  const settings = await getBookingSettings(a.businessId);
+  if (!canCustomerCancel(a.startsAt.getTime(), Date.now(), settings.cancelNoticeMin)) return { ok: false as const, error: "too_late" };
+  await db.appointment.update({ where: { id: a.id }, data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: "customer_online" } });
+  await audit({ businessId: a.businessId, userId: null, action: "appointment.cancelled_by_customer", entityType: "Appointment", entityId: a.id });
+  await notifyAppointmentEvent("booking_cancelled", a.id);
+  await recomputeCustomerStats(a.businessId, c.id).catch(() => {});
+  return { ok: true as const };
 }

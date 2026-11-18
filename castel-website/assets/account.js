@@ -7,20 +7,21 @@
 (function () {
   "use strict";
   var API = "https://castel-studio-delta.vercel.app/api/public";
-  var DEV = "castel.booking.device";
+  var ME = "castel.booking.me"; // { name, phone } — saved on this phone after booking (or entered here)
   var lang = function () { return document.documentElement.lang === "en" ? "en" : "he"; };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* private mode */ } }
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  var device = function () { var d = read(DEV); return d && /^[A-Za-z0-9_-]{30,64}$/.test(d) ? d : null; };
+  var myPhone = function () { try { var v = JSON.parse(read(ME) || "null"); return v && typeof v.phone === "string" && v.phone.replace(/\D/g, "").length >= 9 ? v.phone : null; } catch (e) { return null; } };
+  function savePhone(phone, name) { try { var v = JSON.parse(read(ME) || "null") || {}; v.phone = phone; if (name) v.name = name; store(ME, JSON.stringify(v)); } catch (e) { /* */ } }
   var post = function (path, body) { return fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" }).then(function (r) { return r.json().then(function (d) { d._ok = r.ok; return d; }); }); };
 
   var T = {
     he: {
-      me: "החשבון שלי", myAppts: "התורים שלי", guest: "עוד לא קבעת תור מהטלפון הזה", guestSub: "אחרי התור הראשון תראו כאן את כל התורים והביקורים שלכם.",
+      me: "החשבון שלי", myAppts: "התורים שלי", guest: "כניסה עם מספר הטלפון", guestSub: "הזינו את מספר הטלפון שאיתו קבעתם תור, ותראו את כל התורים והביקורים שלכם.", phone: "מספר טלפון", show: "הצגת התורים שלי", notFound: "לא מצאנו תורים למספר הזה. בדקו את המספר או קבעו תור חדש.",
       book: "קביעת תור", upcoming: "תורים קרובים", history: "היסטוריית ביקורים", none: "אין תורים קרובים.", noHistory: "עוד אין ביקורים קודמים.",
       visits: "ביקורים", since: "לקוח מאז", nextAt: "עוד {n} ביקורים לדרגה הבאה", cancel: "ביטול", cancelQ: "לבטל את התור?", cal: "ליומן",
-      tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", logout: "התנתקות מהמכשיר הזה", logoutQ: "להסיר את החשבון מהמכשיר הזה?", close: "סגירה", loading: "טוען…",
+      tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", logout: "יציאה (לא אני)", logoutQ: "לצאת מהחשבון במכשיר הזה?", close: "סגירה", loading: "טוען…",
       tier: { NEW: "לקוח חדש", SILVER: "כסף", GOLD: "זהב", PLATINUM: "פלטינום" }, tierL: "סטטוס",
       st: { CONFIRMED: "מאושר", SCHEDULED: "ממתין לאישור", COMPLETED: "הושלם", CANCELLED: "בוטל", NO_SHOW: "לא הגיע" }, min: "דק׳",
       instTitle: "רוצים להוסיף את האתר כאפליקציה למסך הבית?", instSub: "קביעת תור בלחיצה אחת, והתורים שלכם תמיד בהישג יד.", instParen: "(עדיף מאשר כול פעם לחפש את הקישור 😮‍💨)",
@@ -29,10 +30,10 @@
       inApp: "פתחו את האתר בספארי (⋯ ← ״פתיחה בדפדפן״) ואז הוסיפו למסך הבית.", added: "האפליקציה נוספה ✓",
     },
     en: {
-      me: "My account", myAppts: "My appointments", guest: "You haven't booked from this phone yet", guestSub: "After your first booking, all your appointments and visits appear here.",
+      me: "My account", myAppts: "My appointments", guest: "Sign in with your phone number", guestSub: "Enter the phone number you booked with to see all your appointments and visits.", phone: "Phone number", show: "Show my appointments", notFound: "No bookings found for this number. Check it or book a new appointment.",
       book: "Book now", upcoming: "Upcoming", history: "Visit history", none: "No upcoming appointments.", noHistory: "No past visits yet.",
       visits: "Visits", since: "Customer since", nextAt: "{n} more visits to the next tier", cancel: "Cancel", cancelQ: "Cancel this appointment?", cal: "Calendar",
-      tooLate: "Too late to cancel online. Please call the shop.", logout: "Sign out on this device", logoutQ: "Remove the account from this device?", close: "Close", loading: "Loading…",
+      tooLate: "Too late to cancel online. Please call the shop.", logout: "Sign out (not me)", logoutQ: "Sign out on this device?", close: "Close", loading: "Loading…",
       tier: { NEW: "New", SILVER: "Silver", GOLD: "Gold", PLATINUM: "Platinum" }, tierL: "Status",
       st: { CONFIRMED: "Confirmed", SCHEDULED: "Pending", COMPLETED: "Completed", CANCELLED: "Cancelled", NO_SHOW: "No-show" }, min: "min",
       instTitle: "Add the site to your home screen as an app?", instSub: "Book in one tap, with your appointments always at hand.", instParen: "(Better than searching for the link every time 😮‍💨)",
@@ -46,18 +47,19 @@
   var svcName = function (s) { return s ? (lang() === "en" ? s.en || s.he : s.he) : ""; };
 
   // ── data ──
-  var data = null, loadingP = null;
+  var data = null, loadingP = null, lastError = "";
   function load(force) {
-    var d = device();
-    if (!d) { data = null; return Promise.resolve(null); }
+    var ph = myPhone();
+    if (!ph) { data = null; return Promise.resolve(null); }
     if (!force && loadingP) return loadingP;
-    loadingP = post("/me", { d: d }).then(function (r) {
-      if (!r._ok) { if (r.error === "unknown_device") store(DEV, null); data = null; } else data = r;
+    loadingP = post("/me", { phone: ph }).then(function (r) {
+      if (!r._ok) { data = null; lastError = r.error || "x"; } else { data = r; lastError = ""; }
       loadingP = null; paintMenu(); return data;
     }).catch(function () { loadingP = null; return data; });
     return loadingP;
   }
   window.addEventListener("castel:device", function () { load(true); });
+  window.addEventListener("castel:booked", function () { load(true); });
 
   // ── menu card (three lines) + desktop link ──
   function menuCard() {
@@ -91,6 +93,7 @@
       panel = document.createElement("div"); panel.className = "acc-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-modal", "true");
       document.body.appendChild(panel);
       panel.addEventListener("click", onPanelClick);
+      panel.addEventListener("submit", onPanelSubmit);
     }
     document.documentElement.classList.add("acc-lock");
     renderPanel(true);
@@ -107,9 +110,12 @@
   }
   function renderPanel(loading) {
     var L = t(), h = '<div class="acc-sheet"><div class="acc-top"><p class="acc-eyebrow">CASTEL STUDIO</p><button type="button" class="acc-x" data-close aria-label="' + L.close + '">✕</button></div>';
-    if (loading && device() && !data) h += '<p class="acc-muted">' + L.loading + "</p>";
+    if (loading && myPhone() && !data) h += '<p class="acc-muted">' + L.loading + "</p>";
     else if (!data) {
-      h += '<h2 class="acc-h">' + L.myAppts + '</h2><p class="acc-lead">' + L.guest + '</p><p class="acc-muted">' + L.guestSub + '</p><a class="btn acc-book" href="#book" data-close>' + L.book + "</a>";
+      h += '<h2 class="acc-h">' + L.myAppts + '</h2><p class="acc-muted">' + L.guestSub + "</p>" +
+        '<form class="acc-login" novalidate><label class="bk-field">' + L.phone + '<input name="phone" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="050-0000000" maxlength="20" value="' + esc(myPhone() || "") + '"></label>' +
+        (lastError && myPhone() ? '<p class="acc-err">' + (lastError === "rate_limited" ? "✕" : L.notFound) + "</p>" : "") +
+        '<button class="btn acc-book" type="submit">' + L.show + '</button></form><a class="acc-logout" href="#book" data-close>' + L.book + "</a>";
     } else {
       var pct = data.next ? Math.round(100 * (1 - data.next.remaining / Math.max(1, data.next.at))) : 100;
       h += '<h2 class="acc-h">' + esc(data.name) + "</h2>" +
@@ -123,6 +129,12 @@
     }
     panel.innerHTML = h + "</div>";
   }
+  function onPanelSubmit(e) {
+    e.preventDefault();
+    var v = e.target.phone.value.trim(); if (v.replace(/\D/g, "").length < 9) return;
+    savePhone(v); lastError = ""; renderPanel(true);
+    load(true).then(function (d) { if (d) savePhone(v, d.name); renderPanel(false); paintMenu(); });
+  }
   function onPanelClick(e) {
     if (e.target === panel) return closePanel();
     var b = e.target.closest("[data-close],[data-cancel],[data-logout]"); if (!b) return;
@@ -130,15 +142,14 @@
     if (b.hasAttribute("data-cancel")) {
       if (!confirm(t().cancelQ)) return;
       b.disabled = true;
-      post("/me/cancel", { d: device(), id: b.getAttribute("data-cancel") }).then(function (r) {
+      post("/me/cancel", { phone: myPhone(), id: b.getAttribute("data-cancel") }).then(function (r) {
         if (r._ok) { load(true).then(function () { renderPanel(false); window.dispatchEvent(new Event("castel:changed")); }); }
         else { var er = document.getElementById("accErr"); er.hidden = false; er.textContent = r.error === "too_late" ? t().tooLate : "✕"; b.disabled = false; }
       });
     }
     if (b.hasAttribute("data-logout")) {
       if (!confirm(t().logoutQ)) return;
-      post("/me/forget", { d: device() }).catch(function () {});
-      store(DEV, null); try { localStorage.removeItem("castel.booking.me"); } catch (x) { /* */ }
+      store(ME, null); store("castel.booking.device", null);
       data = null; paintMenu(); renderPanel(false);
     }
   }
@@ -186,6 +197,22 @@
     });
   }
   setTimeout(showPop, 2000);
+
+  // ── Auto-update: the installed app resumes instead of reloading, so check for a newer site version when it comes back ──
+  var myVersion = (document.querySelector('meta[name="castel-version"]') || {}).content || "";
+  function busyTyping() {
+    var a = document.activeElement; if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return true;
+    var f = document.getElementById("bkForm"); return !!(f && f.name && f.name.type !== "hidden" && f.name.value);
+  }
+  function checkUpdate() {
+    if (!myVersion) return;
+    fetch("/version.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (v) {
+      if (v && v.v && v.v !== myVersion && !busyTyping()) location.reload();
+    }).catch(function () {});
+  }
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") { checkUpdate(); load(true); } });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) checkUpdate(); });
+  setInterval(checkUpdate, 5 * 60000);
 
   // Shortcut from the installed app: /?me=1 opens "My appointments"
   if (/[?&]me=1/.test(location.search)) setTimeout(openPanel, 300);

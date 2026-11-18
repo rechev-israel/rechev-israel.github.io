@@ -1,7 +1,7 @@
 /* CASTEL STUDIO OS service worker.
  * Privacy-first: caches ONLY immutable static assets (JS/CSS/fonts/icons) and an offline page.
  * Business pages and API responses are never cached, so no customer or financial data is stored on the device. */
-const VERSION = "castel-v2";
+const VERSION = "castel-v3";
 const STATIC = `${VERSION}-static`;
 const OFFLINE_URL = "/offline.html";
 
@@ -11,7 +11,10 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))))
+      // Navigation preload: the page request starts in parallel with the worker, so the SW adds no delay.
+      .then(() => (self.registration.navigationPreload ? self.registration.navigationPreload.enable() : null))
+      .then(() => self.clients.claim()),
   );
 });
 
@@ -34,7 +37,10 @@ self.addEventListener("fetch", (event) => {
 
   // Page navigations → always network; offline page only when the network is unavailable.
   if (req.mode === "navigate") {
-    event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
+    event.respondWith((async () => {
+      try { return (await event.preloadResponse) || (await fetch(req)); }
+      catch { return caches.match(OFFLINE_URL); }
+    })());
   }
 });
 

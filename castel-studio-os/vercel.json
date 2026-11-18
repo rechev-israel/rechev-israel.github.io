@@ -4,7 +4,7 @@
   "installCommand": "npm ci",
   "buildCommand": "node scripts/vercel-build.mjs",
   "regions": [
-    "fra1"
+    "iad1"
   ],
   "crons": [
     {

@@ -244,7 +244,6 @@
 
   function openManage(token) {
     S.token = token;
-    if (!readDev()) post("/../me/claim", { t: token }).then(function (r) { if (r._ok && r.deviceToken) saveDev(r.deviceToken); }).catch(function () {});
     return get("/manage?t=" + encodeURIComponent(token)).then(function (d) { S.manage = d._status === 200 ? d : { error: true }; render(); })
       .catch(function () { S.manage = { error: true }; render(); });
   }
@@ -283,12 +282,12 @@
     if (!on(f, "terms") || f.name.value.trim().length < 2 || f.phone.value.trim().length < 9) { S.error = L.e.validation; render(); return; }
     var vals = { name: f.name.value, phone: f.phone.value, notes: f.notes.value, remember: on(f, "remember") };
     S.busy = true; S.error = ""; render();
-    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: on(f, "mkt"), terms: true, deviceToken: readDev() || undefined, website: f.website.value })
+    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: vals.name, phone: vals.phone, notes: vals.notes || undefined, marketingConsent: on(f, "mkt"), terms: true, website: f.website.value })
       .then(function (d) {
         S.busy = false;
         if (d._ok && d.token) {
-          if (d.deviceToken) saveDev(d.deviceToken);
           if (vals.remember) { saveMe(vals); S.me = readMe(); } else { forgetMe(); S.me = null; }
+          window.dispatchEvent(new Event("castel:booked"));
           cache = {};
           history.replaceState(null, "", "?booking=" + encodeURIComponent(d.token) + "#book");
           return openManage(d.token).then(function () { root.scrollIntoView({ behavior: "smooth", block: "start" }); });

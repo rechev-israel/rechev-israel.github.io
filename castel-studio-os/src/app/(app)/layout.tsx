@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { LiveBell } from "@/components/shell/live-bell";
+import { AppFreshness } from "@/components/shell/app-freshness";
 import { notificationWhere } from "@/server/notify/visibility";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/auth/rbac";
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-dvh safe-x">
+      <AppFreshness build={(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 12)} />
       <Sidebar
         groups={groups}
         tagline={t.app.tagline}
