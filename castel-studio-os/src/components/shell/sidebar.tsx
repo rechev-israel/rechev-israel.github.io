@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, CalendarDays, GraduationCap, Wallet, ListChecks, LineChart, Megaphone, Palette, Globe,
-  MessagesSquare, Workflow, Bot, UserRound, ShieldCheck, Plug, Settings, ScrollText, Menu, X,
+  MessagesSquare, Workflow, Bot, UserRound, ShieldCheck, Plug, Settings, ScrollText, Menu, X, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandMark, Wordmark } from "./brand";
 
-const ICONS = { LayoutDashboard, Users, CalendarDays, GraduationCap, Wallet, ListChecks, LineChart, Megaphone, Palette, Globe, MessagesSquare, Workflow, Bot, UserRound, ShieldCheck, Plug, Settings, ScrollText };
+const ICONS = { LayoutDashboard, Users, CalendarDays, Clock, GraduationCap, Wallet, ListChecks, LineChart, Megaphone, Palette, Globe, MessagesSquare, Workflow, Bot, UserRound, ShieldCheck, Plug, Settings, ScrollText };
 
 export type SidebarItem = { href: string; label: string; icon: keyof typeof ICONS; state: "live" | "partial" | "planned"; badge?: number };
 export type SidebarGroup = { label: string; items: SidebarItem[] };

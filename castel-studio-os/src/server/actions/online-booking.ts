@@ -13,7 +13,7 @@ import { runAction } from "./util";
 const PERM = "services.edit" as const;
 const bool = z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean());
 const int = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
-const done = () => { revalidatePath("/bookings/online"); revalidatePath("/book"); };
+const done = () => { revalidatePath("/bookings/online"); revalidatePath("/hours"); revalidatePath("/bookings"); revalidatePath("/book"); };
 
 export async function saveBookingSettingsAction(_: ActionState, fd: FormData): Promise<ActionState> {
   return runAction(async (): Promise<ActionState | void> => {

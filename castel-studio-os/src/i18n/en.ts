@@ -14,7 +14,7 @@ export const en: Dictionary = {
   },
   nav: {
     groups: { core: "Operations", growth: "Growth & Marketing", ai: "Artificial Intelligence", system: "System" },
-    dashboard: "Command Center", crm: "Customers (CRM)", bookings: "Bookings", academy: "Academy", finance: "Finance & BI",
+    dashboard: "Command Center", crm: "Customers (CRM)", bookings: "Bookings", hours: "Working hours", academy: "Academy", finance: "Finance & BI",
     analytics: "Analytics", marketing: "Marketing Dept.", creative: "Creative Studio", sites: "Landing Page Builder",
     communications: "Communications", automations: "Automations", agents: "AI Agents", twin: "Digital Twin",
     approvals: "Approvals", tasks: "Tasks", integrations: "Integration Center", settings: "Settings", audit: "Audit Log",
