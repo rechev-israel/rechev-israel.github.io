@@ -134,6 +134,9 @@
     });
   }
 
+  // CASTEL FRIENDS: remember a friend's code from ?ref= for 30 days (sent with this device's next booking).
+  try { var rq = new URLSearchParams(location.search).get("ref"); if (rq && /^CS-[A-HJ-NP-Z2-9]{6}$/.test(rq)) store("castel.ref", JSON.stringify({ code: rq, until: Date.now() + 30 * 864e5 })); } catch (e) { /* ignore */ }
+
   window.CastelReview = { open: open };
   setTimeout(showBanner, 2000);
 })();

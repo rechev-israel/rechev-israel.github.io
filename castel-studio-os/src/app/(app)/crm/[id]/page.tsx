@@ -1,3 +1,4 @@
+import { ExperienceCard } from "@/components/crm/experience-card";
 import { ContactButtons } from "@/components/contact-buttons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -63,6 +64,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         }
       />
       {c.archivedAt && <Badge tone="warning" className="mb-4">{t.crm.archived}</Badge>}
+      <ExperienceCard businessId={user.businessId} customerId={c.id} locale={locale} canEdit={can(user.role, "crm.edit")} isOwner={can(user.role, "services.edit")} />
       {can(user.role, "crm.delete") && (c.status === "BLOCKED" ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-danger/40 bg-danger/10 p-4">
           <div className="text-sm"><b className="text-danger">🚫 {locale === "he" ? "הלקוח חסום" : "Customer blocked"}</b><p className="mt-0.5 text-xs text-muted">{locale === "he" ? "לא יכול לקבוע תור באתר, לא מקבל הודעות, ו״התורים שלי״ סגור בפניו. אפשר עדיין לקבוע לו תור ידנית מהמערכת." : "Can't book online, gets no messages, and \"My appointments\" is closed. You can still book him manually."}</p></div>

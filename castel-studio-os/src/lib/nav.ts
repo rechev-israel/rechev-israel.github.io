@@ -13,6 +13,7 @@ export const NAV: NavGroup[] = [
       { key: "bookings", href: "/bookings", icon: "CalendarDays", state: "live", permission: "bookings.view" },
       { key: "hours", href: "/hours", icon: "Clock", state: "live", permission: "bookings.view" },
       { key: "reviews", href: "/reviews", icon: "Star", state: "live", permission: "crm.view" },
+      { key: "experience", href: "/experience", icon: "Crown", state: "live", permission: "crm.view" },
       { key: "academy", href: "/academy", icon: "GraduationCap", state: "live", permission: "academy.view" },
       { key: "finance", href: "/finance", icon: "Wallet", state: "live", permission: "finance.view" },
       { key: "tasks", href: "/tasks", icon: "ListChecks", state: "live" },

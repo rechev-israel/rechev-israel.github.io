@@ -59,6 +59,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   <Stars n={r.rating} />
                 </div>
                 {r.text ? <p className="whitespace-pre-line text-sm leading-relaxed">{r.text}</p> : <p className="text-sm text-muted">{L("(דירוג בלי טקסט)", "(rating only)")}</p>}
+                {r.suggestion && <p className="rounded-lg border border-border bg-surface-2 p-2 text-xs"><b className="text-muted">{L("הצעה לשיפור (פרטי):", "Improvement idea (private):")}</b> {r.suggestion}</p>}
+                <div className="flex flex-wrap gap-1.5">{r.verified && <Badge tone="info">{L("אחרי ביקור", "Verified visit")}</Badge>}{!r.publicConsent && <Badge>{L("פרטי, לא מוצג באתר", "Private, not on site")}</Badge>}{r.serviceRating && <Badge>{L("שירות", "Service")} {r.serviceRating}★</Badge>}</div>
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Badge tone={r.status === "PUBLISHED" ? "success" : r.status === "HIDDEN" ? "neutral" : "warning"}>{r.status === "PUBLISHED" ? L("מפורסם באתר", "Published") : r.status === "HIDDEN" ? L("מוסתר", "Hidden") : L("ממתין לאישור", "Pending")}</Badge>
                   {edit && (<>

@@ -115,7 +115,8 @@
       h += '<h2 class="acc-h">' + L.myAppts + '</h2><p class="acc-muted">' + L.guestSub + "</p>" +
         '<form class="acc-login" novalidate><label class="bk-field">' + L.phone + '<input name="phone" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="050-0000000" maxlength="20" value="' + esc(myPhone() || "") + '"></label>' +
         (lastError && myPhone() ? '<p class="acc-err">' + (lastError === "rate_limited" ? "✕" : L.notFound) + "</p>" : "") +
-        '<button class="btn acc-book" type="submit">' + L.show + '</button></form><a class="acc-logout" href="/book/" data-close>' + L.book + "</a>";
+        '<button class="btn acc-book" type="submit">' + L.show + '</button></form>' + '<a class="btn ghost acc-book acc-my" href="/my/" data-close>MY CASTEL · ' + (document.documentElement.lang === "en" ? "My account" : "האזור האישי") + "</a>" +
+        '<a class="acc-logout" href="/book/" data-close>' + L.book + "</a>";
     } else {
       var pct = data.next ? Math.round(100 * (1 - data.next.remaining / Math.max(1, data.next.at))) : 100;
       h += '<h2 class="acc-h">' + esc(data.name) + "</h2>" +
@@ -124,6 +125,7 @@
         (data.next ? '<div class="acc-prog"><i style="width:' + pct + '%"></i></div><p class="acc-muted acc-small">' + L.nextAt.replace("{n}", data.next.remaining) + "</p>" : "") +
         '<h3 class="acc-sec">' + L.upcoming + "</h3>" + (data.upcoming.length ? '<ul class="acc-list">' + data.upcoming.map(function (a) { return apptRow(a, true); }).join("") + "</ul>" : '<p class="acc-muted">' + L.none + "</p>") +
         '<a class="btn acc-book" href="/book/" data-close>' + L.book + "</a>" +
+        '<a class="btn ghost acc-book acc-my" href="/my/" data-close>MY CASTEL · ' + (document.documentElement.lang === "en" ? "My account" : "האזור האישי") + "</a>" +
         '<h3 class="acc-sec">' + L.history + "</h3>" + (data.history.length ? '<ul class="acc-list">' + data.history.map(function (a) { return apptRow(a, false); }).join("") + "</ul>" : '<p class="acc-muted">' + L.noHistory + "</p>") +
         '<p class="acc-err" id="accErr" role="alert" hidden></p><button type="button" class="acc-logout" data-logout>' + L.logout + "</button>";
     }

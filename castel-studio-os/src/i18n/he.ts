@@ -12,7 +12,7 @@ export const he = {
   },
   nav: {
     groups: { core: "ניהול", growth: "צמיחה ושיווק", ai: "בינה מלאכותית", system: "מערכת" },
-    dashboard: "מרכז פיקוד", crm: "לקוחות (CRM)", bookings: "תורים", hours: "שעות פעילות", reviews: "ביקורות", academy: "האקדמיה", finance: "כספים ו-BI",
+    dashboard: "מרכז פיקוד", crm: "לקוחות (CRM)", bookings: "תורים", hours: "שעות פעילות", reviews: "ביקורות", experience: "חוויית לקוח", academy: "האקדמיה", finance: "כספים ו-BI",
     analytics: "אנליטיקה", marketing: "מחלקת שיווק", creative: "סטודיו קריאייטיב", sites: "בונה דפי נחיתה",
     communications: "מרכז תקשורת", automations: "אוטומציות", agents: "סוכני AI", twin: "תאום דיגיטלי",
     approvals: "אישורים", tasks: "משימות", integrations: "מרכז חיבורים", settings: "הגדרות", audit: "יומן ביקורת",

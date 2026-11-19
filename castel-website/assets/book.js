@@ -74,6 +74,16 @@
 
   // Same on-device memory as the homepage booking form (shared keys, so returning customers are recognised everywhere).
   var MEM = "castel.booking.me";
+  // MY CASTEL: this device's private key (issued by the system after a booking on this device or opening a booking link).
+  var DEV = "castel.booking.device", REF = "castel.ref";
+  function readDev() { try { var d = localStorage.getItem(DEV); return d && /^[A-Za-z0-9_-]{30,64}$/.test(d) ? d : ""; } catch (e) { return ""; } }
+  function saveDev(d) { try { if (d && /^[A-Za-z0-9_-]{30,64}$/.test(d)) localStorage.setItem(DEV, d); } catch (e) { /* private mode */ } }
+  function readRef() { try { var v = JSON.parse(localStorage.getItem(REF) || "null"); return v && v.code && v.until > Date.now() ? v.code : ""; } catch (e) { return ""; } }
+  var PORTAL = API.replace(/\/booking$/, "/portal"), ME_API = API.replace(/\/booking$/, "/me");
+  function claimDevice(token) { // a booking link proves who the customer is → this device can open MY CASTEL
+    fetch(ME_API + "/claim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: token, d: readDev() || undefined }) })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { if (d && d.deviceToken) saveDev(d.deviceToken); }).catch(function () { /* optional */ });
+  }
   function readMe() { try { var v = JSON.parse(localStorage.getItem(MEM) || "null"); return v && typeof v.name === "string" && typeof v.phone === "string" ? v : null; } catch (e) { return null; } }
   function saveMe(v) { try { localStorage.setItem(MEM, JSON.stringify({ name: v.name.trim().slice(0, 80), phone: v.phone.trim().slice(0, 20) })); } catch (e) { /* private mode */ } }
   function forgetMe() { try { localStorage.removeItem(MEM); } catch (e) { /* ignore */ } }
@@ -373,11 +383,15 @@
     if (sending) return; // one tap = one booking request
     var L = t(), f = S.form;
     sending = true; S.busy = true; S.error = ""; render();
-    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: f.name, phone: f.phone, notes: f.notes || undefined, marketingConsent: !!f.mkt, terms: true, website: f.website || "" })
+    post("", { serviceId: S.service, staffId: S.staff, date: S.date, start: S.start, name: f.name, phone: f.phone, notes: f.notes || undefined, marketingConsent: !!f.mkt, terms: true, website: f.website || "", deviceToken: readDev() || undefined })
       .then(function (d) {
         sending = false; S.busy = false;
         if (d._ok && d.token) {
           if (f.remember) { saveMe(f); S.me = readMe(); } else { forgetMe(); S.me = null; }
+          if (d.deviceToken) saveDev(d.deviceToken);
+          var refCode = readRef();
+          if (refCode) fetch(PORTAL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "referral.claim", token: d.token, code: refCode }) })
+            .then(function () { try { localStorage.removeItem(REF); } catch (e) { /* ignore */ } }).catch(function () { /* optional */ });
           window.dispatchEvent(new Event("castel:booked"));
           cache = {};
           history.replaceState(null, "", location.pathname + "?booking=" + encodeURIComponent(d.token));
@@ -420,11 +434,21 @@
       if (d.open && d.staff.length === 1) S.staff = d.staff[0].id;
       render(true);
       if (d.open) d.services.forEach(function (sv) { fetchDays(sv.id, S.staff); }); // prefetch: days and times are ready before the customer taps
+      // "Book again" / waitlist from MY CASTEL: the service (and maybe the day) is already chosen — the customer still picks and confirms.
+      var qp = new URLSearchParams(location.search), qs = qp.get("service"), qd = qp.get("date");
+      if (d.open && qs && d.services.some(function (sv) { return sv.id === qs; })) {
+        S.service = qs; loadDays(); go(2, "fwd");
+        if (qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)) fetchDays(S.service, S.staff).then(function (days) {
+          if (S.service !== qs || S.step !== 2) return;
+          applyDays(days);
+          if (days.some(function (x) { return x.date === qd && x.free > 0; })) { S.date = qd; S.month = qd.slice(0, 7); loadSlots(); go(3, "fwd"); } else render();
+        });
+      }
     }).catch(function () { S.cfg = { open: false }; render(); });
   }
 
   applyLang(lang());
   loadReviews();
   var tok = new URLSearchParams(location.search).get("booking");
-  if (tok && /^[A-Za-z0-9_-]{20,64}$/.test(tok)) openManage(tok); else init();
+  if (tok && /^[A-Za-z0-9_-]{20,64}$/.test(tok)) { openManage(tok); claimDevice(tok); } else init();
 })();
