@@ -130,3 +130,12 @@ describe("CSV safety", () => {
     expect(toCsv(["a"], [["x"]]).startsWith("﻿")).toBe(true);
   });
 });
+
+import { whatsappNumber } from "@/components/contact-buttons";
+describe("whatsappNumber", () => {
+  it("builds wa.me numbers from stored and local formats", () => {
+    expect(whatsappNumber("+972521234567")).toBe("972521234567");
+    expect(whatsappNumber("052-123-4567")).toBe("972521234567");
+    expect(whatsappNumber("00972521234567")).toBe("972521234567");
+  });
+});

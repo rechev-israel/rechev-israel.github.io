@@ -1,3 +1,4 @@
+import { ContactButtons } from "@/components/contact-buttons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Archive, ArrowRight, CalendarPlus, ListPlus, Pin, Trash2 } from "lucide-react";
@@ -53,6 +54,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         subtitle={[c.phone, c.email].filter(Boolean).map((v) => `\u2066${v}\u2069`).join(" · ") || undefined}
         actions={
           <>
+            <ContactButtons phone={c.phone} he={locale === "he"} />
             <Badge tone={segmentTone(c.status)} className="h-8 px-3 text-xs">{t.segments[c.status]}</Badge>
             {can(user.role, "bookings.edit") && <Link href={`/bookings/new?customerId=${c.id}`} className={buttonClass("secondary")}><CalendarPlus size={14} /> {t.bookings.new}</Link>}
             {can(user.role, "tasks.edit") && <InlineAction action={createFollowUpTaskAction} fields={{ customerId: c.id }} variant="secondary" size="md"><ListPlus size={14} /> {t.crm.followUp}</InlineAction>}

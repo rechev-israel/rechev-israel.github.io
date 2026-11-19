@@ -1,3 +1,4 @@
+import { ContactButtons } from "@/components/contact-buttons";
 import Link from "next/link";
 import { Cake, Download, Plus, RefreshCw, Search } from "lucide-react";
 import { pageGuard } from "@/server/auth/guard";
@@ -76,7 +77,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           {/* Phone: card list */}
           <ul className="space-y-2 md:hidden">
             {items.map((c) => (
-              <li key={c.id}>
+              <li key={c.id} className="relative">
                 <Link href={`/crm/${c.id}`} className="block rounded-xl border border-border bg-surface-2 p-3 active:bg-surface-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -85,12 +86,15 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                     </div>
                     <Badge tone={segmentTone(c.status)}>{t.segments[c.status]}</Badge>
                   </div>
+                  {c.phone && <div className="h-12" aria-hidden="true" />}
                   <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted">
                     <span>{t.crm.visits}: <b className="text-text">{c.visitCount}</b></span>
                     <span>{formatILS(c.totalSpent, locale)}</span>
                     <span className="text-end">{formatDate(c.lastVisitAt, locale)}</span>
                   </div>
                 </Link>
+                {/* outside the card link (a link can't contain links); sits in the space reserved above */}
+                <ContactButtons phone={c.phone} he={locale === "he"} className="absolute end-3 top-[3.4rem]" />
               </li>
             ))}
           </ul>
@@ -114,7 +118,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                     <Link href={`/crm/${c.id}`} className="font-medium hover:text-gold">{fullName(c)}</Link>
                     {c.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{c.tags.slice(0, 3).map((tg) => <Badge key={tg}>{tg}</Badge>)}</div>}
                   </Td>
-                  <Td dir="ltr" className="text-muted tabular-nums">{c.phone ?? "—"}</Td>
+                  <Td dir="ltr" className="text-muted tabular-nums"><span className="inline-flex items-center gap-2">{c.phone ?? "—"}<ContactButtons phone={c.phone} he={locale === "he"} compact /></span></Td>
                   <Td><Badge tone={segmentTone(c.status)}>{t.segments[c.status]}</Badge></Td>
                   <Td className="text-muted">{formatDate(c.lastVisitAt, locale)}</Td>
                   <Td className="text-end tabular-nums">{c.visitCount}</Td>

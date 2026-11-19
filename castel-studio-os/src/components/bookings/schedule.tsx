@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Ban, CalendarClock, ChevronLeft, ChevronRight, Coffee, CreditCard, Phone, Plus, X } from "lucide-react";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
+import { ContactButtons } from "@/components/contact-buttons";
 import { Badge, Input, Label, Select, Textarea, buttonClass } from "@/components/ui";
 import { editBreakAction } from "@/server/actions/online-booking";
 import { blockTimeAction, removeBlockAction, rescheduleAppointmentAction, setAppointmentStatusAction, setPaymentStatusAction, updateAppointmentDetailsAction } from "@/server/actions/bookings";
@@ -291,7 +292,7 @@ function AppointmentPanel({ a, he, edit, services, staff, onClose }: { a: CalApp
         {row(L("שירות", "Service"), a.service || "—")}
         {row(L("מחיר", "Price"), a.price != null ? `₪${a.price}` : "—")}
         {a.staff && row(L("ספר", "Barber"), a.staff)}
-        {a.customer?.phone && row(L("טלפון", "Phone"), <a href={`tel:${a.customer.phone}`} className="inline-flex items-center gap-1 text-gold" dir="ltr"><Phone size={12} /> {a.customer.phone}</a>)}
+        {a.customer?.phone && row(L("טלפון", "Phone"), <span className="inline-flex flex-wrap items-center justify-end gap-2"><a href={`tel:${a.customer.phone}`} className="inline-flex items-center gap-1 text-gold" dir="ltr"><Phone size={12} /> {a.customer.phone}</a><ContactButtons phone={a.customer.phone} he={he} compact /></span>)}
         {a.notes && row(L("הערות", "Notes"), <span className="whitespace-pre-wrap">{a.notes}</span>)}
         {a.cancelReason && row(L("סיבת ביטול", "Cancel reason"), a.cancelReason === "customer_online" ? L("בוטל ע״י הלקוח באתר", "Cancelled by customer online") : a.cancelReason)}
       </dl>
