@@ -127,6 +127,7 @@
       (rb ? '<a class="my-q" href="' + bookUrl(rb.serviceId) + '">' + ICON.repeat + "<b>" + l.again + "</b><small>" + esc(svcName(rb.service)) + "</small></a>" : '<button type="button" class="my-q" data-tab="appts" data-focus="wl">' + ICON.clock + "<b>" + l.qWait + "</b><small>" + l.qWaitSub + "</small></button>") +
       '<button type="button" class="my-q" data-tab="cut">' + ICON.cut + "<b>" + l.qCut + "</b><small>" + l.qCutSub + "</small></button>" +
       '<button type="button" class="my-q" data-tab="looks">' + ICON.img + "<b>" + l.qLooks + "</b><small>" + l.qLooksSub + "</small></button></div></section>";
+    if (d.referral) h += '<section class="my-sec"><h2>' + l.friends + "</h2>" + referralCard(d.referral) + "</section>";
     if (d.club) h += '<section class="my-sec">' + clubCard() + "</section>";
     if (d.vip && d.vip.member) h += '<section class="my-sec">' + vipCard() + "</section>";
     return h;
@@ -189,6 +190,16 @@
       (v.benefits && v.benefits.length ? '<div class="my-card" style="margin-top:14px"><h3>' + l.vipBenefits + '</h3><ul class="my-benefits">' + v.benefits.map(function (b) { return "<li>" + esc(b) + "</li>"; }).join("") + "</ul></div>" : "");
   }
 
+  // CASTEL FRIENDS card — used in the club tab, on the home screen and in the phone-number view.
+  function referralCard(r) {
+    var l = L();
+    S.ref = r;
+    return '<div class="my-card gold"><p class="my-muted">' + esc(l.friendsSub.replace("{r}", r.reward || (lang() === "he" ? "הטבה" : "a reward"))) + (r.friendReward ? " " + esc(l.friendGets.replace("{r}", r.friendReward)) : "") + "</p>" +
+      '<div class="my-code"><b>' + esc(r.code) + '</b><span style="display:flex;gap:8px">' + (navigator.share ? '<button type="button" class="my-chip" data-share>' + l.share + "</button>" : "") + '<button type="button" class="my-chip" data-copy>' + l.copy + "</button></span></div>" +
+      '<div class="my-stats"><div><b>' + r.invited + "</b><span>" + l.invited + "</span></div><div><b>" + r.qualified + "</b><span>" + l.qualified + "</span></div><div><b>" + r.pending + "</b><span>" + l.pendingR + "</span></div></div>" +
+      (r.conditions ? '<p class="my-muted" style="margin-top:10px;font-size:12px">' + esc(r.conditions) + "</p>" : "") + "</div>";
+  }
+
   function viewClub() {
     var l = L(), d = S.data, h = '<h1 class="my-hello">' + l.tabs[2] + "</h1>";
     h += '<section class="my-sec">' + clubCard() + "</section>";
@@ -198,13 +209,7 @@
       }).join("") : '<p class="my-muted">' + l.noRewards + "</p>") + "</div></section>";
     }
     if (d.vip) h += '<section class="my-sec"><h2>' + l.vip + "</h2>" + vipCard() + "</section>";
-    if (d.referral) {
-      var r = d.referral;
-      h += '<section class="my-sec"><h2>' + l.friends + '</h2><div class="my-card gold"><p class="my-muted">' + esc(l.friendsSub.replace("{r}", r.reward || (lang() === "he" ? "הטבה" : "a reward"))) + (r.friendReward ? " " + esc(l.friendGets.replace("{r}", r.friendReward)) : "") + "</p>" +
-        '<div class="my-code"><b>' + esc(r.code) + '</b><span style="display:flex;gap:8px">' + (navigator.share ? '<button type="button" class="my-chip" data-share>' + l.share + "</button>" : "") + '<button type="button" class="my-chip" data-copy>' + l.copy + "</button></span></div>" +
-        '<div class="my-stats"><div><b>' + r.invited + "</b><span>" + l.invited + "</span></div><div><b>" + r.qualified + "</b><span>" + l.qualified + "</span></div><div><b>" + r.pending + "</b><span>" + l.pendingR + "</span></div></div>" +
-        (r.conditions ? '<p class="my-muted" style="margin-top:10px;font-size:12px">' + esc(r.conditions) + "</p>" : "") + "</div></section>";
-    }
+    if (d.referral) h += '<section class="my-sec"><h2>' + l.friends + "</h2>" + referralCard(d.referral) + "</section>";
     return h;
   }
 
@@ -260,6 +265,7 @@
     var row = function (a) { return '<div class="my-appt"><b>' + esc(svcName(a.service)) + '</b><div class="my-appt-act"></div><p class="my-muted">' + esc(dShort(a.date)) + ' · <span dir="ltr">' + a.time + "</span> · " + (l.st[a.status] || a.status) + "</p></div>"; };
     root.innerHTML = '<p class="my-eyebrow">MY CASTEL</p><h1 class="my-hello">' + l.hello.replace("{n}", esc(d.firstName)) + '</h1><p class="my-sub">' + l.visits.replace("{n}", d.visits) + "</p>" +
       '<section class="my-sec"><h2>' + l.upcoming + '</h2><div class="my-card">' + (d.upcoming.length ? d.upcoming.map(row).join("") : '<p class="my-muted">' + l.noNext + "</p>") + "</div></section>" +
+      (S.phoneRef ? '<section class="my-sec"><h2>' + l.friends + "</h2>" + referralCard(S.phoneRef) + "</section>" : "") +
       '<section class="my-sec"><div class="my-lock">' + ICON.lock + "<span><b>" + l.lockT + "</b>" + l.lockS + '</span></div><div class="my-row"><a class="bp-btn sm" href="/book/">' + l.book + '</a><button type="button" class="bp-btn ghost sm" data-back-login>' + l.close + "</button></div></section>" +
       '<section class="my-sec"><h2>' + l.history + '</h2><div class="my-card">' + (d.history.length ? d.history.slice(0, 20).map(row).join("") : '<p class="my-muted">' + l.noHistory + "</p>") + "</div></section>";
   }
@@ -369,10 +375,10 @@
     } else if (t.dataset.rate) openRating(t.dataset.rate);
     else if (t.dataset.leave) api("waitlist.leave", { id: t.dataset.leave }).then(load).catch(function () { toast(l.err); });
     else if (t.dataset.photoOpen) openPhoto(t.dataset.photoOpen);
-    else if (t.hasAttribute("data-copy")) { (navigator.clipboard ? navigator.clipboard.writeText(S.data.referral.link) : Promise.reject()).then(function () { toast(l.copied); }).catch(function () { prompt("", S.data.referral.link); }); }
-    else if (t.hasAttribute("data-share")) navigator.share({ title: "CASTEL STUDIO", text: l.shareText, url: S.data.referral.link }).catch(function () { /* cancelled */ });
+    else if (t.hasAttribute("data-copy")) { (navigator.clipboard ? navigator.clipboard.writeText(S.ref.link) : Promise.reject()).then(function () { toast(l.copied); }).catch(function () { prompt("", S.ref.link); }); }
+    else if (t.hasAttribute("data-share")) navigator.share({ title: "CASTEL STUDIO", text: l.shareText, url: S.ref.link }).catch(function () { /* cancelled */ });
     else if (t.hasAttribute("data-reload")) load();
-    else if (t.hasAttribute("data-back-login")) { S.phoneView = null; render(); }
+    else if (t.hasAttribute("data-back-login")) { S.phoneView = null; S.phoneRef = null; render(); }
     else if (t.hasAttribute("data-logout")) { if (confirm(l.logout + "?")) { fetch(BASE + "/me/forget", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ d: device() }) }).catch(function () { /* ignore */ }); store(DEV, null); S.data = null; render(); } }
   });
   tabsEl.addEventListener("click", function (e) { var b = e.target.closest("[data-tab]"); if (b) go(b.dataset.tab); });
@@ -392,7 +398,11 @@
     if (f.id === "phoneForm") {
       fetch(BASE + "/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: f.phone.value }) })
         .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "x"); return d; }); })
-        .then(function (d) { S.phoneView = d; render(); window.scrollTo(0, 0); })
+        .then(function (d) {
+          S.phoneView = d; S.phoneRef = null; render(); window.scrollTo(0, 0);
+          var ph = f.phone.value;
+          api("referral.phone", { phone: ph }).then(function (x) { if (x.referral && S.phoneView) { S.phoneRef = x.referral; render(); } }).catch(function () { /* optional */ });
+        })
         .catch(function () { err.textContent = l.notFound; err.hidden = false; });
     } else if (f.id === "cutForm") {
       var p = {}; ["style", "fade", "guards", "topLength", "beard", "styling", "notes", "photoId"].forEach(function (k) { p[k] = f[k].value; });

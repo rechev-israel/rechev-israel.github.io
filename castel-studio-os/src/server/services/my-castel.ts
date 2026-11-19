@@ -79,6 +79,24 @@ export async function portalOverview(device: unknown) {
   };
 }
 
+/**
+ * CASTEL FRIENDS by phone number (the owner's choice, like "My appointments"): only the code, the link and
+ * counts — nothing private. Sharing a code can only bring the code's owner a benefit.
+ */
+export async function referralByPhone(phone: unknown) {
+  const { customerByPhone } = await import("./customer-portal");
+  const c = await customerByPhone(phone);
+  if (!c) throw new PortalError("not_found");
+  const exp = await getExperience(c.businessId);
+  if (!exp.referral.enabled) return { referral: null };
+  const code = await ensureReferralCode(c.businessId, c.id);
+  const refs = await db.referral.findMany({ where: { referrerId: c.id }, select: { status: true } });
+  return { referral: {
+    code, link: `${SITE}/?ref=${code}`, reward: exp.referral.referrerRewardLabel, friendReward: exp.referral.bothBenefit ? exp.referral.friendRewardLabel : "", conditions: exp.referral.conditions, minCompleted: exp.referral.minCompleted,
+    invited: refs.length, qualified: refs.filter((r) => r.status === "QUALIFIED").length, pending: refs.filter((r) => r.status === "PENDING").length,
+  } };
+}
+
 /** Calendar file for one of the customer's own upcoming appointments. */
 export async function portalIcs(device: unknown, appointmentId: unknown) {
   const c = await portalCustomer(device);

@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { audit } from "@/server/audit";
 import { cancelFromPortal } from "@/server/services/customer-portal";
 import { deletePhoto, joinWaitlist, leaveWaitlist, recordReferral, saveHaircutProfile, updatePhoto, uploadPhoto } from "@/server/services/experience";
-import { PortalError, portalCustomer, portalIcs, portalOverview, portalReview } from "@/server/services/my-castel";
+import { PortalError, portalCustomer, portalIcs, portalOverview, portalReview, referralByPhone } from "@/server/services/my-castel";
 import { findByToken } from "@/server/services/online-booking";
 import { ReviewError } from "@/server/services/reviews";
 import { clientIp } from "../booking/errors";
@@ -40,6 +40,10 @@ export async function POST(req: Request) {
       case "photo.delete": { const c = await portalCustomer(body.device); await deletePhoto(c.id, body.id); return json(req, { ok: true }); }
       case "waitlist.join": { const c = await portalCustomer(body.device); const e = await joinWaitlist(c.businessId, c.id, body as never); await audit({ businessId: c.businessId, userId: null, action: "waitlist.joined", entityType: "WaitlistEntry", entityId: e.id }); return json(req, { ok: true }); }
       case "waitlist.leave": { const c = await portalCustomer(body.device); await leaveWaitlist(c.id, body.id); return json(req, { ok: true }); }
+      case "referral.phone": {
+        if (!rateLimit(`portalrefph:${ip}`, 20, 60_000).ok) return json(req, { error: "rate_limited" }, 429);
+        return json(req, await referralByPhone(body.phone));
+      }
       case "referral.claim": {
         // Right after booking with a friend's link: proven by the new booking's private token (no device needed).
         if (!rateLimit(`portalref:${ip}`, 10, 10 * 60_000).ok) return json(req, { error: "rate_limited" }, 429);
