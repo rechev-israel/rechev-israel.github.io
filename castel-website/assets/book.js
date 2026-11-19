@@ -230,6 +230,8 @@
       }).join("") + "</div></section>";
   }
   function openReview() {
+    var m0 = S.manage || {};
+    if (window.CastelReview) return window.CastelReview.open({ token: S.token, name: (S.form && S.form.name) || m0.name || "", current: m0.review, onDone: function (rating, text) { if (S.manage) { S.manage.review = { rating: rating, text: text }; renderManage(); } } });
     var L = t(), m = S.manage || {}, cur = m.review || { rating: 0, text: "" };
     var name = (S.form && S.form.name) || m.name || "";
     var box = document.createElement("div");

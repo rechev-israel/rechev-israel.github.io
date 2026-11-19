@@ -539,6 +539,11 @@ d("online booking (PostgreSQL)", () => {
     await db.review.update({ where: { id: a.id }, data: { status: "HIDDEN" } }); // owner hid it
     expect((await rv.submitReview(r.token, { rating: 5 })).status).toBe("HIDDEN");
     expect((await rv.publicReviews(biz)).count).toBe(0);
+    // banner: by the phone this device knows → their latest appointment (no duplicates); strangers can't review
+    await db.review.update({ where: { id: a.id }, data: { status: "PUBLISHED" } });
+    const c = await rv.submitReviewByPhone("054-123-1234", { rating: 3, text: "מהבאנר" });
+    expect(c.id).toBe(a.id);
+    await expect(rv.submitReviewByPhone("0500000001", { rating: 5 })).rejects.toThrow("not_found");
   });
 
   it("a blocked customer can't book online and 'My appointments' is closed", async () => {

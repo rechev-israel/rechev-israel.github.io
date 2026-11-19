@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { sendPush } from "@/server/notify/push";
 import { findByToken } from "./online-booking";
+import { customerByPhone } from "./customer-portal";
 
 export class ReviewError extends Error {}
 
@@ -18,6 +19,22 @@ export async function submitReview(token: string, input: { rating: unknown; text
   const a = await findByToken(token);
   if (!a) throw new ReviewError("not_found");
   if (a.status === "CANCELLED") throw new ReviewError("cancelled");
+  return saveReview(a, input);
+}
+
+/**
+ * From the website banner: a customer this device already knows (saved phone). The review is attached to their
+ * most recent appointment that wasn't cancelled; customers without one can't review.
+ */
+export async function submitReviewByPhone(phone: unknown, input: { rating: unknown; text?: unknown; name?: unknown }) {
+  const c = await customerByPhone(phone);
+  if (!c) throw new ReviewError("not_found");
+  const a = await db.appointment.findFirst({ where: { businessId: c.businessId, customerId: c.id, status: { not: "CANCELLED" } }, orderBy: { startsAt: "desc" }, include: { customer: { select: { firstName: true, lastName: true } } } });
+  if (!a) throw new ReviewError("not_found");
+  return saveReview(a, input);
+}
+
+async function saveReview(a: { id: string; businessId: string; customerId: string | null; customer: { firstName: string; lastName: string | null } | null }, input: { rating: unknown; text?: unknown; name?: unknown }) {
   const rating = Number(input.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ReviewError("rating");
   const fallback = [a.customer?.firstName, a.customer?.lastName].filter(Boolean).join(" ");
