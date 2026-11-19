@@ -517,7 +517,7 @@ d("online booking (PostgreSQL)", () => {
     expect((await ob.getSlots(biz, { serviceId, staffId: "any", date: "2027-03-24" }, now)).slots).toHaveLength(2);
   });
 
-  it("reviews: only with a booking link, one per appointment, public only after the owner publishes", async () => {
+  it("reviews: only with a booking link, one per appointment, published immediately; hidden ones stay hidden", async () => {
     const rv = await import("@/server/services/reviews");
     const d8 = "2027-03-30";
     const sl = (await ob.getSlots(biz, { serviceId, staffId: "any", date: d8 }, now)).slots;
@@ -525,18 +525,20 @@ d("online booking (PostgreSQL)", () => {
     await expect(rv.submitReview("x".repeat(30), { rating: 5 })).rejects.toThrow("not_found");
     await expect(rv.submitReview(r.token, { rating: 7 })).rejects.toThrow("rating");
     const a = await rv.submitReview(r.token, { rating: 5, text: "  שירות   מעולה " });
-    expect(a.status).toBe("PENDING");
+    expect(a.status).toBe("PUBLISHED");
     expect(a.text).toBe("שירות מעולה");
     expect(a.name).toBe("דני כהן");
     expect(await db.notification.count({ where: { dedupeKey: `review:${a.id}` } })).toBe(1);
-    expect((await rv.publicReviews(biz)).count).toBe(0); // not public until published
+    expect((await rv.publicReviews(biz)).count).toBe(1); // live right away
     const b = await rv.submitReview(r.token, { rating: 4, text: "עדכון" }); // same appointment → edit, not a second review
     expect(b.id).toBe(a.id);
     expect(await db.review.count({ where: { businessId: biz } })).toBe(1);
-    await db.review.update({ where: { id: a.id }, data: { status: "PUBLISHED" } });
     const pub = await rv.publicReviews(biz);
     expect(pub).toMatchObject({ count: 1, average: 4 });
     expect(pub.items[0]).toMatchObject({ name: "דני כ.", rating: 4, text: "עדכון" });
+    await db.review.update({ where: { id: a.id }, data: { status: "HIDDEN" } }); // owner hid it
+    expect((await rv.submitReview(r.token, { rating: 5 })).status).toBe("HIDDEN");
+    expect((await rv.publicReviews(biz)).count).toBe(0);
   });
 
   it("a blocked customer can't book online and 'My appointments' is closed", async () => {

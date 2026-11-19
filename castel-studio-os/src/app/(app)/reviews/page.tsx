@@ -24,7 +24,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const L = (h: string, e: string) => (he ? h : e);
   const edit = can(user.role, "services.edit");
   const sp = await searchParams;
-  const tab = (["PENDING", "PUBLISHED", "HIDDEN"] as const).find((x) => x === sp.tab) ?? "PENDING";
+  const tab = (["PENDING", "PUBLISHED", "HIDDEN"] as const).find((x) => x === sp.tab) ?? "PUBLISHED";
   const [items, counts, agg] = await Promise.all([
     db.review.findMany({ where: { businessId: user.businessId, status: tab }, orderBy: { createdAt: "desc" }, take: 200 }),
     db.review.groupBy({ by: ["status"], where: { businessId: user.businessId }, _count: true }),
@@ -32,10 +32,10 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   ]);
   const count = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
   const appts = await db.appointment.findMany({ where: { id: { in: items.map((r) => r.appointmentId).filter((x): x is string => !!x) } }, select: { id: true, startsAt: true, service: { select: { nameHe: true } } } });
-  const TABS = [["PENDING", L("ממתינות לאישור", "Pending")], ["PUBLISHED", L("מפורסמות באתר", "Published")], ["HIDDEN", L("מוסתרות", "Hidden")]] as const;
+  const TABS = [["PUBLISHED", L("מפורסמות באתר", "Published")], ["HIDDEN", L("מוסתרות", "Hidden")], ...(count("PENDING") ? [["PENDING", L("ממתינות", "Pending")] as const] : [])] as const;
   return (
     <div className="space-y-5">
-      <PageHeader title={L("ביקורות", "Reviews")} subtitle={L("ביקורות שלקוחות השאירו באתר. ביקורת מופיעה באתר רק אחרי שתאשר אותה.", "Reviews customers left on the website. A review appears on the site only after you publish it.")} />
+      <PageHeader title={L("ביקורות", "Reviews")} subtitle={L("ביקורות שלקוחות השאירו באתר. כל ביקורת עולה לאתר מיד. אפשר להסתיר או למחוק ביקורת בכל רגע.", "Reviews customers left on the website. Each review goes live immediately; you can hide or delete any of them.")} />
       <Card className="flex flex-wrap items-center gap-4 p-4">
         <div className="font-display text-4xl font-bold text-gold">{agg._avg.rating ? agg._avg.rating.toFixed(1) : "—"}</div>
         <div><Stars n={Math.round(agg._avg.rating ?? 0)} size={18} /><p className="text-xs text-muted">{L(`${agg._count} ביקורות מפורסמות`, `${agg._count} published reviews`)}</p></div>
@@ -45,7 +45,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           <Link key={k} href={`/reviews?tab=${k}`} className={`rounded-full border px-3.5 py-1.5 text-sm ${tab === k ? "border-gold bg-gold/10 text-gold" : "border-border text-muted"}`}>{label} · {count(k)}</Link>
         ))}
       </div>
-      {!items.length ? <EmptyState icon={<Star />} title={tab === "PENDING" ? L("אין ביקורות חדשות", "No new reviews") : L("אין כאן ביקורות", "Nothing here")}>{L("אחרי שלקוח קובע תור באתר הוא מוזמן להשאיר ביקורת. ביקורות חדשות יופיעו כאן.", "After booking, customers are invited to leave a review. New ones appear here.")}</EmptyState> : (
+      {!items.length ? <EmptyState icon={<Star />} title={tab === "PUBLISHED" ? L("עדיין אין ביקורות", "No reviews yet") : L("אין כאן ביקורות", "Nothing here")}>{L("אחרי שלקוח קובע תור באתר הוא מוזמן להשאיר ביקורת. ביקורות חדשות יופיעו כאן.", "After booking, customers are invited to leave a review. New ones appear here.")}</EmptyState> : (
         <div className="grid gap-3 md:grid-cols-2">
           {items.map((r) => {
             const ap = appts.find((a) => a.id === r.appointmentId);

@@ -12,7 +12,7 @@ export const publicName = (name: string) => { const [f, ...r] = name.trim().spli
 
 /**
  * A customer's review, left with the private booking link (so only real customers can review, one per appointment).
- * New and edited reviews wait for the owner's approval before they appear on the website.
+ * Reviews are published on the website immediately (the owner's choice); the owner can still hide or delete them.
  */
 export async function submitReview(token: string, input: { rating: unknown; text?: unknown; name?: unknown }) {
   const a = await findByToken(token);
@@ -25,9 +25,9 @@ export async function submitReview(token: string, input: { rating: unknown; text
   const text = clean(input.text, 600) || null;
   const existing = await db.review.findUnique({ where: { appointmentId: a.id } });
   if (existing) {
-    return db.review.update({ where: { id: existing.id }, data: { rating, text, name, status: existing.status === "HIDDEN" ? "HIDDEN" : "PENDING" } });
+    return db.review.update({ where: { id: existing.id }, data: { rating, text, name, status: existing.status === "HIDDEN" ? "HIDDEN" : "PUBLISHED" } });
   }
-  const r = await db.review.create({ data: { businessId: a.businessId, customerId: a.customerId, appointmentId: a.id, rating, text, name } });
+  const r = await db.review.create({ data: { businessId: a.businessId, customerId: a.customerId, appointmentId: a.id, rating, text, name, status: "PUBLISHED" } });
   await notifyOwnerReview(r).catch((e) => logger.error("notify.review_failed", { err: String(e) }));
   return r;
 }
