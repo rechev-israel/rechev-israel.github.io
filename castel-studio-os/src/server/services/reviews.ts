@@ -34,17 +34,22 @@ export async function submitReviewByPhone(phone: unknown, input: { rating: unkno
   return saveReview(a, input);
 }
 
-async function saveReview(a: { id: string; businessId: string; customerId: string | null; customer: { firstName: string; lastName: string | null } | null }, input: { rating: unknown; text?: unknown; name?: unknown }) {
+export type ReviewInput = { rating: unknown; text?: unknown; name?: unknown; serviceRating?: unknown; suggestion?: unknown; publicConsent?: unknown };
+export async function saveReview(a: { id: string; businessId: string; customerId: string | null; status?: string; customer: { firstName: string; lastName: string | null } | null }, input: ReviewInput) {
   const rating = Number(input.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ReviewError("rating");
+  const sr = input.serviceRating == null || input.serviceRating === "" ? null : Number(input.serviceRating);
+  if (sr != null && (!Number.isInteger(sr) || sr < 1 || sr > 5)) throw new ReviewError("rating");
+  // Private extras: improvement ideas are never public; publishing needs the customer's consent (on unless they unticked it).
+  const extra = { serviceRating: sr, suggestion: clean(input.suggestion, 600) || null, publicConsent: input.publicConsent !== false, verified: a.status === "COMPLETED" };
   const fallback = [a.customer?.firstName, a.customer?.lastName].filter(Boolean).join(" ");
   const name = clean(input.name, 60) || fallback || "לקוח";
   const text = clean(input.text, 600) || null;
   const existing = await db.review.findUnique({ where: { appointmentId: a.id } });
   if (existing) {
-    return db.review.update({ where: { id: existing.id }, data: { rating, text, name, status: existing.status === "HIDDEN" ? "HIDDEN" : "PUBLISHED" } });
+    return db.review.update({ where: { id: existing.id }, data: { rating, text, name, ...extra, status: existing.status === "HIDDEN" ? "HIDDEN" : "PUBLISHED" } });
   }
-  const r = await db.review.create({ data: { businessId: a.businessId, customerId: a.customerId, appointmentId: a.id, rating, text, name, status: "PUBLISHED" } });
+  const r = await db.review.create({ data: { businessId: a.businessId, customerId: a.customerId, appointmentId: a.id, rating, text, name, ...extra, status: "PUBLISHED" } });
   await notifyOwnerReview(r).catch((e) => logger.error("notify.review_failed", { err: String(e) }));
   return r;
 }
@@ -70,8 +75,8 @@ export async function reviewForAppointment(appointmentId: string) {
 /** Published reviews for the website. */
 export async function publicReviews(businessId: string, limit = 20) {
   const [agg, items] = await Promise.all([
-    db.review.aggregate({ where: { businessId, status: "PUBLISHED" }, _avg: { rating: true }, _count: true }),
-    db.review.findMany({ where: { businessId, status: "PUBLISHED" }, orderBy: { createdAt: "desc" }, take: limit, select: { name: true, rating: true, text: true, createdAt: true } }),
+    db.review.aggregate({ where: { businessId, status: "PUBLISHED", publicConsent: true }, _avg: { rating: true }, _count: true }),
+    db.review.findMany({ where: { businessId, status: "PUBLISHED", publicConsent: true }, orderBy: { createdAt: "desc" }, take: limit, select: { name: true, rating: true, text: true, createdAt: true } }),
   ]);
   return {
     count: agg._count, average: agg._avg.rating ? Math.round(agg._avg.rating * 10) / 10 : null,

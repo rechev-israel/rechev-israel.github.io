@@ -201,4 +201,8 @@ export async function commsTick(businessId: string) {
     ensured.add(businessId);
   }
   await flushDueMessages(20).catch(() => null);
+  // MY CASTEL heartbeat: waitlist matches and 24h/2h reminders (both do nothing until the owner turns them on / customers join).
+  const exp = await import("@/server/services/experience");
+  await exp.waitlistTick(businessId).catch(() => 0);
+  await exp.reminderTick(businessId).catch(() => 0);
 }

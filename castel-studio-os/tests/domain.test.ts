@@ -139,3 +139,35 @@ describe("whatsappNumber", () => {
     expect(whatsappNumber("00972521234567")).toBe("972521234567");
   });
 });
+
+import { clubProgress, fitsWindow, isReferralCode, makeReferralCode, parseClub, qualifyingVisits, rewardText } from "@/domain/experience";
+describe("CASTEL CLUB rules", () => {
+  it("is off by default with safe defaults", () => {
+    expect(parseClub({})).toMatchObject({ enabled: false, visitsRequired: 10, premiumQualifies: false });
+    expect(parseClub({ visitsRequired: -3 }).visitsRequired).toBe(10);
+  });
+  it("counts only completed visits, one per day, premium only when allowed", () => {
+    const a = [
+      { status: "COMPLETED", dayKey: "2027-01-01", premium: false },
+      { status: "COMPLETED", dayKey: "2027-01-01", premium: false }, // duplicate same day
+      { status: "CANCELLED", dayKey: "2027-01-02", premium: false },
+      { status: "NO_SHOW", dayKey: "2027-01-03", premium: false },
+      { status: "COMPLETED", dayKey: "2027-01-04", premium: true },
+      { status: "SCHEDULED", dayKey: "2027-01-05", premium: false },
+    ];
+    expect(qualifyingVisits(a, { premiumQualifies: false })).toBe(1);
+    expect(qualifyingVisits(a, { premiumQualifies: true })).toBe(2);
+  });
+  it("progress and reward text", () => {
+    expect(clubProgress(23, 10)).toEqual({ cycles: 2, inCard: 3, remaining: 7, required: 10 });
+    expect(rewardText({ rewardLabel: "", rewardType: "discount_percent", rewardValue: 50 })).toBe("50% הנחה על תספורת");
+    expect(rewardText({ rewardLabel: "קפה ותספורת", rewardType: "gift", rewardValue: 0 })).toBe("קפה ותספורת");
+  });
+  it("referral codes and waitlist windows", () => {
+    const c = makeReferralCode();
+    expect(isReferralCode(c)).toBe(true);
+    expect(isReferralCode("CS-0OI1AA")).toBe(false);
+    expect(fitsWindow(600, 540, 720)).toBe(true);
+    expect(fitsWindow(720, 540, 720)).toBe(false);
+  });
+});

@@ -171,6 +171,12 @@ enum ConsentStatus {
 
 model Customer {
   devices                  CustomerDevice[]
+  haircutProfile           HaircutProfile?
+  photos                   CustomerPhoto[]
+  vipMembership            VipMembership?
+  referralCode             ReferralCode?
+  waitlist                 WaitlistEntry[]
+  rewards                  LoyaltyReward[]
   id                       String           @id @default(cuid())
   businessId               String
   business                 Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1134,9 +1140,160 @@ model Review {
   name          String
   rating        Int
   text          String?
+  /// Optional ratings and private notes (never shown on the website).
+  serviceRating Int?
+  suggestion    String?
+  /// The customer agreed to show this review on the website.
+  publicConsent Boolean      @default(true)
+  /// Left after a completed visit.
+  verified      Boolean      @default(false)
   status        ReviewStatus @default(PENDING)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
   @@index([businessId, status, createdAt])
+}
+
+// ───────────────────────── Customer experience (MY CASTEL) ─────────────────────────
+
+/// Owner-controlled programs. Everything is OFF until the owner turns it on.
+model ExperienceSettings {
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  club       Json     @default("{}")
+  vip        Json     @default("{}")
+  referral   Json     @default("{}")
+  reminders  Json     @default("{}")
+  updatedAt  DateTime @updatedAt
+}
+
+/// A reward a customer earned (CASTEL CLUB visits, or a referral). refKey makes each one unique — no double rewards.
+model LoyaltyReward {
+  id           String    @id @default(cuid())
+  businessId   String
+  customerId   String
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// club | referral
+  kind         String
+  refKey       String    @unique
+  label        String
+  /// AVAILABLE | REDEEMED | EXPIRED | VOID
+  status       String    @default("AVAILABLE")
+  earnedAt     DateTime  @default(now())
+  expiresAt    DateTime?
+  redeemedAt   DateTime?
+  redeemedById String?
+
+  @@index([customerId, status])
+}
+
+/// "MY HAIRCUT": what the customer likes. Visible to the shop's staff (that's its purpose).
+model HaircutProfile {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  style      String?
+  fade       String?
+  guards     String?
+  topLength  String?
+  beard      String?
+  styling    String?
+  notes      String?
+  photoId    String?
+  updatedAt  DateTime @updatedAt
+}
+
+/// "MY LOOKS": private photos. Staff see a photo only when the customer shares it.
+model CustomerPhoto {
+  id               String   @id @default(cuid())
+  businessId       String
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  mime             String
+  data             Bytes
+  bytes            Int
+  note             String?
+  favorite         Boolean  @default(false)
+  sharedWithBarber Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@index([customerId, createdAt])
+}
+
+model VipMembership {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// ACTIVE | REVOKED
+  status     String   @default("ACTIVE")
+  /// MANUAL | AUTO
+  source     String   @default("MANUAL")
+  note       String?
+  since      DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ReferralCode {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  code       String   @unique
+  createdAt  DateTime @default(now())
+}
+
+/// One referral per new customer (referredId is unique).
+model Referral {
+  id            String    @id @default(cuid())
+  businessId    String
+  referrerId    String
+  referredId    String    @unique
+  appointmentId String?
+  /// PENDING | QUALIFIED | REJECTED
+  status        String    @default("PENDING")
+  reason        String?
+  qualifiedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([referrerId])
+}
+
+model WaitlistEntry {
+  id         String    @id @default(cuid())
+  businessId String
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId  String
+  /// Preferred date first, then acceptable alternatives (YYYY-MM-DD).
+  dates      String[]
+  fromMin    Int
+  toMin      Int
+  /// portal | whatsapp
+  notify     String    @default("portal")
+  /// ACTIVE | NOTIFIED | BOOKED | LEFT | EXPIRED
+  status     String    @default("ACTIVE")
+  matchDate  String?
+  matchStart Int?
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([businessId, status])
+}
+
+/// One reminder per appointment, kind and start time (a moved appointment gets a fresh reminder).
+model AppointmentReminder {
+  id            String   @id @default(cuid())
+  businessId    String
+  appointmentId String
+  kind          String
+  startsAtKey   String
+  /// sent | skipped_not_connected | blocked_no_consent | failed
+  outcome       String
+  messageId     String?
+  createdAt     DateTime @default(now())
+
+  @@unique([appointmentId, kind, startsAtKey])
 }
