@@ -3,9 +3,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Ban, CalendarClock, ChevronLeft, ChevronRight, CreditCard, Phone, Plus, X } from "lucide-react";
+import { Ban, CalendarClock, ChevronLeft, ChevronRight, Coffee, CreditCard, Phone, Plus, X } from "lucide-react";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Input, Label, Select, Textarea, buttonClass } from "@/components/ui";
+import { editBreakAction } from "@/server/actions/online-booking";
 import { blockTimeAction, removeBlockAction, rescheduleAppointmentAction, setAppointmentStatusAction, setPaymentStatusAction, updateAppointmentDetailsAction } from "@/server/actions/bookings";
 
 export type CalDay = { key: string; weekday: number; label: string; short: string; open: [number, number] | null; windows?: [number, number, boolean][]; special?: string | null };
@@ -69,6 +70,7 @@ export function ScheduleCalendar(props: {
   const [showCancelled, setShowCancelled] = useState(false);
   const [pick, setPick] = useState<{ dayKey: string; min: number } | null>(null);
   const [blockAt, setBlockAt] = useState<{ dayKey: string; min: number } | null>(null);
+  const [breakAt, setBreakAt] = useState<{ dayKey: string; from: number; to: number; dayLabel: string; weekday: number } | null>(null);
   const selectedId = sp.get("appt");
   const selected = appts.find((a) => a.id === selectedId) ?? null;
   const PX = PX_BY_VIEW[view];
@@ -94,7 +96,7 @@ export function ScheduleCalendar(props: {
   const colMin = view === "week" ? "min-w-[118px]" : view === "3day" ? "min-w-[104px]" : "min-w-0";
 
   const onGridClick = (e: React.MouseEvent<HTMLDivElement>, dayKey: string) => {
-    if (!edit || (e.target as HTMLElement).closest("[data-appt],[data-block]")) return;
+    if (!edit || (e.target as HTMLElement).closest("[data-appt],[data-block],[data-break]")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const min = Math.floor((range[0] + (e.clientY - rect.top) / PX) / 15) * 15;
     setPick({ dayKey, min });
@@ -168,8 +170,19 @@ export function ScheduleCalendar(props: {
                     const gaps: [number, number][] = []; let cur = range[0];
                     for (const [s0, e0] of ws) { if (s0 > cur) gaps.push([cur, s0]); cur = Math.max(cur, e0); }
                     if (cur < range[1]) gaps.push([cur, range[1]]);
+                    // A break = a gap between two regular working windows (not before opening / after closing, not premium).
+                    const reg = ws.filter((w) => !w[2]);
+                    const breaks: [number, number][] = [];
+                    for (let i = 0; i + 1 < reg.length; i++) if (reg[i][1] < reg[i + 1][0] && !ws.some((w) => w[2] && w[0] < reg[i + 1][0] && w[1] > reg[i][1])) breaks.push([reg[i][1], reg[i + 1][0]]);
                     return (<>
                       {gaps.map(([a, b], k) => <div key={`g${k}`} className="absolute inset-x-0 bg-[#2c2b29]" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }} />)}
+                      {breaks.map(([a, b]) => (
+                        <button key={`b${a}`} type="button" data-break disabled={!edit} onClick={(e) => { e.stopPropagation(); setBreakAt({ dayKey: d.key, from: a, to: b, dayLabel: `${d.short} ${d.label}`, weekday: d.weekday }); }}
+                          className="absolute inset-x-0 z-[1] flex items-start justify-center gap-1 overflow-hidden border-y border-dashed border-white/10 pt-0.5 text-[10px] text-muted transition-colors enabled:cursor-pointer enabled:hover:bg-white/[0.04] enabled:hover:text-gold"
+                          style={{ top: (a - range[0]) * PX, height: (b - a) * PX }} aria-label={L(`הפסקה ${hm(a)}–${hm(b)}`, `Break ${hm(a)}–${hm(b)}`)}>
+                          {(b - a) * PX >= 16 && <><Coffee size={10} className="mt-px shrink-0" /><span className="truncate">{L("הפסקה", "Break")} <span dir="ltr" className="tabular-nums">{hm(a)}–{hm(b)}</span></span></>}
+                        </button>
+                      ))}
                       {ws.filter((w) => w[2]).map(([a, b], k) => <div key={`p${k}`} className="pointer-events-none absolute inset-x-0 border-y border-gold/25 bg-gold/[0.07]" style={{ top: (a - range[0]) * PX, height: (b - a) * PX }}><span className="absolute end-1 top-0.5 text-[10px] text-gold">⭐</span></div>)}
                     </>);
                   })()}
@@ -232,6 +245,7 @@ export function ScheduleCalendar(props: {
 
       {selected && <AppointmentPanel a={selected} he={he} edit={edit} services={props.services} staff={props.staff} onClose={() => go({ appt: null })} />}
       {blockAt && <BlockDialog at={blockAt} he={he} staff={props.staff} onClose={() => setBlockAt(null)} />}
+      {breakAt && <BreakDialog at={breakAt} he={he} onClose={() => setBreakAt(null)} />}
     </div>
   );
 }
@@ -344,6 +358,44 @@ function BlockDialog({ at, he, staff, onClose }: { at: { dayKey: string; min: nu
         <div><Label>{L("סיבה", "Reason")}</Label><Input name="reason" maxLength={120} placeholder={L("הפסקה / סידור", "Break / errand")} /></div>
         <SubmitButton size="sm">{L("חסימה", "Block")}</SubmitButton>
       </ActionForm>
+    </Sheet>
+  );
+}
+
+const WEEKDAY_HE = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const WEEKDAY_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** Tap a break in the calendar: remove it, move it, or keep it — on this date only or every week. */
+function BreakDialog({ at, he, onClose }: { at: { dayKey: string; from: number; to: number; dayLabel: string; weekday: number }; he: boolean; onClose: () => void }) {
+  const L = (h: string, e: string) => (he ? h : e);
+  const [scope, setScope] = useState<"day" | "week">("day");
+  const run = async (s: Parameters<typeof editBreakAction>[0], fd: FormData) => { const r = await editBreakAction(s, fd); if (r?.ok) onClose(); return r; };
+  const base = { date: at.dayKey, from: hm(at.from), to: hm(at.to), scope };
+  const hidden = (extra: Record<string, string>) => Object.entries({ ...base, ...extra }).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />);
+  const wd = he ? `כל יום ${WEEKDAY_HE[at.weekday]}` : `Every ${WEEKDAY_EN[at.weekday]}`;
+  return (
+    <Sheet onClose={onClose} title={<><p className="font-display text-xl font-bold"><Coffee size={18} className="me-1.5 inline text-gold" />{L("הפסקה", "Break")} <span dir="ltr" className="tabular-nums">{hm(at.from)}–{hm(at.to)}</span></p><p className="text-xs text-muted">{at.dayLabel}</p></>}>
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl border border-border p-1 text-sm" role="radiogroup" aria-label={L("על מה להחיל", "Apply to")}>
+        {([["day", L("רק בתאריך הזה", "This date only")], ["week", wd]] as const).map(([k, label]) => (
+          <button key={k} type="button" role="radio" aria-checked={scope === k} onClick={() => setScope(k)} className={`rounded-lg px-2 py-2 ${scope === k ? "btn-gold text-black" : "text-muted"}`}>{label}</button>
+        ))}
+      </div>
+      <ActionForm action={run} className="mb-4">
+        {hidden({ mode: "remove" })}
+        <SubmitButton variant="danger" className="w-full">{L("ביטול ההפסקה", "Remove break")}</SubmitButton>
+        <p className="mt-1.5 text-xs text-muted">{scope === "day" ? L("ביום הזה אפשר יהיה לקבוע תורים גם בשעות ההפסקה.", "Customers can book during this time on this date.") : L(`ההפסקה תבוטל ${wd}. אפשר להחזיר אותה בשעות פעילות.`, `The break is removed ${wd.toLowerCase()}. You can add it back in Working hours.`)}</p>
+      </ActionForm>
+      <ActionForm action={run} className="space-y-2 rounded-xl border border-border p-3">
+        {hidden({ mode: "change" })}
+        <p className="text-sm font-medium">{L("שינוי שעות ההפסקה", "Change break times")}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div><Label>{L("מ-", "From")}</Label><Input type="time" name="newFrom" defaultValue={hm(at.from)} step={300} dir="ltr" required /></div>
+          <div><Label>{L("עד", "To")}</Label><Input type="time" name="newTo" defaultValue={hm(at.to)} step={300} dir="ltr" required /></div>
+        </div>
+        <SubmitButton size="sm" className="w-full">{L("שמירת השינוי", "Save change")}</SubmitButton>
+      </ActionForm>
+      <button type="button" onClick={onClose} className={`${buttonClass("ghost", "sm")} mt-3 w-full`}>{L("להשאיר כמו שזה", "Keep as is")}</button>
+      <p className="mt-2 text-[11px] text-muted">{L("תורים שכבר נקבעו לא משתנים.", "Existing appointments are not changed.")}</p>
     </Sheet>
   );
 }

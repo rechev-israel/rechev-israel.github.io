@@ -26,6 +26,7 @@
       quickNote: "בלחיצה על אישור קביעת תור את/ה מאשר/ת שימוש בפרטים לניהול התור.",
       booked: "התור נקבע", pending: "הבקשה התקבלה. נאשר בהקדם", cancelled: "התור בוטל", cal: "הוספה ליומן", cancel: "ביטול התור", cancelQ: "לבטל את התור?",
       save: "שמרו את הקישור הזה כדי לנהל את התור:", copy: "העתקה", copied: "הועתק", again: "קביעת תור נוסף", home: "חזרה לאתר",
+      rvAsk: "נשמח לשמוע ממך ✨", rvAskSub: "איך החוויה ב־CASTEL STUDIO? כמה מילים וכוכבים עוזרים לנו מאוד.", rvText: "מה תרצה לספר? (לא חובה)", rvName: "השם שיופיע", rvSend: "שליחת ביקורת", rvLater: "אחר כך", rvThanks: "תודה רבה! 🙏", rvThanksSub: "הביקורת התקבלה ותופיע באתר אחרי אישור.", rvPick: "בחרו דירוג בכוכבים", rvLeave: "השארת ביקורת", rvYours: "הביקורת שלך", rvEdit: "עריכה", rvTitle: "מה הלקוחות אומרים", rvCount: "{n} ביקורות", rvStars: ["גרוע", "לא משהו", "בסדר", "טוב מאוד", "מושלם"], close: "סגירה",
       tooLate: "כבר מאוחר מדי לבטל אונליין. התקשרו למספרה.", cancelUntil: "ביטול אונליין אפשרי עד {h} שעות לפני התור.",
       closed: "קביעת תורים אונליין תיפתח בקרוב.", contact: "בינתיים אפשר לפנות אלינו:", err: "משהו השתבש. נסו שוב.", notFound: "התור לא נמצא.",
       st: { CONFIRMED: "מאושר", SCHEDULED: "ממתין לאישור", CANCELLED: "בוטל", COMPLETED: "הושלם", NO_SHOW: "לא הגיע" }, premium: "Premium",
@@ -47,6 +48,7 @@
       quickNote: "By confirming you agree your details are used to manage this booking.",
       booked: "You're booked", pending: "Request received. We'll confirm soon", cancelled: "Booking cancelled", cal: "Add to calendar", cancel: "Cancel booking", cancelQ: "Cancel this booking?",
       save: "Keep this link to manage your booking:", copy: "Copy", copied: "Copied", again: "Book another", home: "Back to site",
+      rvAsk: "We'd love your feedback ✨", rvAskSub: "How was your CASTEL STUDIO experience? A few words and stars help us a lot.", rvText: "Anything to share? (optional)", rvName: "Name to show", rvSend: "Send review", rvLater: "Later", rvThanks: "Thank you! 🙏", rvThanksSub: "Your review was received and will appear after approval.", rvPick: "Choose a star rating", rvLeave: "Leave a review", rvYours: "Your review", rvEdit: "Edit", rvTitle: "What clients say", rvCount: "{n} reviews", rvStars: ["Poor", "Meh", "OK", "Very good", "Perfect"], close: "Close",
       tooLate: "Too late to cancel online. Please call the shop.", cancelUntil: "Online cancellation up to {h}h before.",
       closed: "Online booking opens soon.", contact: "Meanwhile, reach us:", err: "Something went wrong. Please try again.", notFound: "Booking not found.",
       st: { CONFIRMED: "Confirmed", SCHEDULED: "Awaiting confirmation", CANCELLED: "Cancelled", COMPLETED: "Completed", NO_SHOW: "No-show" }, premium: "Premium",
@@ -135,7 +137,7 @@
 
   function stepService() {
     var L = t(), c = S.cfg, note = c.note && c.note[lang()];
-    return head(L.h1, L.h1s) + (note ? '<p class="bp-note">' + esc(note) + "</p>" : "") + '<div class="bp-svcs">' + c.services.map(function (s) {
+    return reviewsStrip() + head(L.h1, L.h1s) + (note ? '<p class="bp-note">' + esc(note) + "</p>" : "") + '<div class="bp-svcs">' + c.services.map(function (s) {
       var lk = look(s), on = S.service === s.id, desc = lk[lang()];
       return '<button type="button" class="bp-svc' + (on ? " on" : "") + (s.premiumOnly ? " prem" : "") + '" data-svc="' + esc(s.id) + '" aria-pressed="' + on + '">' +
         '<span class="bp-svc-img"><img src="' + lk.img + '" alt="" loading="lazy" decoding="async"></span>' +
@@ -214,6 +216,59 @@
       (S.me ? '<p class="bp-muted bp-small" style="margin:0;text-align:center">' + L.quickNote + "</p>" : "") + "</div>";
   }
 
+  // ── Reviews ──
+  var RV_API = API.replace(/\/booking$/, "/reviews");
+  function stars(n) { var o = ""; for (var i = 1; i <= 5; i++) o += i <= n ? "★" : "☆"; return o; }
+  var reviews = null;
+  function loadReviews() { fetch(RV_API, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) { reviews = d; if (S.step === 1 && !S.manage) render(); }).catch(function () { /* optional */ }); }
+  function reviewsStrip() {
+    if (!reviews || !reviews.count) return "";
+    var L = t();
+    return '<section class="bp-rvs" aria-label="' + esc(L.rvTitle) + '"><div class="bp-rvs-head"><span class="bp-rvs-avg">' + reviews.average.toFixed(1) + '</span><span><b class="bp-stars-s" aria-hidden="true">' + stars(Math.round(reviews.average)) + '</b><small>' + L.rvTitle + " · " + L.rvCount.replace("{n}", reviews.count) + "</small></span></div>" +
+      '<div class="bp-rvs-list">' + reviews.items.map(function (r) {
+        return '<figure class="bp-rv"><b class="bp-stars-s" aria-label="' + r.rating + '/5">' + stars(r.rating) + "</b>" + (r.text ? "<blockquote>" + esc(r.text) + "</blockquote>" : "") + "<figcaption>" + esc(r.name) + "</figcaption></figure>";
+      }).join("") + "</div></section>";
+  }
+  function openReview() {
+    var L = t(), m = S.manage || {}, cur = m.review || { rating: 0, text: "" };
+    var name = (S.form && S.form.name) || m.name || "";
+    var box = document.createElement("div");
+    box.className = "bp-modal"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-labelledby", "rvT");
+    box.innerHTML = '<div class="bp-modal-card"><button type="button" class="bp-modal-x" data-x aria-label="' + L.close + '">✕</button>' +
+      '<p class="bp-modal-eye">CASTEL STUDIO</p><h2 id="rvT">' + L.rvAsk + "</h2><p class=\"bp-muted bp-small\">" + L.rvAskSub + "</p>" +
+      '<form novalidate><div class="bp-rate" role="radiogroup" aria-label="' + L.rvPick + '">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" role="radio" aria-checked="' + (cur.rating === n) + '" data-r="' + n + '" aria-label="' + n + " · " + L.rvStars[n - 1] + '">★</button>'; }).join("") + "</div>" +
+      '<p class="bp-rate-lbl" aria-live="polite">' + (cur.rating ? L.rvStars[cur.rating - 1] : "&nbsp;") + "</p>" +
+      '<label class="bp-field">' + L.rvText + '<textarea name="text" maxlength="600" rows="3">' + esc(cur.text) + "</textarea></label>" +
+      '<label class="bp-field">' + L.rvName + '<input name="name" maxlength="60" value="' + esc(name) + '"></label><input name="website" tabindex="-1" autocomplete="off" class="bp-hp" aria-hidden="true">' +
+      '<p class="bp-err" role="alert" hidden></p><button class="bp-btn" type="submit">' + L.rvSend + '</button><button type="button" class="bp-btn ghost sm bp-later" data-x>' + L.rvLater + "</button></form></div>";
+    document.body.appendChild(box); document.body.style.overflow = "hidden";
+    var rating = cur.rating, prevFocus = document.activeElement;
+    function paint() { box.querySelectorAll("[data-r]").forEach(function (b) { var n = +b.dataset.r; b.classList.toggle("on", n <= rating); b.setAttribute("aria-checked", String(n === rating)); }); box.querySelector(".bp-rate-lbl").innerHTML = rating ? L.rvStars[rating - 1] : "&nbsp;"; }
+    function close() { box.classList.add("out"); document.body.style.overflow = ""; setTimeout(function () { box.remove(); }, 250); if (prevFocus && prevFocus.focus) try { prevFocus.focus({ preventScroll: true }); } catch (e) { /* ignore */ } document.removeEventListener("keydown", onKey); }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+    paint();
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target.closest("[data-x]")) return close();
+      var r = e.target.closest("[data-r]"); if (r) { rating = +r.dataset.r; paint(); box.querySelector(".bp-err").hidden = true; }
+    });
+    box.querySelector("form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var f = e.target, err = box.querySelector(".bp-err"), btn = f.querySelector("[type=submit]");
+      if (!rating) { err.textContent = L.rvPick; err.hidden = false; return; }
+      btn.disabled = true; btn.textContent = L.loading;
+      fetch(RV_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: S.token, rating: rating, text: f.text.value, name: f.name.value, website: f.website.value }) })
+        .then(function (r) { return r.json().then(function (d) { d._ok = r.ok; return d; }); })
+        .then(function (d) {
+          if (!d._ok) throw new Error(d.error || "x");
+          if (S.manage) S.manage.review = { rating: rating, text: f.text.value };
+          box.querySelector(".bp-modal-card").innerHTML = '<div class="bp-ok" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>' + L.rvThanks + '</h2><p class="bp-muted bp-small">' + L.rvThanksSub + '</p><button type="button" class="bp-btn sm" data-x style="margin-top:14px">' + L.close + "</button>";
+          renderManage();
+        }).catch(function (x) { btn.disabled = false; btn.textContent = L.rvSend; err.textContent = (L.e[x.message] || L.err); err.hidden = false; });
+    });
+    setTimeout(function () { var first = box.querySelector("[data-r]"); if (first) try { first.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 50);
+  }
+
   function renderManage() {
     var L = t(), m = S.manage;
     if (m.error) { root.innerHTML = '<div class="bp-done"><h2>' + L.notFound + '</h2><div class="bp-row"><button type="button" class="bp-btn sm" data-again>' + L.again + "</button></div></div>"; return; }
@@ -230,6 +285,8 @@
       h += '<p class="bp-muted bp-small" style="margin:18px 0 0;text-align:start">' + L.save + '</p><div class="bp-linkbox"><input readonly dir="ltr" value="' + esc(link) + '"><button type="button" class="bp-btn ghost sm" data-copy>' + L.copy + "</button></div>";
     }
     if (S.error) h += '<p class="bp-err" role="alert" style="margin-top:12px">' + esc(S.error) + "</p>";
+    if (!cancelled) h += m.review ? '<div class="bp-rv-mine"><span>' + L.rvYours + ' <b class="bp-stars-s">' + stars(m.review.rating) + '</b></span><button type="button" class="bp-link" data-review>' + L.rvEdit + "</button></div>"
+      : '<div class="bp-row"><button type="button" class="bp-btn ghost sm" data-review>★ ' + L.rvLeave + "</button></div>";
     h += '<div class="bp-row"><button type="button" class="bp-btn sm" data-again>' + L.again + '</button><a class="bp-btn ghost sm" href="/">' + L.home + "</a></div></div>";
     root.innerHTML = h;
   }
@@ -281,6 +338,7 @@
     } else if (b.hasAttribute("data-copy")) {
       var inp = root.querySelector(".bp-linkbox input"); inp.select();
       (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.resolve(document.execCommand("copy"))).then(function () { b.textContent = L.copied; });
+    } else if (b.hasAttribute("data-review")) { openReview();
     } else if (b.hasAttribute("data-again")) {
       S.manage = null; S.token = ""; S.service = ""; S.date = ""; S.days = null; S.slots = null; S.start = null; S.error = ""; S.editing = false; S.me = readMe();
       if (S.me) S.form = { name: S.me.name, phone: S.me.phone, notes: "", terms: true, mkt: false, remember: true };
@@ -321,7 +379,7 @@
           window.dispatchEvent(new Event("castel:booked"));
           cache = {};
           history.replaceState(null, "", location.pathname + "?booking=" + encodeURIComponent(d.token));
-          return openManage(d.token).then(function () { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); });
+          return openManage(d.token).then(function () { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); setTimeout(function () { if (S.manage && !S.manage.error && !S.manage.review) openReview(); }, 1400); });
         }
         S.error = L.e[d.error] || L.err;
         if (d.error === "slot_taken") {
@@ -364,6 +422,7 @@
   }
 
   applyLang(lang());
+  loadReviews();
   var tok = new URLSearchParams(location.search).get("booking");
   if (tok && /^[A-Za-z0-9_-]{20,64}$/.test(tok)) openManage(tok); else init();
 })();

@@ -102,3 +102,28 @@ export function windowsToRange(ws: { start: string; end: string }[]) {
   for (let i = 1; i < sorted.length; i++) if (sorted[i].s > sorted[i - 1].e) breaks.push({ start: sorted[i - 1].end, end: sorted[i].start });
   return { open: sorted[0].start, close: sorted[sorted.length - 1].end, breaks };
 }
+
+export type DayWindow = { start: string; end: string; kind: string };
+const toHm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+
+/**
+ * Edit one break of a day (the gap between two regular working windows, `from`–`to`) straight from the calendar.
+ * "remove" joins the two windows; "change" moves the break to `newFrom`–`newTo` (within the same two windows).
+ * Premium windows are kept untouched. Returns null when the break or the new times are not valid.
+ */
+export function editBreak(windows: DayWindow[], from: string, to: string, edit: { mode: "remove" } | { mode: "change"; newFrom: string; newTo: string }): DayWindow[] | null {
+  const f = hhmm(from), t = hhmm(to);
+  if (f == null || t == null || t <= f) return null;
+  const regular = windows.filter((w) => w.kind !== "premium");
+  const a = regular.find((w) => hhmm(w.end) === f), b = regular.find((w) => hhmm(w.start) === t);
+  if (!a || !b || a === b) return null;
+  const others = windows.filter((w) => w !== a && w !== b);
+  let next: DayWindow[];
+  if (edit.mode === "remove") next = [...others, { start: a.start, end: b.end, kind: "regular" }];
+  else {
+    const nf = hhmm(edit.newFrom), nt = hhmm(edit.newTo), as = hhmm(a.start)!, be = hhmm(b.end)!;
+    if (nf == null || nt == null || nt <= nf || nf < as || nt > be) return null;
+    next = [...others, ...(nf > as ? [{ start: a.start, end: toHm(nf), kind: "regular" }] : []), ...(be > nt ? [{ start: toHm(nt), end: b.end, kind: "regular" }] : [])];
+  }
+  return next.sort((x, y) => (hhmm(x.start) ?? 0) - (hhmm(y.start) ?? 0));
+}

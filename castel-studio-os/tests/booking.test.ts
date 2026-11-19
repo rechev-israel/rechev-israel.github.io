@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCustomerCancel, computeSlots, hhmm, icsEvent, pickStaff, rangeMinusBreaks, windowsToRange } from "@/domain/booking";
+import { canCustomerCancel, computeSlots, editBreak, hhmm, icsEvent, pickStaff, rangeMinusBreaks, windowsToRange } from "@/domain/booking";
 import { zonedDate } from "@/lib/dates";
 
 const H = 3_600_000, M = 60_000;
@@ -71,5 +71,21 @@ describe("breaks and premium hours", () => {
     const p = computeSlots({ staff, durationMin: 60, stepMin: 30, bufferMin: 0, now: 0, minNoticeMin: 0, premiumOnly: true });
     expect(p.map((x) => (x.start - base) / H)).toEqual([4]);
     expect(p[0].premium).toBe(true);
+  });
+});
+
+describe("editBreak (calendar break editing)", () => {
+  const day = [{ start: "09:00", end: "13:00", kind: "regular" }, { start: "14:00", end: "19:00", kind: "regular" }, { start: "20:00", end: "22:00", kind: "premium" }];
+  it("removes a break by joining the two windows, keeps premium", () => {
+    expect(editBreak(day, "13:00", "14:00", { mode: "remove" })).toEqual([{ start: "09:00", end: "19:00", kind: "regular" }, { start: "20:00", end: "22:00", kind: "premium" }]);
+  });
+  it("moves a break inside the same working hours", () => {
+    expect(editBreak(day, "13:00", "14:00", { mode: "change", newFrom: "12:30", newTo: "13:15" })).toEqual([
+      { start: "09:00", end: "12:30", kind: "regular" }, { start: "13:15", end: "19:00", kind: "regular" }, { start: "20:00", end: "22:00", kind: "premium" }]);
+  });
+  it("rejects invalid edits and gaps that aren't breaks", () => {
+    expect(editBreak(day, "13:00", "14:00", { mode: "change", newFrom: "15:00", newTo: "14:00" })).toBeNull();
+    expect(editBreak(day, "13:00", "14:00", { mode: "change", newFrom: "08:00", newTo: "10:00" })).toBeNull(); // before opening
+    expect(editBreak(day, "19:00", "20:00", { mode: "remove" })).toBeNull(); // regular → premium is not a break
   });
 });

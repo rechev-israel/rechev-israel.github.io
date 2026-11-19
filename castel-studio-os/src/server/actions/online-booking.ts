@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/server/auth/session";
 import { audit } from "@/server/audit";
 import { getI18n } from "@/i18n";
-import { hhmm, rangeMinusBreaks } from "@/domain/booking";
+import { editBreak, hhmm, rangeMinusBreaks, type DayWindow } from "@/domain/booking";
 import { parseLocalDateTime } from "@/lib/dates";
 import { formToObject, type ActionState } from "@/lib/validation";
 import { runAction } from "./util";
@@ -181,4 +181,50 @@ export async function setServicePremiumOnlyAction(fd: FormData) {
   const user = await requireUser(PERM);
   await db.service.updateMany({ where: { id: String(fd.get("id") ?? ""), businessId: user.businessId }, data: { premiumOnly: fd.get("on") === "1" } });
   done();
+}
+
+/**
+ * Remove or move a break straight from the calendar: only on that date (a special-hours date)
+ * or every week on that weekday (the weekly schedule). Appointments are never touched.
+ */
+export async function editBreakAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  return runAction(async (): Promise<ActionState | void> => {
+    const user = await requireUser(PERM);
+    const { locale } = await getI18n();
+    const L = (h: string, e: string) => (locale === "he" ? h : e);
+    const d = z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), from: hm, to: hm, mode: z.enum(["remove", "change"]), scope: z.enum(["day", "week"]),
+      newFrom: hm.optional().or(z.literal("")), newTo: hm.optional().or(z.literal("")),
+    }).parse(formToObject(fd));
+    const edit = d.mode === "remove" ? { mode: "remove" as const } : { mode: "change" as const, newFrom: d.newFrom ?? "", newTo: d.newTo ?? "" };
+    const bad = d.mode === "change"
+      ? L("השעות החדשות לא תקינות: ההפסקה חייבת להתחיל לפני שהיא נגמרת ולהישאר בתוך שעות הפעילות של אותו יום.", "Invalid times: the break must end after it starts and stay within that day's working hours.")
+      : L("לא מצאתי את ההפסקה הזאת. רעננו את הדף ונסו שוב.", "Break not found. Refresh and try again.");
+    const branch = await db.branch.findFirst({ where: { businessId: user.businessId, isActive: true }, orderBy: { createdAt: "asc" } });
+    if (!branch) return { error: "no branch" };
+    const weekday = new Date(d.date + "T12:00:00Z").getUTCDay();
+    const ov = await db.dateOverride.findFirst({ where: { businessId: user.businessId, staffId: null, date: d.date } });
+    const ovWindows = ov && !ov.closed ? ((Array.isArray(ov.windows) ? ov.windows : []) as { start: string; end: string; kind?: string }[]).map((w) => ({ start: w.start, end: w.end, kind: w.kind ?? "regular" })) : null;
+    const rules = await db.availabilityRule.findMany({ where: { branchId: branch.id, staffId: null, weekday, isActive: true } });
+    const weekly: DayWindow[] = rules.map((r) => ({ start: r.startTime, end: r.endTime, kind: r.kind }));
+
+    if (d.scope === "day") {
+      const next = editBreak(ovWindows ?? weekly, d.from, d.to, edit);
+      if (!next) return { error: bad };
+      if (ov) await db.dateOverride.update({ where: { id: ov.id }, data: { closed: false, windows: next } });
+      else await db.dateOverride.create({ data: { businessId: user.businessId, staffId: null, date: d.date, closed: false, windows: next, note: L("הפסקה שונתה ביומן", "Break changed in calendar") } });
+    } else {
+      const next = editBreak(weekly, d.from, d.to, edit);
+      if (!next) return { error: ovWindows ? L("בתאריך הזה יש שעות מיוחדות. אפשר לשנות כאן רק את התאריך הזה.", "This date has special hours. Change this date only.") : bad };
+      await db.$transaction([
+        db.availabilityRule.deleteMany({ where: { branchId: branch.id, staffId: null, weekday } }),
+        db.availabilityRule.createMany({ data: next.map((w) => ({ branchId: branch.id, staffId: null, weekday, startTime: w.start, endTime: w.end, kind: w.kind })) }),
+      ]);
+      // A special-hours date with the same break follows the weekly change too.
+      const ovNext = ovWindows && editBreak(ovWindows, d.from, d.to, edit);
+      if (ov && ovNext) await db.dateOverride.update({ where: { id: ov.id }, data: { windows: ovNext } });
+    }
+    await audit({ businessId: user.businessId, userId: user.id, action: "booking.break_edit", entityType: "AvailabilityRule", metadata: { date: d.date, from: d.from, to: d.to, mode: d.mode, scope: d.scope, newFrom: d.newFrom, newTo: d.newTo } });
+    done();
+  });
 }

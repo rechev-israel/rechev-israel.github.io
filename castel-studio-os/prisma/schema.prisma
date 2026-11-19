@@ -25,6 +25,7 @@ enum Role {
 model Business {
   dateOverrides     DateOverride[]
   pushSubscriptions PushSubscription[]
+  reviews           Review[]
   bookingSettings   BookingSettings?
   timeOff           TimeOff[]
   id                String             @id @default(cuid())
@@ -1115,4 +1116,27 @@ model DateOverride {
 
   @@unique([businessId, staffId, date])
   @@index([businessId, date])
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+}
+
+/// A customer's star review, left from the website with their private booking link (one per appointment).
+model Review {
+  id            String       @id @default(cuid())
+  businessId    String
+  business      Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId    String?
+  appointmentId String?      @unique
+  name          String
+  rating        Int
+  text          String?
+  status        ReviewStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([businessId, status, createdAt])
 }
