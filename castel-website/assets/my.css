@@ -54,7 +54,7 @@
 .my-club-name { font-family: "Manrope", sans-serif; font-size: 12px; letter-spacing: .34em; color: var(--gold); }
 .my-club-big { font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--gold2); font-variant-numeric: lining-nums; }
 .my-stamps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 18px 0 12px; }
-.my-stamp { aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(198,164,119,.35); display: grid; place-items: center; color: transparent; font-size: 16px; }
+.my-stamp { width: 100%; max-width: 64px; justify-self: center; aspect-ratio: 1; border-radius: 50%; border: 1px dashed rgba(198,164,119,.35); display: grid; place-items: center; color: transparent; font-size: 16px; }
 .my-stamp.on { border-style: solid; border-color: var(--gold); background: radial-gradient(circle, rgba(198,164,119,.35), rgba(198,164,119,.08)); color: var(--black); }
 .my-stamp.on::before { content: "✂"; color: var(--gold2); font-size: 15px; }
 .my-stamp.gift { border-color: var(--gold); }
