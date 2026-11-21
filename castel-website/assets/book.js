@@ -24,6 +24,8 @@
       service: "שירות", date: "תאריך", timeL: "שעה", duration: "משך", price: "מחיר", customer: "שם", phoneL: "טלפון", noteL: "הערה", status: "סטטוס",
       hi: "שלום {n} 👋", savedDetails: "הפרטים שמורים במכשיר הזה", editDetails: "עריכת פרטים", notMe: "לא אני",
       quickNote: "בלחיצה על אישור קביעת תור את/ה מאשר/ת שימוש בפרטים לניהול התור.",
+      ref: "מספר הזמנה", google: "Google Calendar", shareAppt: "שתף את התור", details: "צפה בפרטי התור", detailsSub: "בקשות מיוחדות, תזכורת והאזור האישי", styleAttached: "הסגנון שבחרת צורף לתור ✓",
+      live: { pending: "ממתין לאישור", confirmed: "התור אושר", soon: "התור מתקרב", delay: "יש עיכוב", ready: "אפשר להיכנס", completed: "התור הושלם", cancelled: "התור בוטל", no_show: "לא הגעת" }, delayBy: "כ־{n} דק׳", shareText: "נתראה ב־CASTEL STUDIO ✂️ {s} · {d} בשעה {t}",
       booked: "התור נקבע", pending: "הבקשה התקבלה. נאשר בהקדם", cancelled: "התור בוטל", cal: "הוספה ליומן", cancel: "ביטול התור", cancelQ: "לבטל את התור?",
       save: "שמרו את הקישור הזה כדי לנהל את התור:", copy: "העתקה", copied: "הועתק", again: "קביעת תור נוסף", home: "חזרה לאתר",
       rvAsk: "נשמח לשמוע ממך ✨", rvAskSub: "איך החוויה ב־CASTEL STUDIO? כמה מילים וכוכבים עוזרים לנו מאוד.", rvText: "מה תרצה לספר? (לא חובה)", rvName: "השם שיופיע", rvSend: "שליחת ביקורת", rvLater: "אחר כך", rvThanks: "תודה רבה! 🙏", rvThanksSub: "הביקורת שלך פורסמה באתר.", rvPick: "בחרו דירוג בכוכבים", rvLeave: "השארת ביקורת", rvYours: "הביקורת שלך", rvEdit: "עריכה", rvTitle: "מה הלקוחות אומרים", rvCount: "{n} ביקורות", rvStars: ["גרוע", "לא משהו", "בסדר", "טוב מאוד", "מושלם"], close: "סגירה",
@@ -46,6 +48,8 @@
       service: "Service", date: "Date", timeL: "Time", duration: "Duration", price: "Price", customer: "Name", phoneL: "Phone", noteL: "Note", status: "Status",
       hi: "Hi {n} 👋", savedDetails: "Details saved on this device", editDetails: "Edit details", notMe: "Not me",
       quickNote: "By confirming you agree your details are used to manage this booking.",
+      ref: "Booking ref", google: "Google Calendar", shareAppt: "Share", details: "Booking details", detailsSub: "Special requests, reminders and your account", styleAttached: "Your chosen style was attached ✓",
+      live: { pending: "Awaiting confirmation", confirmed: "Confirmed", soon: "Coming up", delay: "Running late", ready: "Come in now", completed: "Completed", cancelled: "Cancelled", no_show: "Missed" }, delayBy: "~{n} min", shareText: "See you at CASTEL STUDIO ✂️ {s} · {d} at {t}",
       booked: "You're booked", pending: "Request received. We'll confirm soon", cancelled: "Booking cancelled", cal: "Add to calendar", cancel: "Cancel booking", cancelQ: "Cancel this booking?",
       save: "Keep this link to manage your booking:", copy: "Copy", copied: "Copied", again: "Book another", home: "Back to site",
       rvAsk: "We'd love your feedback ✨", rvAskSub: "How was your CASTEL STUDIO experience? A few words and stars help us a lot.", rvText: "Anything to share? (optional)", rvName: "Name to show", rvSend: "Send review", rvLater: "Later", rvThanks: "Thank you! 🙏", rvThanksSub: "Your review is now live on the website.", rvPick: "Choose a star rating", rvLeave: "Leave a review", rvYours: "Your review", rvEdit: "Edit", rvTitle: "What clients say", rvCount: "{n} reviews", rvStars: ["Poor", "Meh", "OK", "Very good", "Perfect"], close: "Close",
@@ -289,10 +293,14 @@
     var link = location.origin + "/book/?booking=" + encodeURIComponent(S.token);
     var s = { he: m.service ? m.service.he : "", en: m.service ? m.service.en : "", durationMin: m.durationMin || "", price: m.price || 0, premiumOnly: /פרימיום/.test(m.service ? m.service.he : "") };
     var extra = (m.name ? "<dt>" + L.customer + "</dt><dd>" + esc(m.name) + "</dd>" : "") + (m.staff ? "<dt>" + L.barber + "</dt><dd>" + esc(m.staff) + "</dd>" : "") +
-      "<dt>" + L.status + '</dt><dd><span class="bp-st s-' + esc(m.status) + '">' + esc(L.st[m.status] || m.status) + "</span></dd>";
+      (m.ref ? "<dt>" + L.ref + '</dt><dd><bdi dir="ltr" style="letter-spacing:.12em">' + esc(m.ref) + "</bdi></dd>" : "") +
+      "<dt>" + L.status + '</dt><dd><span class="bp-st s-' + esc(m.status) + (m.live ? " lv-" + esc(m.live) : "") + '">' + esc(m.live ? L.live[m.live] || m.live : L.st[m.status] || m.status) + (m.live === "delay" && m.delayMin ? " · " + esc(L.delayBy.replace("{n}", m.delayMin)) : "") + "</span></dd>";
     var h = '<div class="bp-done">' + (cancelled ? "" : '<div class="bp-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>') + "<h2>" + title + "</h2>" + summary(s, m.date, m.time, false, extra) + "</div>";
     if (!cancelled && !m.past) {
-      h += '<div class="bp-row"><a class="bp-btn ghost sm" href="' + API + "/ics?t=" + encodeURIComponent(S.token) + '">' + L.cal + "</a>" + (m.canCancel ? '<button type="button" class="bp-btn ghost sm bp-danger" data-cancel>' + L.cancel + "</button>" : "") + "</div>";
+      if (S.styleAttached) h += '<p class="bp-muted bp-small" style="color:var(--gold2)">' + L.styleAttached + "</p>";
+      h += '<div class="bp-row"><a class="bp-btn ghost sm" href="' + API + "/ics?t=" + encodeURIComponent(S.token) + '">' + L.cal + "</a>" + (m.google ? '<a class="bp-btn ghost sm" href="' + esc(m.google) + '" target="_blank" rel="noopener">' + L.google + "</a>" : "") +
+        '<button type="button" class="bp-btn ghost sm" data-share-appt>' + L.shareAppt + "</button>" + (m.canCancel ? '<button type="button" class="bp-btn ghost sm bp-danger" data-cancel>' + L.cancel + "</button>" : "") + "</div>";
+      h += '<div class="bp-row"><a class="bp-btn sm" href="/my/?booking=' + encodeURIComponent(S.token) + '">✦ ' + L.details + '</a></div><p class="bp-muted bp-small" style="margin-top:6px">' + L.detailsSub + "</p>";
       if (!m.canCancel) h += '<p class="bp-muted bp-small">' + L.cancelUntil.replace("{h}", Math.round(m.cancelNoticeMin / 60)) + "</p>";
       h += '<p class="bp-muted bp-small" style="margin:18px 0 0;text-align:start">' + L.save + '</p><div class="bp-linkbox"><input readonly dir="ltr" value="' + esc(link) + '"><button type="button" class="bp-btn ghost sm" data-copy>' + L.copy + "</button></div>";
     }
@@ -350,6 +358,11 @@
     } else if (b.hasAttribute("data-copy")) {
       var inp = root.querySelector(".bp-linkbox input"); inp.select();
       (navigator.clipboard ? navigator.clipboard.writeText(inp.value) : Promise.resolve(document.execCommand("copy"))).then(function () { b.textContent = L.copied; });
+    } else if (b.hasAttribute("data-share-appt") && S.manage) {
+      // Only what and when — never the private link or personal details.
+      var m2 = S.manage, txt = L.shareText.replace("{s}", m2.service ? svcName(m2.service) : "").replace("{d}", fmt(m2.date, { weekday: "short", day: "numeric", month: "numeric" })).replace("{t}", m2.time);
+      if (navigator.share) navigator.share({ title: "CASTEL STUDIO", text: txt }).catch(function () { /* cancelled */ });
+      else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { b.textContent = L.copied; });
     } else if (b.hasAttribute("data-review")) { openReview();
     } else if (b.hasAttribute("data-again")) {
       S.manage = null; S.token = ""; S.service = ""; S.date = ""; S.days = null; S.slots = null; S.start = null; S.error = ""; S.editing = false; S.me = readMe();
@@ -389,6 +402,9 @@
         if (d._ok && d.token) {
           if (f.remember) { saveMe(f); S.me = readMe(); } else { forgetMe(); S.me = null; }
           if (d.deviceToken) saveDev(d.deviceToken);
+          var pend = (function () { try { var v = JSON.parse(localStorage.getItem("castel.pendingStyle") || "null"); return v && v.style && v.until > Date.now() ? v.style : ""; } catch (x) { return ""; } })();
+          if (pend) fetch(PORTAL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request.save", token: d.token, request: { style: pend } }) })
+            .then(function (r) { if (r.ok) { S.styleAttached = true; try { localStorage.removeItem("castel.pendingStyle"); } catch (x) { /* ignore */ } if (S.manage) renderManage(); } }).catch(function () { /* optional */ });
           var refCode = readRef();
           if (refCode) fetch(PORTAL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "referral.claim", token: d.token, code: refCode }) })
             .then(function () { try { localStorage.removeItem(REF); } catch (e) { /* ignore */ } }).catch(function () { /* optional */ });

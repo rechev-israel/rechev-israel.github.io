@@ -37,6 +37,12 @@
       looks: "MY LOOKS · הגלריה שלי", looksSub: "פרטית לגמרי. הצוות רואה רק תמונה שבחרתם לשתף או לסמן לתור הבא.", upload: "העלאת תמונה", uploading: "מעלה…", favorite: "מועדפת", shared: "משותפת עם הספר", forNext: "לתור הבא", note: "הערה", del: "מחיקת התמונה", delQ: "למחוק את התמונה לצמיתות?", useNext: "לבחור לתור הבא", tooBig: "התמונה גדולה מדי.", limit: "הגעת למספר התמונות המקסימלי.", badImg: "הקובץ אינו תמונה תקינה.",
       fb: "איך היה הביקור?", fbService: "דירוג השירות", fbText: "כמה מילים (לא חובה)", fbSuggest: "הצעה לשיפור (פרטי, רק למספרה)", fbPublic: "אפשר לפרסם את הביקורת באתר", fbSend: "שליחה", fbThanks: "תודה על המשוב! 🙏",
       loginT: "MY CASTEL", loginH: "האזור האישי שלך", loginSub: "התורים, המועדון, התספורת שלך והגלריה הפרטית, במקום אחד.", loginHow: "האזור האישי נפתח אוטומטית במכשיר שממנו קבעת תור, או אחרי שפותחים את הקישור של התור שלך.", loginBook: "קביעת תור", loginPhone: "צפייה בתורים לפי מספר טלפון", phone: "מספר טלפון", show: "הצגה", notFound: "לא מצאנו תורים על המספר הזה.",
+      live: { pending: "ממתין לאישור", confirmed: "התור אושר", soon: "התור מתקרב", delay: "יש עיכוב", ready: "אפשר להיכנס", completed: "התור הושלם", cancelled: "התור בוטל", no_show: "לא הגעת לתור" }, delayBy: "עיכוב של כ־{n} דקות",
+      cdLeft: "נותרו עוד {s} לתספורת שלך", cdDays: "ימים", cdHours: "שעות", cdMins: "דקות", cdNow: "התור שלך מתחיל עכשיו ✂️", and: " ו־",
+      apCard: "כרטיס התור", apRef: "מספר הזמנה", apApple: "Apple / iPhone", apGoogle: "Google Calendar", apShare: "שתף את התור", apDownload: "הורדת הכרטיס", apShareText: "נתראה ב־CASTEL STUDIO ✂️ {s} · {d} בשעה {t}",
+      rq: "בקשות מיוחדות", rqSub: "ספרו לספר מה אתם רוצים לפני התור. הבקשה לא משנה את משך התור או את המחיר.", rqStyle: "סגנון", rqFade: "סוג פייד", rqBeard: "העדפות לזקן", rqChanges: "מה לשנות מהפעם הקודמת", rqNote: "הערה", rqPhoto: "תמונת השראה (תוצג לספר)", rqReview: "סיכום הבקשה", rqConfirm: "שליחה לספר", rqEdit: "עריכה", rqSent: "הבקשה נשלחה לספר ✓", rqRemove: "מחיקת הבקשה", rqHas: "יש בקשה", rqEmpty: "מלאו לפחות פרט אחד.", rqPh: { changes: "למשל: פייד נמוך ולהשאיר יותר אורך למעלה" },
+      surprise: "ההפתעה שלך מ־CASTEL", surpriseSub: "גרדו את הכרטיס כדי לחשוף את ההטבה שלכם.", surpriseOpen: "לחשיפת ההפתעה", surpriseGot: "ההטבה נשמרה בהטבות שלך ✓", surpriseHint: "גרדו כאן ✨", nSurprise: "מחכה לך הפתעה מ־CASTEL 🎁",
+      qStyle: "הסטייל שלך", qStyleSub: "מצא תספורת, מדריכים", qGift: "מתנה בסטייל", qGiftSub: "כרטיס מתנה",
       lockT: "האזור הפרטי נעול במכשיר הזה", lockS: "פתחו את MY CASTEL מהמכשיר שממנו קבעתם תור, או קבעו תור מכאן, והכול ייפתח.", logout: "התנתקות מהמכשיר"
     },
     en: {
@@ -57,6 +63,12 @@
       looks: "MY LOOKS", looksSub: "Completely private. Staff only see a photo you share or mark for your next visit.", upload: "Upload a photo", uploading: "Uploading…", favorite: "Favorite", shared: "Shared with my barber", forNext: "For next visit", note: "Note", del: "Delete photo", delQ: "Delete this photo permanently?", useNext: "Use for my next visit", tooBig: "The photo is too large.", limit: "You've reached the photo limit.", badImg: "That file isn't a valid image.",
       fb: "How was your visit?", fbService: "Service rating", fbText: "A few words (optional)", fbSuggest: "Suggestion (private, shop only)", fbPublic: "You may publish my review on the website", fbSend: "Send", fbThanks: "Thanks for your feedback! 🙏",
       loginT: "MY CASTEL", loginH: "Your private area", loginSub: "Your bookings, club, haircut and private gallery in one place.", loginHow: "MY CASTEL opens automatically on the device you booked from, or after opening your booking link.", loginBook: "Book an appointment", loginPhone: "View bookings by phone number", phone: "Phone number", show: "Show", notFound: "No bookings found for this number.",
+      live: { pending: "Awaiting confirmation", confirmed: "Confirmed", soon: "Coming up", delay: "Running late", ready: "Come in now", completed: "Completed", cancelled: "Cancelled", no_show: "Missed" }, delayBy: "About {n} minutes late",
+      cdLeft: "{s} until your haircut", cdDays: "days", cdHours: "hours", cdMins: "minutes", cdNow: "Your appointment is starting ✂️", and: " and ",
+      apCard: "Appointment card", apRef: "Booking ref", apApple: "Apple / iPhone", apGoogle: "Google Calendar", apShare: "Share", apDownload: "Download card", apShareText: "See you at CASTEL STUDIO ✂️ {s} · {d} at {t}",
+      rq: "Special requests", rqSub: "Tell your barber what you'd like before the appointment. It doesn't change duration or price.", rqStyle: "Style", rqFade: "Fade type", rqBeard: "Beard", rqChanges: "What to change from last time", rqNote: "Note", rqPhoto: "Inspiration photo (shown to your barber)", rqReview: "Summary", rqConfirm: "Send to barber", rqEdit: "Edit", rqSent: "Sent to your barber ✓", rqRemove: "Delete request", rqHas: "Request sent", rqEmpty: "Fill in at least one detail.", rqPh: { changes: "e.g. low fade, keep more length on top" },
+      surprise: "Your CASTEL surprise", surpriseSub: "Scratch the card to reveal your benefit.", surpriseOpen: "Reveal", surpriseGot: "Saved to your rewards ✓", surpriseHint: "Scratch here ✨", nSurprise: "A surprise from CASTEL is waiting 🎁",
+      qStyle: "Your style", qStyleSub: "Haircut finder, guides", qGift: "Gift cards", qGiftSub: "Give a haircut",
       lockT: "Private area locked on this device", lockS: "Open MY CASTEL on the device you booked from, or book from here, and everything opens.", logout: "Sign out of this device"
     }
   };
@@ -106,8 +118,9 @@
     h += '<section class="my-sec"><h2>' + l.next + "</h2>";
     if (n) {
       h += '<div class="my-card gold my-next"><div class="my-date"><b>' + Number(n.date.slice(8, 10)) + "</b><span>" + esc(fmtD(n.date, { month: "short" })) + '</span></div><div><h3>' + esc(svcName(n.service)) + '</h3><p class="my-muted">' + esc(dLong(n.date)) + ' · <span class="my-time" dir="ltr">' + n.time + "</span></p>" +
-        '<p class="my-muted">' + n.durationMin + (lang() === "he" ? " דק׳" : " min") + (n.staff ? " · " + esc(n.staff) : "") + " · " + (l.st[n.status] || n.status) + "</p></div>" +
-        '<div class="my-row" style="grid-column:1/-1"><button type="button" class="my-chip" data-ics="' + n.id + '">' + ICON.cal + l.cal + '</button><a class="my-chip" href="' + esc(d.shop.waze) + '" target="_blank" rel="noopener">' + ICON.pin + l.waze + '</a><a class="my-chip" href="' + esc(d.shop.maps) + '" target="_blank" rel="noopener">' + ICON.pin + l.maps + "</a>" +
+        '<p class="my-muted">' + n.durationMin + (lang() === "he" ? " דק׳" : " min") + (n.staff ? " · " + esc(n.staff) : "") + '</p><p style="margin:8px 0 0">' + liveBadge(n) + "</p></div>" +
+        countdown(n) +
+        '<div class="my-row" style="grid-column:1/-1"><button type="button" class="my-chip" data-apcard="' + n.id + '">✦ ' + l.apCard + '</button><button type="button" class="my-chip" data-request="' + n.id + '">✂ ' + (n.hasRequest ? l.rqHas : l.rq) + '</button><button type="button" class="my-chip" data-ics="' + n.id + '">' + ICON.cal + l.cal + '</button><a class="my-chip" href="' + esc(d.shop.waze) + '" target="_blank" rel="noopener">' + ICON.pin + l.waze + '</a><a class="my-chip" href="' + esc(d.shop.maps) + '" target="_blank" rel="noopener">' + ICON.pin + l.maps + "</a>" +
         (d.shop.phone ? '<a class="my-chip" href="tel:' + esc(d.shop.phone) + '">' + ICON.phone + l.call + "</a>" : "") + (n.canCancel ? '<button type="button" class="my-chip danger" data-cancel="' + n.id + '">' + l.cancelAppt + "</button>" : "") + "</div></div>";
     } else {
       h += '<div class="my-card"><h3>' + l.noNext + '</h3><p class="my-muted">' + l.noNextSub + '</p><div class="my-row"><a class="bp-btn sm" href="/book/">' + l.book + "</a>" + (lastRebook() ? '<a class="bp-btn ghost sm" href="' + bookUrl(lastRebook().serviceId) + '">' + l.again + "</a>" : "") + "</div></div>";
@@ -116,6 +129,7 @@
     var notes = (d.notifications || []).map(function (x) {
       if (x.kind === "reminder") return '<div class="my-note"><i aria-hidden="true">⏰</i><span>' + esc(l.nReminder.replace("{d}", dShort(x.date)).replace("{t}", x.time)) + "</span></div>";
       if (x.kind === "waitlist") return '<div class="my-note hot"><i aria-hidden="true">✨</i><span>' + esc(l.nWaitlist.replace("{d}", dShort(x.date)).replace("{t}", x.time)) + '</span><a class="bp-link" href="' + bookUrl(x.serviceId, x.date) + '">' + l.nWaitlistGo + "</a></div>";
+      if (x.kind === "surprise") return '<div class="my-note hot"><i aria-hidden="true">🎁</i><span>' + l.nSurprise + '</span><button type="button" class="bp-link" data-scratch="' + x.id + '">' + l.surpriseOpen + "</button></div>";
       if (x.kind === "reward") return '<div class="my-note hot"><i aria-hidden="true">🎁</i><span>' + esc(l.nReward.replace("{l}", x.label)) + "</span></div>";
       if (x.kind === "vip") return '<div class="my-note"><i aria-hidden="true">👑</i><span><b>' + l.nVip + "</b><br>" + esc(x.text) + "</span></div>";
       return "";
@@ -126,22 +140,152 @@
       '<a class="my-q" href="/book/">' + ICON.plus + "<b>" + l.qBook + "</b><small>" + l.qBookSub + "</small></a>" +
       (rb ? '<a class="my-q" href="' + bookUrl(rb.serviceId) + '">' + ICON.repeat + "<b>" + l.again + "</b><small>" + esc(svcName(rb.service)) + "</small></a>" : '<button type="button" class="my-q" data-tab="appts" data-focus="wl">' + ICON.clock + "<b>" + l.qWait + "</b><small>" + l.qWaitSub + "</small></button>") +
       '<button type="button" class="my-q" data-tab="cut">' + ICON.cut + "<b>" + l.qCut + "</b><small>" + l.qCutSub + "</small></button>" +
-      '<button type="button" class="my-q" data-tab="looks">' + ICON.img + "<b>" + l.qLooks + "</b><small>" + l.qLooksSub + "</small></button></div></section>";
+      '<button type="button" class="my-q" data-tab="looks">' + ICON.img + "<b>" + l.qLooks + "</b><small>" + l.qLooksSub + "</small></button>" +
+      '<a class="my-q" href="/style/">' + ICON.cut + "<b>" + l.qStyle + "</b><small>" + l.qStyleSub + "</small></a>" +
+      (d.giftsEnabled ? '<a class="my-q" href="/gift/">' + ICON.crown + "<b>" + l.qGift + "</b><small>" + l.qGiftSub + "</small></a>" : "") + "</div></section>";
     if (d.referral) h += '<section class="my-sec"><h2>' + l.friends + "</h2>" + referralCard(d.referral) + "</section>";
     if (d.club) h += '<section class="my-sec">' + clubCard() + "</section>";
     if (d.vip && d.vip.member) h += '<section class="my-sec">' + vipCard() + "</section>";
     return h;
   }
 
+  // ── live status (only real data: system status + what the shop set) ──
+  function liveBadge(a) {
+    var l = L(), st = a.live || "confirmed";
+    return '<span class="my-live ' + st + '">' + esc(l.live[st] || st) + (st === "delay" && a.delayMin ? " · " + esc(l.delayBy.replace("{n}", a.delayMin)) : "") + "</span>";
+  }
+  // ── countdown to the real appointment time (absolute timestamp → right in any timezone) ──
+  function countParts(ms) { var m = Math.max(0, Math.floor(ms / 60000)); return { d: Math.floor(m / 1440), h: Math.floor((m % 1440) / 60), m: m % 60 }; }
+  function countText(at) {
+    var l = L(), left = at - Date.now();
+    if (left <= 0) return l.cdNow;
+    var p = countParts(left), parts = [];
+    var he = lang() === "he", one = function (n, sg, pl) { return n === 1 ? sg : n + " " + pl; };
+    if (p.d) parts.push(one(p.d, he ? "יום אחד" : "1 day", l.cdDays));
+    if (p.h) parts.push(one(p.h, he ? "שעה אחת" : "1 hour", l.cdHours));
+    parts.push(one(p.m, he ? "דקה אחת" : "1 minute", l.cdMins));
+    var txt = parts.length > 1 ? parts.slice(0, -1).join(", ") + l.and + parts[parts.length - 1] : parts[0];
+    return l.cdLeft.replace("{s}", txt);
+  }
+  function countdown(n) {
+    if (!n.startsAtMs || n.live === "cancelled" || n.startsAtMs < Date.now() - 3600000) return "";
+    var l = L(), p = countParts(n.startsAtMs - Date.now());
+    return '<div style="grid-column:1/-1" data-countdown="' + n.startsAtMs + '"><div class="my-count" aria-hidden="true"><div><b data-cd="d">' + p.d + "</b><span>" + l.cdDays + '</span></div><div><b data-cd="h">' + p.h + "</b><span>" + l.cdHours + '</span></div><div><b data-cd="m">' + p.m + "</b><span>" + l.cdMins + '</span></div></div><p class="my-count-line" data-cd-line>' + esc(countText(n.startsAtMs)) + "</p></div>";
+  }
+  setInterval(function () {
+    root.querySelectorAll("[data-countdown]").forEach(function (el) {
+      var at = +el.dataset.countdown, p = countParts(at - Date.now());
+      el.querySelector('[data-cd="d"]').textContent = p.d; el.querySelector('[data-cd="h"]').textContent = p.h; el.querySelector('[data-cd="m"]').textContent = p.m;
+      el.querySelector("[data-cd-line]").textContent = countText(at);
+    });
+  }, 20000);
+
+  function apptById(id) { return (S.data.upcoming || []).filter(function (a) { return a.id === id; })[0]; }
+  // ── digital appointment card ──
+  function openApCard(id) {
+    var l = L(), a = apptById(id); if (!a) return;
+    var name = S.data.name || "";
+    sheet('<div class="apc"><div class="apc-top"><img src="/images/logo.png" alt="CASTEL STUDIO"><span class="apc-ref">' + l.apRef + " · " + esc(a.ref) + '</span></div><h3>' + esc(svcName(a.service)) + '</h3><div class="apc-when"><b dir="ltr">' + a.time + '</b><span class="my-muted">' + esc(dLong(a.date)) + "</span></div>" +
+      '<p style="margin:12px 0 0">' + liveBadge(a) + '</p><div class="apc-name"><span>' + esc(name) + "</span><span>" + a.durationMin + (lang() === "he" ? " דק׳" : " min") + "</span></div></div>" +
+      '<div class="my-row"><button type="button" class="my-chip" data-ics-sheet>' + ICON.cal + l.apApple + '</button><a class="my-chip" href="' + esc(a.google) + '" target="_blank" rel="noopener">' + ICON.cal + l.apGoogle + "</a>" +
+      '<button type="button" class="my-chip" data-share-appt>' + l.apShare + '</button><button type="button" class="my-chip" data-download>' + l.apDownload + "</button></div>", function (box) {
+      box.addEventListener("click", function (e) {
+        var t = e.target.closest("button"); if (!t) return;
+        if (t.hasAttribute("data-ics-sheet")) downloadIcs(a.id);
+        else if (t.hasAttribute("data-share-appt")) {
+          // Shares only what and when — never the private booking link or personal details.
+          var text = l.apShareText.replace("{s}", svcName(a.service)).replace("{d}", dShort(a.date)).replace("{t}", a.time);
+          if (navigator.share) navigator.share({ title: "CASTEL STUDIO", text: text }).catch(function () { /* cancelled */ });
+          else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast(l.copied); });
+        } else if (t.hasAttribute("data-download")) drawCard(a, name);
+      });
+    });
+  }
+  function drawCard(a, name) {
+    var l = L(), c = document.createElement("canvas"), W = 1080, H = 640; c.width = W; c.height = H;
+    var g = c.getContext("2d"), grd = g.createLinearGradient(0, 0, W, H); grd.addColorStop(0, "#1a160f"); grd.addColorStop(1, "#090807");
+    g.fillStyle = grd; g.fillRect(0, 0, W, H); g.strokeStyle = "rgba(198,164,119,.6)"; g.lineWidth = 3; g.strokeRect(18, 18, W - 36, H - 36);
+    var rtl = lang() === "he", x = rtl ? W - 70 : 70; g.textAlign = rtl ? "right" : "left"; try { g.direction = rtl ? "rtl" : "ltr"; } catch (e) { /* old browsers */ }
+    g.fillStyle = "#C6A477"; g.font = "600 26px Manrope, sans-serif"; g.fillText("CASTEL STUDIO", x, 90);
+    g.fillStyle = "#F5F3EF"; g.font = "300 64px Heebo, sans-serif"; g.fillText(svcName(a.service), x, 230);
+    g.fillStyle = "#E2C99F"; g.font = "400 96px 'Cormorant Garamond', serif"; g.fillText(a.time, x, 360);
+    g.fillStyle = "#A6A29B"; g.font = "300 36px Heebo, sans-serif"; g.fillText(dLong(a.date), x, 420);
+    g.fillStyle = "#EAE2D5"; g.font = "300 32px Heebo, sans-serif"; g.fillText(name, x, 545);
+    g.fillStyle = "#C6A477"; g.font = "500 24px Manrope, sans-serif"; g.textAlign = rtl ? "left" : "right"; g.fillText(l.apRef + " " + a.ref, rtl ? 70 : W - 70, 545);
+    c.toBlob(function (b) { var u = URL.createObjectURL(b), el = document.createElement("a"); el.href = u; el.download = "castel-appointment.png"; document.body.appendChild(el); el.click(); el.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000); }, "image/png");
+  }
+  function downloadIcs(id) {
+    api("ics", { appointmentId: id }).then(function (txt) { var el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([txt], { type: "text/calendar" })); el.download = "castel-appointment.ics"; document.body.appendChild(el); el.click(); el.remove(); }).catch(function () { toast(L().err); });
+  }
+  // ── special requests (summary before sending) ──
+  function openRequest(id) {
+    var l = L(), a = apptById(id); if (!a) return;
+    sheet('<h2 style="margin:0 0 4px;font-weight:300;font-size:24px">' + l.rq + '</h2><p class="my-muted">' + esc(svcName(a.service)) + " · " + esc(dShort(a.date)) + " " + a.time + '</p><div data-rq><div class="my-skel"></div></div>', function (box, close) {
+      var host = box.querySelector("[data-rq]"), cur = {}, photoData = "";
+      function form() {
+        host.innerHTML = '<p class="my-muted" style="margin:6px 0 10px">' + l.rqSub + '</p><form class="my-form" novalidate>' +
+          [["style", l.rqStyle, ""], ["fade", l.rqFade, ""], ["beard", l.rqBeard, ""], ["changes", l.rqChanges, l.rqPh.changes]].map(function (f) { return '<label class="bp-field">' + f[1] + '<input name="' + f[0] + '" maxlength="' + (f[0] === "changes" ? 300 : 120) + '" value="' + esc(cur[f[0]] || "") + '" placeholder="' + esc(f[2]) + '"></label>'; }).join("") +
+          '<label class="bp-field">' + l.rqNote + '<textarea name="note" maxlength="600" rows="2">' + esc(cur.note || "") + "</textarea></label>" +
+          '<label class="bp-field">' + l.rqPhoto + '<input type="file" name="photo" accept="image/*"></label>' + (cur.photoId && !photoData ? '<div class="my-ph" style="max-width:120px"><img data-photo="' + esc(cur.photoId) + '" alt=""></div>' : "") +
+          '<p class="bp-err" role="alert" hidden></p><button class="bp-btn" type="submit">' + l.rqReview + "</button>" + (cur.updatedAt ? '<button type="button" class="bp-link" data-rq-del style="color:#f0c7c2">' + l.rqRemove + "</button>" : "") + "</form>";
+        host.querySelectorAll("img[data-photo]").forEach(function (im) { photoUrl(im.dataset.photo).then(function (u) { im.src = u; }).catch(function () { /* ignore */ }); });
+        var f = host.querySelector("form");
+        f.photo.addEventListener("change", function () { if (f.photo.files[0]) resizeImage(f.photo.files[0]).then(function (d) { photoData = d; }).catch(function () { toast(l.badImg); }); });
+        f.addEventListener("submit", function (e) {
+          e.preventDefault();
+          ["style", "fade", "beard", "changes", "note"].forEach(function (k) { cur[k] = f[k].value.trim(); });
+          if (!cur.style && !cur.fade && !cur.beard && !cur.changes && !cur.note && !photoData && !cur.photoId) { var er = f.querySelector(".bp-err"); er.textContent = l.rqEmpty; er.hidden = false; return; }
+          summary();
+        });
+        var del = host.querySelector("[data-rq-del]");
+        if (del) del.addEventListener("click", function () { api("request.remove", { appointmentId: id }).then(function () { close(); load(); }).catch(function () { toast(l.err); }); });
+      }
+      function summary() {
+        var rows = [[l.rqStyle, cur.style], [l.rqFade, cur.fade], [l.rqBeard, cur.beard], [l.rqChanges, cur.changes], [l.rqNote, cur.note]].filter(function (r) { return r[1]; });
+        host.innerHTML = '<p class="my-eyebrow" style="margin-top:10px">' + l.rqReview + '</p><div class="my-card">' + rows.map(function (r) { return '<div class="my-toggle"><span class="my-muted">' + esc(r[0]) + "</span><span>" + esc(r[1]) + "</span></div>"; }).join("") +
+          (photoData ? '<img src="' + photoData + '" alt="" style="max-height:160px;margin-top:10px">' : "") + '</div><div class="my-row"><button type="button" class="bp-btn ghost sm" data-rq-edit>' + l.rqEdit + '</button><button type="button" class="bp-btn sm" data-rq-send>' + l.rqConfirm + "</button></div>";
+        host.querySelector("[data-rq-edit]").addEventListener("click", form);
+        host.querySelector("[data-rq-send]").addEventListener("click", function (e) {
+          e.target.disabled = true;
+          var body = { style: cur.style, fade: cur.fade, beard: cur.beard, changes: cur.changes, note: cur.note, photoId: photoData ? "" : (cur.photoId || "") };
+          if (photoData) body.photo = photoData;
+          api("request.save", { appointmentId: id, request: body }).then(function () { close(); toast(l.rqSent); load(); }).catch(function (x) { e.target.disabled = false; toast(x.message === "too_late" ? l.tooLate : x.message === "too_big" ? l.tooBig : l.err); });
+        });
+      }
+      api("request.get", { appointmentId: id }).then(function (r) { cur = r.request || {}; form(); }).catch(function () { form(); });
+    });
+  }
+  // ── surprise: a visual reveal of a benefit already assigned on the server ──
+  function openScratch(id) {
+    var l = L();
+    sheet('<h2 style="margin:0 0 4px;font-weight:300;font-size:24px">' + l.surprise + '</h2><p class="my-muted">' + l.surpriseSub + '</p><div class="scratch"><div><p class="my-eyebrow">CASTEL STUDIO</p><p class="prize" data-prize>…</p></div><canvas aria-label="' + l.surpriseHint + '"></canvas></div><p class="my-muted" data-after style="text-align:center;margin-top:12px"></p><div class="my-row" style="justify-content:center"><button type="button" class="bp-btn ghost sm" data-reveal-all>' + l.surpriseOpen + "</button></div>", function (box) {
+      var cv = box.querySelector("canvas"), ctx = cv.getContext("2d"), revealed = false, prize = null;
+      api("surprise.reveal", { id: id }).then(function (r) { prize = r; box.querySelector("[data-prize]").textContent = r.label; }).catch(function () { box.querySelector("[data-prize]").textContent = l.err; });
+      function size() {
+        var r = cv.getBoundingClientRect(); cv.width = r.width * 2; cv.height = r.height * 2;
+        var g = ctx.createLinearGradient(0, 0, cv.width, cv.height); g.addColorStop(0, "#b8935e"); g.addColorStop(0.5, "#e8d1a6"); g.addColorStop(1, "#9c7745");
+        ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height); ctx.fillStyle = "rgba(11,11,11,.75)"; ctx.font = "600 " + Math.round(cv.width / 16) + "px Heebo, sans-serif"; ctx.textAlign = "center"; ctx.fillText(l.surpriseHint, cv.width / 2, cv.height / 2 + 10);
+      }
+      requestAnimationFrame(size);
+      function done() { if (revealed) return; revealed = true; cv.style.transition = "opacity .5s"; cv.style.opacity = "0"; setTimeout(function () { cv.remove(); }, 500); box.querySelector("[data-after]").textContent = l.surpriseGot; var rb = box.querySelector("[data-reveal-all]"); if (rb) rb.remove(); load(); }
+      function scratch(e) { var r = cv.getBoundingClientRect(); ctx.globalCompositeOperation = "destination-out"; ctx.beginPath(); ctx.arc((e.clientX - r.left) * 2, (e.clientY - r.top) * 2, 46, 0, Math.PI * 2); ctx.fill(); }
+      var down = false, moves = 0;
+      cv.addEventListener("pointerdown", function (e) { down = true; scratch(e); });
+      cv.addEventListener("pointermove", function (e) { if (!down) return; scratch(e); if (++moves > 45 && prize) done(); });
+      window.addEventListener("pointerup", function () { down = false; });
+      box.querySelector("[data-reveal-all]").addEventListener("click", function () { if (prize) done(); });
+    });
+  }
+
   function apptRow(a, upcoming) {
     var l = L(), act = "";
-    if (upcoming) act = '<button type="button" class="my-chip" data-ics="' + a.id + '">' + ICON.cal + l.cal + "</button>" + (a.canCancel ? '<button type="button" class="my-chip danger" data-cancel="' + a.id + '">' + l.cancel + "</button>" : "");
+    if (upcoming) act = '<button type="button" class="my-chip" data-apcard="' + a.id + '">✦ ' + l.apCard + '</button><button type="button" class="my-chip" data-request="' + a.id + '">✂ ' + (a.hasRequest ? l.rqHas : l.rq) + '</button><button type="button" class="my-chip" data-ics="' + a.id + '">' + ICON.cal + l.cal + "</button>" + (a.canCancel ? '<button type="button" class="my-chip danger" data-cancel="' + a.id + '">' + l.cancel + "</button>" : "");
     else {
       if (a.serviceId) act += '<a class="my-chip" href="' + bookUrl(a.serviceId) + '">' + ICON.repeat + l.again + "</a>";
       if (a.canReview) act += '<button type="button" class="my-chip" data-rate="' + a.id + '">★ ' + l.rate + "</button>";
       else if (a.rating) act += '<span class="my-stars" aria-label="' + l.rated + " " + a.rating + '/5">' + "★★★★★".slice(0, a.rating) + "</span>";
     }
-    return '<div class="my-appt"><b>' + esc(svcName(a.service)) + '</b><div class="my-appt-act">' + act + '</div><p class="my-muted">' + esc(dShort(a.date)) + ' · <span dir="ltr">' + a.time + "</span> · " + (l.st[a.status] || a.status) + (a.price ? " · ₪" + a.price : "") + "</p></div>";
+    return '<div class="my-appt"><b>' + esc(svcName(a.service)) + '</b><div class="my-appt-act">' + act + '</div><p class="my-muted">' + esc(dShort(a.date)) + ' · <span dir="ltr">' + a.time + "</span> · " + (upcoming && a.live ? liveBadge(a) : (l.st[a.status] || a.status)) + (a.price ? " · ₪" + a.price : "") + "</p></div>";
   }
 
   function viewAppts() {
@@ -205,6 +349,7 @@
     h += '<section class="my-sec">' + clubCard() + "</section>";
     if (d.club || (d.rewards || []).length) {
       h += '<section class="my-sec"><h2>' + l.rewards + '</h2><div class="my-card">' + ((d.rewards || []).length ? d.rewards.map(function (r) {
+        if (r.hidden) return '<div class="my-reward"><span>🎁 ' + l.surprise + '</span><button type="button" class="bp-btn sm" data-scratch="' + r.id + '">' + l.surpriseOpen + "</button></div>";
         return '<div class="my-reward"><span>' + esc(r.label) + '<br><small class="my-muted">' + esc(dShort(r.earnedAt)) + (r.expiresAt && r.status === "AVAILABLE" ? " · " + esc(dShort(r.expiresAt)) : "") + '</small></span><span class="my-st' + (r.status === "AVAILABLE" ? " on" : "") + '">' + (l.rs[r.status] || r.status) + "</span></div>";
       }).join("") : '<p class="my-muted">' + l.noRewards + "</p>") + "</div></section>";
     }
@@ -373,6 +518,9 @@
       if (!confirm(l.cancelQ)) return;
       api("cancel", { appointmentId: t.dataset.cancel }).then(function () { load(); }).catch(function (x) { toast(x.message === "too_late" ? l.tooLate : l.err); });
     } else if (t.dataset.rate) openRating(t.dataset.rate);
+    else if (t.dataset.apcard) openApCard(t.dataset.apcard);
+    else if (t.dataset.request) openRequest(t.dataset.request);
+    else if (t.dataset.scratch) openScratch(t.dataset.scratch);
     else if (t.dataset.leave) api("waitlist.leave", { id: t.dataset.leave }).then(load).catch(function () { toast(l.err); });
     else if (t.dataset.photoOpen) openPhoto(t.dataset.photoOpen);
     else if (t.hasAttribute("data-copy")) { (navigator.clipboard ? navigator.clipboard.writeText(S.ref.link) : Promise.reject()).then(function () { toast(l.copied); }).catch(function () { prompt("", S.ref.link); }); }

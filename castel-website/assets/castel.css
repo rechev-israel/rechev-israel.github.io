@@ -994,3 +994,6 @@ html[dir="ltr"] .acc-sheet { transform: translateX(100%); }
 .bk-sname .bk-star { display: inline; margin-inline-start: 6px; }
 .bk-chip.on .bk-star { color: var(--ivory); }
 .bk-prem-note { margin: 10px 0 0; }
+
+.acc-more { margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--muted); }
+.acc-more a { color: var(--gold); text-decoration: underline; text-underline-offset: 4px; }

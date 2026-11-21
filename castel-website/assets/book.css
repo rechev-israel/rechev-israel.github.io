@@ -236,3 +236,6 @@ html[dir="rtl"] .bp-rate { direction: rtl; }
 .bp-field textarea { padding: 12px 14px; background: var(--card); border: 1px solid var(--line); color: var(--text); font: inherit; font-size: 16px; resize: vertical; border-radius: 0; }
 .bp-field textarea:focus { outline: none; border-color: var(--gold); }
 .bp-later { width: 100%; border-color: transparent !important; color: var(--muted) !important; }
+.bp-st.lv-ready { border-color: #4caf7d; color: #9fe0bb; }
+.bp-st.lv-delay { border-color: #d2a24c; color: #f1d39b; }
+.bp-st.lv-soon, .bp-st.lv-confirmed { border-color: var(--gold); }
