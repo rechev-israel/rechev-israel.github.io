@@ -1,3 +1,4 @@
+import { liveState } from "@/domain/experience";
 import Link from "next/link";
 import { Globe, Plus, Scissors, Upload } from "lucide-react";
 import { pageGuard } from "@/server/auth/guard";
@@ -66,7 +67,10 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   });
   const dayKeys = new Set(days.map((d) => d.key));
 
+  const reqs = await db.appointmentRequest.findMany({ where: { appointmentId: { in: appts.map((a) => a.id) } } });
+  const reqOf = new Map(reqs.map((r) => [r.appointmentId, r]));
   const calAppts: CalAppt[] = appts.filter((a) => dayKeys.has(keyOf(a.startsAt))).map((a) => {
+    const rq = reqOf.get(a.id);
     const sm = minOf(a.startsAt);
     const dur = Math.max(5, Math.round((a.endsAt.getTime() - a.startsAt.getTime()) / 60000));
     const em = Math.min(24 * 60, sm + dur);
@@ -75,6 +79,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       customer: a.customer ? { id: a.customer.id, name: fullName(a.customer), phone: a.customer.phone } : null,
       serviceId: a.serviceId, service: a.service ? (he ? a.service.nameHe : a.service.nameEn) : "", staffId: a.staffId, staff: a.staff?.name ?? null,
       price: a.price == null ? null : toNumber(a.price), paymentStatus: a.paymentStatus, source: a.source, notes: a.notes, startsAtLocal: toLocalInput(a.startsAt), durationMin: dur, cancelReason: a.cancelReason,
+      live: liveState(a), liveDelayMin: a.liveDelayMin,
+      request: rq ? { style: rq.style, fade: rq.fade, beard: rq.beard, changes: rq.changes, note: rq.note, photoId: rq.photoId } : null,
     };
   });
   // Blocks are clipped per day.

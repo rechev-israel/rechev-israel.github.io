@@ -171,3 +171,27 @@ describe("CASTEL CLUB rules", () => {
     expect(fitsWindow(720, 540, 720)).toBe(false);
   });
 });
+
+import { googleCalendarUrl, isGiftCode, liveState, makeGiftCode, parseGifts, parseSurprise, pickSurprise } from "@/domain/experience";
+describe("client features rules", () => {
+  const now = new Date("2027-03-02T08:00:00Z");
+  const appt = (o: Record<string, unknown>) => ({ status: "CONFIRMED", startsAt: new Date("2027-03-02T12:00:00Z"), endsAt: new Date("2027-03-02T12:30:00Z"), ...o }) as any;
+  it("live status only from real data", () => {
+    expect(liveState(appt({ status: "SCHEDULED" }), now)).toBe("pending");
+    expect(liveState(appt({}), now)).toBe("confirmed");
+    expect(liveState(appt({ startsAt: new Date("2027-03-02T09:30:00Z") }), now)).toBe("soon");
+    expect(liveState(appt({ liveStatus: "delay", liveUpdatedAt: new Date("2027-03-02T07:50:00Z") }), now)).toBe("delay");
+    expect(liveState(appt({ liveStatus: "ready", liveUpdatedAt: new Date("2027-02-20T07:50:00Z") }), now)).toBe("confirmed"); // stale flag ignored
+    expect(liveState(appt({ status: "CANCELLED", liveStatus: "ready", liveUpdatedAt: now }), now)).toBe("cancelled");
+  });
+  it("surprise and gift settings are off by default; picks are owner-approved", () => {
+    expect(parseSurprise({}).enabled).toBe(false);
+    expect(parseGifts({}).enabled).toBe(false);
+    const r = [{ label: "10% הנחה", weight: 3 }, { label: "שדרוג", weight: 1 }];
+    expect(pickSurprise(r, 0)).toBe("10% הנחה");
+    expect(pickSurprise(r, 0.99)).toBe("שדרוג");
+    expect(pickSurprise([], 0.5)).toBeNull();
+    expect(isGiftCode(makeGiftCode())).toBe(true);
+    expect(googleCalendarUrl({ title: "x", start: new Date("2027-03-02T12:00:00Z"), end: new Date("2027-03-02T12:30:00Z") })).toContain("20270302T120000Z%2F20270302T123000Z");
+  });
+});

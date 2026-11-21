@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { zonedParts } from "@/lib/dates";
 import {
-  clubProgress, fitsWindow, isReferralCode, makeReferralCode, parseClub, parseReferral, parseReminders, parseVip, qualifyingVisits, rewardText,
+  clubProgress, fitsWindow, isReferralCode, makeReferralCode, parseClub, parseGifts, parseReferral, parseReminders, parseSurprise, parseVip, pickSurprise, qualifyingVisits, rewardText,
   type Club, type ReferralCfg, type Vip,
 } from "@/domain/experience";
 import { sendPush } from "@/server/notify/push";
@@ -19,12 +19,13 @@ const DAY = 86400_000;
 
 export async function getExperience(businessId: string) {
   const s = await db.experienceSettings.findUnique({ where: { businessId } });
-  return { club: parseClub(s?.club), vip: parseVip(s?.vip), referral: parseReferral(s?.referral), reminders: parseReminders(s?.reminders) };
+  return { club: parseClub(s?.club), vip: parseVip(s?.vip), referral: parseReferral(s?.referral), reminders: parseReminders(s?.reminders), surprise: parseSurprise(s?.surprise), gifts: parseGifts(s?.gifts) };
 }
 export type Experience = Awaited<ReturnType<typeof getExperience>>;
 
-export async function saveExperience(businessId: string, section: "club" | "vip" | "referral" | "reminders", value: unknown) {
-  const v = section === "club" ? parseClub(value) : section === "vip" ? parseVip(value) : section === "referral" ? parseReferral(value) : parseReminders(value);
+export type Section = "club" | "vip" | "referral" | "reminders" | "surprise" | "gifts";
+export async function saveExperience(businessId: string, section: Section, value: unknown) {
+  const v = section === "club" ? parseClub(value) : section === "vip" ? parseVip(value) : section === "referral" ? parseReferral(value) : section === "surprise" ? parseSurprise(value) : section === "gifts" ? parseGifts(value) : parseReminders(value);
   const data = { [section]: v as Prisma.InputJsonValue };
   await db.experienceSettings.upsert({ where: { businessId }, create: { businessId, ...data }, update: data });
   return v;
@@ -117,12 +118,42 @@ export async function syncReferrals(businessId: string, customerId: string, cfg:
   }
 }
 
+// ───────── Surprise after a completed visit ─────────
+
+/**
+ * One surprise per completed appointment (refKey is unique), only for visits completed recently and only
+ * while the owner has the program on with approved benefits. The benefit is chosen here, on the server.
+ */
+export async function syncSurprise(businessId: string, customerId: string, cfg: Experience["surprise"], now = new Date()) {
+  if (!cfg.enabled || !cfg.rewards.length) return 0;
+  const since = new Date(now.getTime() - cfg.windowDays * DAY);
+  const appts = await db.appointment.findMany({ where: { customerId, status: "COMPLETED", startsAt: { gte: since, lte: now } }, select: { id: true } });
+  let made = 0;
+  for (const a of appts) {
+    const label = pickSurprise(cfg.rewards);
+    if (!label) break;
+    const r = await db.loyaltyReward.createMany({ data: [{ businessId, customerId, kind: "surprise", refKey: `surprise:${a.id}`, label, expiresAt: cfg.expiryDays ? new Date(now.getTime() + cfg.expiryDays * DAY) : null }], skipDuplicates: true });
+    made += r.count;
+  }
+  return made;
+}
+
+/** The scratch card only reveals what was already assigned. Revealing twice changes nothing. */
+export async function revealSurprise(customerId: string, id: unknown) {
+  if (typeof id !== "string") throw new Error("not_found");
+  const r = await db.loyaltyReward.findFirst({ where: { id, customerId, kind: "surprise" } });
+  if (!r) throw new Error("not_found");
+  if (!r.revealedAt) await db.loyaltyReward.update({ where: { id: r.id }, data: { revealedAt: new Date() } });
+  return { label: r.label, expiresAt: r.expiresAt?.toISOString().slice(0, 10) ?? null };
+}
+
 /** Everything that changes with visits, refreshed when the customer or the owner looks. */
 export async function syncCustomerPrograms(businessId: string, customerId: string, exp?: Experience) {
   const e = exp ?? (await getExperience(businessId));
   const club = await syncClub(businessId, customerId, e.club);
   await syncVip(businessId, customerId, e.vip, club.visits);
   await syncReferrals(businessId, customerId, e.referral);
+  await syncSurprise(businessId, customerId, e.surprise);
   return { exp: e, club };
 }
 

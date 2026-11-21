@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { zonedDate, zonedParts } from "@/lib/dates";
 import { icsEvent } from "@/domain/booking";
-import { rewardText } from "@/domain/experience";
+import { bookingRef, googleCalendarUrl, liveState, rewardText } from "@/domain/experience";
 import { customerByDevice, customerOverview } from "./customer-portal";
 import { ensureReferralCode, getExperience, syncCustomerPrograms } from "./experience";
 import { ReviewError, saveReview, type ReviewInput } from "./reviews";
@@ -28,7 +28,7 @@ export async function portalOverview(device: unknown) {
   const { exp, club } = await syncCustomerPrograms(c.businessId, c.id);
   const ids = [...base.upcoming, ...base.history].map((a) => a.id);
   const [apptMeta, reviews, rewards, vip, refCode, refs, profile, photos, waitlist, branch, services] = await Promise.all([
-    db.appointment.findMany({ where: { id: { in: ids } }, select: { id: true, serviceId: true } }),
+    db.appointment.findMany({ where: { id: { in: ids } }, select: { id: true, serviceId: true, status: true, startsAt: true, endsAt: true, liveStatus: true, liveDelayMin: true, liveUpdatedAt: true, service: { select: { nameHe: true } } } }),
     db.review.findMany({ where: { appointmentId: { in: ids } }, select: { appointmentId: true, rating: true } }),
     db.loyaltyReward.findMany({ where: { customerId: c.id }, orderBy: { earnedAt: "desc" }, take: 30 }),
     db.vipMembership.findUnique({ where: { customerId: c.id } }),
@@ -41,6 +41,9 @@ export async function portalOverview(device: unknown) {
     db.service.findMany({ where: { businessId: c.businessId, isActive: true, bookableOnline: true }, orderBy: [{ sortOrder: "asc" }, { price: "asc" }], select: { id: true, nameHe: true, nameEn: true, premiumOnly: true } }),
   ]);
   const svcOf = new Map(apptMeta.map((a) => [a.id, a.serviceId]));
+  const metaOf = new Map(apptMeta.map((a) => [a.id, a]));
+  const requests = await db.appointmentRequest.findMany({ where: { appointmentId: { in: base.upcoming.map((a) => a.id) } }, select: { appointmentId: true } });
+  const hasReq = new Set(requests.map((r) => r.appointmentId));
   const ratingOf = new Map(reviews.map((r) => [r.appointmentId, r.rating]));
   const bookable = new Set(services.map((s) => s.id));
   const withMeta = <T extends { id: string; status: string }>(a: T) => {
@@ -56,16 +59,22 @@ export async function portalOverview(device: unknown) {
   const notifications = [
     ...soon.map((a) => ({ kind: "reminder", id: a.id, date: a.date, time: a.time, service: a.service })),
     ...waitlist.filter((w) => w.status === "NOTIFIED" && w.matchDate).map((w) => ({ kind: "waitlist", id: w.id, date: w.matchDate!, time: `${pad(Math.floor(w.matchStart! / 60))}:${pad(w.matchStart! % 60)}`, serviceId: w.serviceId })),
-    ...available.map((r) => ({ kind: "reward", id: r.id, label: r.label })),
+    ...available.filter((r) => r.kind !== "surprise" || r.revealedAt).map((r) => ({ kind: "reward", id: r.id, label: r.label })),
+    ...available.filter((r) => r.kind === "surprise" && !r.revealedAt).map((r) => ({ kind: "surprise", id: r.id })),
     ...(vipActive && exp.vip.announcement ? [{ kind: "vip", id: "vip", text: exp.vip.announcement }] : []),
   ];
   return {
     ...base,
-    upcoming: base.upcoming.map(withMeta),
+    upcoming: base.upcoming.map((a) => {
+      const m = metaOf.get(a.id)!;
+      return { ...withMeta(a), live: liveState(m), delayMin: m.liveStatus === "delay" ? m.liveDelayMin : null, ref: bookingRef(a.id), startsAtMs: m.startsAt.getTime(), endsAtMs: m.endsAt.getTime(), hasRequest: hasReq.has(a.id),
+        google: googleCalendarUrl({ title: `${m.service?.nameHe ?? "תור"} — CASTEL STUDIO`, start: m.startsAt, end: m.endsAt, location: place }) };
+    }),
     history: base.history.map(withMeta),
     shop: { phone: branch?.phone ?? null, address: place, waze: `https://waze.com/ul?q=${encodeURIComponent(place)}&navigate=yes`, maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}` },
     club: exp.club.enabled ? { visits: club.visits, inCard: club.inCard, required: club.required, remaining: club.remaining, reward: rewardText(exp.club, true), rewardEn: rewardText(exp.club, false), conditions: exp.club.conditions, expiryDays: exp.club.expiryDays } : null,
-    rewards: rewards.map((r) => ({ id: r.id, kind: r.kind, label: r.label, status: r.status, earnedAt: r.earnedAt.toISOString().slice(0, 10), expiresAt: r.expiresAt?.toISOString().slice(0, 10) ?? null, redeemedAt: r.redeemedAt?.toISOString().slice(0, 10) ?? null })),
+    // An unrevealed surprise never sends its benefit to the browser before the customer reveals it.
+    rewards: rewards.map((r) => ({ id: r.id, kind: r.kind, label: r.kind === "surprise" && !r.revealedAt ? null : r.label, hidden: r.kind === "surprise" && !r.revealedAt, status: r.status, earnedAt: r.earnedAt.toISOString().slice(0, 10), expiresAt: r.expiresAt?.toISOString().slice(0, 10) ?? null, redeemedAt: r.redeemedAt?.toISOString().slice(0, 10) ?? null })),
     vip: exp.vip.enabled ? (vipActive ? { member: true, since: vip!.since.toISOString().slice(0, 10), benefits: exp.vip.benefits, announcement: exp.vip.announcement } : { member: false, autoMinVisits: exp.vip.autoEnabled ? exp.vip.autoMinVisits : null, visits: club.visits }) : null,
     referral: exp.referral.enabled && refCode ? {
       code: refCode, link: `${SITE}/?ref=${refCode}`, reward: exp.referral.referrerRewardLabel, friendReward: exp.referral.bothBenefit ? exp.referral.friendRewardLabel : "", conditions: exp.referral.conditions, minCompleted: exp.referral.minCompleted,
@@ -75,6 +84,7 @@ export async function portalOverview(device: unknown) {
     photos: photos.map((p) => ({ id: p.id, note: p.note, favorite: p.favorite, shared: p.sharedWithBarber, date: p.createdAt.toISOString().slice(0, 10) })),
     waitlist: waitlist.map((w) => ({ id: w.id, serviceId: w.serviceId, dates: w.dates, from: w.fromMin, to: w.toMin, notify: w.notify, status: w.status, match: w.status === "NOTIFIED" && w.matchDate ? { date: w.matchDate, time: `${pad(Math.floor(w.matchStart! / 60))}:${pad(w.matchStart! % 60)}` } : null })),
     services: services.map((s) => ({ id: s.id, he: s.nameHe, en: s.nameEn, premiumOnly: s.premiumOnly })),
+    giftsEnabled: exp.gifts.enabled,
     notifications,
   };
 }

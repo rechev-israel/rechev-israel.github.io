@@ -4,6 +4,8 @@ import { audit } from "@/server/audit";
 import { cancelFromPortal } from "@/server/services/customer-portal";
 import { deletePhoto, joinWaitlist, leaveWaitlist, recordReferral, saveHaircutProfile, updatePhoto, uploadPhoto } from "@/server/services/experience";
 import { PortalError, portalCustomer, portalIcs, portalOverview, portalReview, referralByPhone } from "@/server/services/my-castel";
+import { getRequest, removeRequest, saveRequest } from "@/server/services/client-features";
+import { revealSurprise } from "@/server/services/experience";
 import { findByToken } from "@/server/services/online-booking";
 import { ReviewError } from "@/server/services/reviews";
 import { clientIp } from "../booking/errors";
@@ -13,6 +15,17 @@ export const dynamic = "force-dynamic";
 export const OPTIONS = preflight;
 
 type Body = Record<string, unknown> & { device?: unknown; action?: unknown };
+
+/** Special requests work with the device key (MY CASTEL) or with the booking's private link token. */
+async function requestOwner(body: Body) {
+  if (typeof body.token === "string" && body.token) {
+    const a = await findByToken(body.token);
+    if (!a?.customerId) throw new PortalError("unauthorized");
+    return { customer: { id: a.customerId, businessId: a.businessId }, appointmentId: a.id };
+  }
+  const c = await portalCustomer(body.device);
+  return { customer: { id: c.id, businessId: c.businessId }, appointmentId: body.appointmentId };
+}
 const json = (req: Request, data: unknown, status = 200) => withCors(req, Response.json(data, { status, headers: { "Cache-Control": "no-store" } }));
 
 /**
@@ -40,6 +53,13 @@ export async function POST(req: Request) {
       case "photo.delete": { const c = await portalCustomer(body.device); await deletePhoto(c.id, body.id); return json(req, { ok: true }); }
       case "waitlist.join": { const c = await portalCustomer(body.device); const e = await joinWaitlist(c.businessId, c.id, body as never); await audit({ businessId: c.businessId, userId: null, action: "waitlist.joined", entityType: "WaitlistEntry", entityId: e.id }); return json(req, { ok: true }); }
       case "waitlist.leave": { const c = await portalCustomer(body.device); await leaveWaitlist(c.id, body.id); return json(req, { ok: true }); }
+      case "request.get": { const o = await requestOwner(body); return json(req, { request: await getRequest(o.customer.id, o.appointmentId) }); }
+      case "request.save": {
+        if (!rateLimit(`portalreq:${ip}`, 20, 10 * 60_000).ok) return json(req, { error: "rate_limited" }, 429);
+        const o = await requestOwner(body); await saveRequest(o.customer, o.appointmentId, (body.request ?? {}) as Record<string, unknown>); return json(req, { ok: true });
+      }
+      case "request.remove": { const o = await requestOwner(body); await removeRequest(o.customer.id, o.appointmentId); return json(req, { ok: true }); }
+      case "surprise.reveal": { const c = await portalCustomer(body.device); return json(req, await revealSurprise(c.id, body.id)); }
       case "referral.phone": {
         if (!rateLimit(`portalrefph:${ip}`, 20, 60_000).ok) return json(req, { error: "rate_limited" }, 429);
         return json(req, await referralByPhone(body.phone));
@@ -55,7 +75,7 @@ export async function POST(req: Request) {
     }
   } catch (e) {
     if (e instanceof PortalError || e instanceof ReviewError) return json(req, { error: e.message }, e.message === "unauthorized" ? 401 : 404);
-    if (e instanceof Error && ["invalid", "too_big", "limit", "not_found", "photo"].includes(e.message)) return json(req, { error: e.message }, 400);
+    if (e instanceof Error && ["invalid", "too_big", "limit", "not_found", "photo", "too_late", "empty"].includes(e.message)) return json(req, { error: e.message }, 400);
     logger.error("portal.failed", { action, err: String(e) });
     return json(req, { error: "server" }, 500);
   }

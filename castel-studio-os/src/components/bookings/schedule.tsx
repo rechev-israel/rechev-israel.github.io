@@ -8,6 +8,7 @@ import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Badge, Input, Label, Select, Textarea, buttonClass } from "@/components/ui";
 import { editBreakAction } from "@/server/actions/online-booking";
+import { setLiveStatusAction } from "@/server/actions/client-features";
 import { blockTimeAction, removeBlockAction, rescheduleAppointmentAction, setAppointmentStatusAction, setPaymentStatusAction, updateAppointmentDetailsAction } from "@/server/actions/bookings";
 
 export type CalDay = { key: string; weekday: number; label: string; short: string; open: [number, number] | null; windows?: [number, number, boolean][]; special?: string | null };
@@ -15,6 +16,8 @@ export type CalAppt = {
   id: string; dayKey: string; startMin: number; endMin: number; start: string; end: string; status: "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   customer: { id: string; name: string; phone: string | null } | null; serviceId: string | null; service: string; staffId: string | null; staff: string | null;
   price: number | null; paymentStatus: string; source: string; notes: string | null; startsAtLocal: string; durationMin: number; cancelReason: string | null;
+  live?: string; liveDelayMin?: number | null;
+  request?: { style: string | null; fade: string | null; beard: string | null; changes: string | null; note: string | null; photoId: string | null } | null;
 };
 export type CalBlock = { id: string; dayKey: string; startMin: number; endMin: number; reason: string | null; staff: string | null };
 
@@ -296,6 +299,29 @@ function AppointmentPanel({ a, he, edit, services, staff, onClose }: { a: CalApp
         {a.notes && row(L("הערות", "Notes"), <span className="whitespace-pre-wrap">{a.notes}</span>)}
         {a.cancelReason && row(L("סיבת ביטול", "Cancel reason"), a.cancelReason === "customer_online" ? L("בוטל ע״י הלקוח באתר", "Cancelled by customer online") : a.cancelReason)}
       </dl>
+      {a.request && (
+        <div className="mb-4 rounded-xl border border-gold/40 bg-gold/[0.06] p-3 text-sm">
+          <p className="mb-1.5 font-medium text-gold">✂ {L("בקשה מיוחדת מהלקוח", "Customer's special request")}</p>
+          <div className="flex gap-3">
+            {a.request.photoId && <img src={`/api/admin/photos/${a.request.photoId}`} alt={L("תמונת השראה", "Inspiration photo")} className="h-24 w-20 shrink-0 rounded-lg border border-border object-cover" />}
+            <dl className="min-w-0 space-y-0.5">
+              {([[L("סגנון", "Style"), a.request.style], [L("פייד", "Fade"), a.request.fade], [L("זקן", "Beard"), a.request.beard], [L("שינויים", "Changes"), a.request.changes], [L("הערה", "Note"), a.request.note]] as const).filter(([, v]) => v).map(([k, v]) => <div key={k}><dt className="inline text-muted">{k}: </dt><dd className="inline whitespace-pre-wrap">{v}</dd></div>)}
+            </dl>
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted">{L("הבקשה לא משנה את משך התור או את המחיר.", "Doesn't change duration or price.")}</p>
+        </div>
+      )}
+      {edit && (a.status === "SCHEDULED" || a.status === "CONFIRMED") && (
+        <div className="mb-4 rounded-xl border border-border p-3">
+          <p className="mb-2 text-sm font-medium">{L("סטטוס חי ללקוח", "Live status for the customer")} {a.live === "delay" ? <Badge tone="warning">{L(`עיכוב ${a.liveDelayMin ?? ""} דק׳`, `Delay ${a.liveDelayMin ?? ""} min`)}</Badge> : a.live === "ready" ? <Badge tone="success">{L("אפשר להיכנס", "Come in")}</Badge> : null}</p>
+          <div className="flex flex-wrap gap-2">
+            {[10, 15, 30].map((m) => <InlineAction key={m} action={setLiveStatusAction} fields={{ id: a.id, status: "delay", delay: String(m) }} variant="secondary">{L(`עיכוב ${m} דק׳`, `${m} min delay`)}</InlineAction>)}
+            <InlineAction action={setLiveStatusAction} fields={{ id: a.id, status: "ready" }} variant="primary">{L("אפשר להיכנס", "Come in now")}</InlineAction>
+            {(a.live === "delay" || a.live === "ready") && <InlineAction action={setLiveStatusAction} fields={{ id: a.id, status: "clear" }}>{L("ניקוי", "Clear")}</InlineAction>}
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted">{L("הלקוח רואה את זה ב־MY CASTEL ובמסך התור שלו. שום דבר לא נשלח לבד.", "Shown in the customer's MY CASTEL and booking page. Nothing is sent automatically.")}</p>
+        </div>
+      )}
       {edit && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">

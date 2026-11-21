@@ -15,12 +15,16 @@ const done = () => { revalidatePath("/experience"); revalidatePath("/crm/[id]", 
 export async function saveExperienceAction(_: ActionState, fd: FormData): Promise<ActionState> {
   return runAction(async () => {
     const user = await requireUser("services.edit");
-    const section = str(fd, "section") as "club" | "vip" | "referral" | "reminders";
+    const section = str(fd, "section") as "club" | "vip" | "referral" | "reminders" | "surprise" | "gifts";
     const value =
       section === "club" ? { enabled: on(fd, "enabled"), visitsRequired: str(fd, "visitsRequired"), rewardType: str(fd, "rewardType"), rewardValue: str(fd, "rewardValue"), rewardLabel: str(fd, "rewardLabel"), premiumQualifies: on(fd, "premiumQualifies"), expiryDays: str(fd, "expiryDays"), conditions: str(fd, "conditions") }
       : section === "vip" ? { enabled: on(fd, "enabled"), autoEnabled: on(fd, "autoEnabled"), autoMinVisits: str(fd, "autoMinVisits"), benefits: str(fd, "benefits").split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 8), announcement: str(fd, "announcement"), waitlistPriority: on(fd, "waitlistPriority") }
       : section === "referral" ? { enabled: on(fd, "enabled"), referrerRewardLabel: str(fd, "referrerRewardLabel"), friendRewardLabel: str(fd, "friendRewardLabel"), bothBenefit: on(fd, "bothBenefit"), minCompleted: str(fd, "minCompleted"), maxPerCustomer: str(fd, "maxPerCustomer"), expiryDays: str(fd, "expiryDays"), conditions: str(fd, "conditions") }
       : section === "reminders" ? { enabled: on(fd, "enabled"), h24: on(fd, "h24"), h2: on(fd, "h2") }
+      : section === "surprise" ? { enabled: on(fd, "enabled"), windowDays: str(fd, "windowDays"), expiryDays: str(fd, "expiryDays"), terms: str(fd, "terms"),
+          rewards: str(fd, "rewards").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 10).map((l) => { const m = /^(.*?)\s*[|×x*]\s*(\d+)$/.exec(l); return m ? { label: m[1], weight: Number(m[2]) } : { label: l, weight: 1 }; }) }
+      : section === "gifts" ? { enabled: on(fd, "enabled"), allowServices: on(fd, "allowServices"), expiryMonths: str(fd, "expiryMonths"), payNote: str(fd, "payNote"), terms: str(fd, "terms"),
+          amounts: str(fd, "amounts").split(/[,\s]+/).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n >= 20).slice(0, 8) }
       : null;
     if (!value) return { error: "bad section" };
     await saveExperience(user.businessId, section, value);

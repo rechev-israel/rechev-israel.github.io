@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BellRing, Crown, Gift, Hourglass, MessageSquareQuote, Users } from "lucide-react";
+import { BellRing, Crown, Gift, Hourglass, MessageSquareQuote, Sparkles, Ticket, Users } from "lucide-react";
 import { pageGuard } from "@/server/auth/guard";
 import { can } from "@/server/auth/rbac";
 import { db } from "@/lib/db";
@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { getExperience } from "@/server/services/experience";
 import { providerFor } from "@/server/comms/providers";
 import { closeWaitlistAction, rejectReferralAction, saveExperienceAction, setRewardStatusAction } from "@/server/actions/experience";
+import { cancelGiftAction, markGiftPaidAction, redeemGiftAction } from "@/server/actions/client-features";
 import { ActionForm, InlineAction, SubmitButton } from "@/components/forms";
 import { Badge, Card, CardTitle, EmptyState, Input, Label, Notice, PageHeader, Select, Stat, Textarea } from "@/components/ui";
 import { Forbidden } from "@/components/forbidden";
@@ -27,7 +28,7 @@ export default async function ExperiencePage({ searchParams }: { searchParams: P
   const staff = can(user.role, "crm.edit");
   const biz = user.businessId;
   const sp = await searchParams;
-  const tab = (["club", "vip", "friends", "waitlist", "reminders", "feedback"] as const).find((x) => x === sp.tab) ?? "club";
+  const tab = (["club", "vip", "friends", "surprise", "gifts", "waitlist", "reminders", "feedback"] as const).find((x) => x === sp.tab) ?? "club";
   const exp = await getExperience(biz);
   const [rewardsAvail, vipCount, waitActive, refPending, fb] = await Promise.all([
     db.loyaltyReward.count({ where: { businessId: biz, status: "AVAILABLE" } }),
@@ -37,7 +38,7 @@ export default async function ExperiencePage({ searchParams }: { searchParams: P
     db.review.aggregate({ where: { businessId: biz }, _avg: { rating: true, serviceRating: true }, _count: true }),
   ]);
   const TABS = [
-    ["club", "CASTEL CLUB", Gift], ["vip", "CASTEL VIP", Crown], ["friends", L("חבר מביא חבר", "Refer a friend"), Users],
+    ["club", "CASTEL CLUB", Gift], ["vip", "CASTEL VIP", Crown], ["friends", L("חבר מביא חבר", "Refer a friend"), Users], ["surprise", L("הפתעות", "Surprises"), Sparkles], ["gifts", L("כרטיסי מתנה", "Gift cards"), Ticket],
     ["waitlist", L("רשימת המתנה", "Waitlist"), Hourglass], ["reminders", L("תזכורות", "Reminders"), BellRing], ["feedback", L("משוב", "Feedback"), MessageSquareQuote],
   ] as const;
   const onOff = (v: boolean) => <Badge tone={v ? "success" : "neutral"}>{v ? L("פעיל", "On") : L("כבוי", "Off")}</Badge>;
@@ -164,6 +165,78 @@ export default async function ExperiencePage({ searchParams }: { searchParams: P
                     {owner && x.status === "PENDING" && <InlineAction action={rejectReferralAction} fields={{ id: x.id }} confirm={L("לדחות את ההפניה?", "Reject this referral?")}>{L("דחייה", "Reject")}</InlineAction>}</span>
                 </li>))}</ul>
             )}
+          </Card>
+        </>);
+      })())}
+
+      {tab === "surprise" && (await (async () => {
+        const c = exp.surprise;
+        const recent = await db.loyaltyReward.findMany({ where: { businessId: biz, kind: "surprise" }, orderBy: { earnedAt: "desc" }, take: 40, include: { customer: { select: { id: true, firstName: true, lastName: true } } } });
+        return (<>
+          <Card className="p-5">
+            <CardTitle action={onOff(c.enabled)}>{L("ההפתעה שלך מ־CASTEL", "Your CASTEL surprise")}</CardTitle>
+            <p className="mb-4 text-sm text-muted">{L("אחרי תור שהושלם, הלקוח מקבל ב־MY CASTEL כרטיס גירוד. ההטבה נבחרת מראש בשרת מתוך הרשימה שלך, והגירוד רק חושף אותה. פעם אחת לכל תור, בחינם, בלי הימורים ובלי פרסים כספיים.", "After a completed visit the customer gets a scratch card in MY CASTEL. The benefit is assigned on the server from your list; scratching only reveals it. Once per visit, free.")}</p>
+            <ActionForm action={saveExperienceAction} className="grid gap-3 md:grid-cols-2">
+              <input type="hidden" name="section" value="surprise" />
+              <div className="md:col-span-2">{check("enabled", L("להפעיל הפתעות אחרי תור", "Enable post-visit surprises"), c.enabled)}</div>
+              <div className="md:col-span-2"><Label>{L("ההטבות (שורה לכל הטבה; אפשר להוסיף | ומשקל, למשל: 10% הנחה | 3)", "Benefits (one per line; optional | weight, e.g. 10% off | 3)")}</Label><Textarea name="rewards" rows={5} defaultValue={c.rewards.map((r) => (r.weight > 1 ? `${r.label} | ${r.weight}` : r.label)).join("\n")} placeholder={L("10% הנחה על התספורת הבאה | 3\nשדרוג עיצוב זקן חינם | 1", "10% off next cut | 3\nFree beard upgrade | 1")} disabled={!owner} /></div>
+              <div><Label>{L("זכאות: תור שהושלם ב־X הימים האחרונים", "Eligible: visit completed in the last X days")}</Label><Input type="number" name="windowDays" min={1} max={60} defaultValue={c.windowDays} disabled={!owner} /></div>
+              <div><Label>{L("תוקף ההטבה בימים (0 = ללא)", "Expires after days (0 = never)")}</Label><Input type="number" name="expiryDays" min={0} max={3650} defaultValue={c.expiryDays} disabled={!owner} /></div>
+              <div className="md:col-span-2"><Label>{L("תנאים (מוצג ללקוח)", "Terms (shown to customers)")}</Label><Textarea name="terms" rows={2} maxLength={300} defaultValue={c.terms} disabled={!owner} /></div>
+              <div className="md:col-span-2">{save}</div>
+            </ActionForm>
+          </Card>
+          <Card className="p-5">
+            <CardTitle>{L("הפתעות שחולקו", "Surprises given")}</CardTitle>
+            {!recent.length ? <EmptyState title={L("עדיין לא חולקו הפתעות", "None yet")} /> : <ul className="divide-y divide-border">{recent.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                <span><Link href={`/crm/${r.customer.id}`} className="font-medium hover:text-gold">{[r.customer.firstName, r.customer.lastName].filter(Boolean).join(" ")}</Link> · {r.label} <span className="text-xs text-muted">· {r.revealedAt ? L("נחשפה", "Revealed") : L("טרם נחשפה", "Not revealed")} · {formatDate(r.earnedAt, locale)}</span></span>
+                <span className="flex items-center gap-2"><Badge tone={r.status === "AVAILABLE" ? "gold" : r.status === "REDEEMED" ? "success" : "neutral"}>{({ AVAILABLE: L("זמינה", "Available"), REDEEMED: L("מומשה", "Redeemed"), EXPIRED: L("פגה", "Expired"), VOID: L("בוטלה", "Void") } as Record<string, string>)[r.status]}</Badge>
+                  {staff && r.status === "AVAILABLE" && <InlineAction action={setRewardStatusAction} fields={{ id: r.id, status: "REDEEMED" }} variant="primary">{L("מימוש", "Redeem")}</InlineAction>}</span>
+              </li>))}</ul>}
+          </Card>
+        </>);
+      })())}
+
+      {tab === "gifts" && (await (async () => {
+        const c = exp.gifts;
+        const cards = await db.giftCard.findMany({ where: { businessId: biz }, orderBy: { createdAt: "desc" }, take: 80 });
+        const ST: Record<string, [string, "warning" | "gold" | "success" | "neutral"]> = { REQUESTED: [L("ממתין לתשלום", "Awaiting payment"), "warning"], ACTIVE: [L("פעיל", "Active"), "gold"], REDEEMED: [L("מומש", "Redeemed"), "success"], CANCELLED: [L("בוטל", "Cancelled"), "neutral"], EXPIRED: [L("פג תוקף", "Expired"), "neutral"] };
+        return (<>
+          <Card className="p-5">
+            <CardTitle>{L("מימוש כרטיס מתנה", "Redeem a gift card")}</CardTitle>
+            <ActionForm action={redeemGiftAction} className="flex flex-wrap items-end gap-2" resetOnSuccess>
+              <div className="min-w-[220px] flex-1"><Label>{L("קוד הכרטיס", "Card code")}</Label><Input name="code" placeholder="GIFT-XXXX-XXXX" dir="ltr" required /></div>
+              <SubmitButton>{L("מימוש", "Redeem")}</SubmitButton>
+            </ActionForm>
+          </Card>
+          <Card className="p-5">
+            <CardTitle action={onOff(c.enabled)}>{L("מתנה בסטייל · כרטיסי מתנה", "Gift cards")}</CardTitle>
+            <p className="mb-4 text-sm text-muted">{L("אין תשלום באתר. לקוח שולח בקשה, אתה מקבל התראה, גובה בדרך שלך (מזומן, ביט וכו׳) ולוחץ \"שולם\". רק אז נוצר קוד ייחודי, והקונה מקבל את הכרטיס בקישור הפרטי שלו. כל כרטיס ממומש פעם אחת.", "No online payment. You get the request, take payment your usual way and press Paid; only then a unique code is issued. Each card redeems once.")}</p>
+            <ActionForm action={saveExperienceAction} className="grid gap-3 md:grid-cols-2">
+              <input type="hidden" name="section" value="gifts" />
+              <div className="md:col-span-2">{check("enabled", L("להפעיל כרטיסי מתנה באתר", "Enable gift cards on the website"), c.enabled)}</div>
+              <div><Label>{L("סכומים לבחירה (₪, מופרדים בפסיק)", "Amounts (₪, comma separated)")}</Label><Input name="amounts" defaultValue={c.amounts.join(", ")} dir="ltr" disabled={!owner} /></div>
+              <div className="self-end">{check("allowServices", L("אפשר גם מתנה של שירות מסוים", "Allow gifting a specific service"), c.allowServices)}</div>
+              <div><Label>{L("תוקף בחודשים (0 = ללא)", "Valid for months (0 = no expiry)")}</Label><Input type="number" name="expiryMonths" min={0} max={60} defaultValue={c.expiryMonths} disabled={!owner} /></div>
+              <div className="md:col-span-2"><Label>{L("איך משלמים (מוצג לקונה)", "How to pay (shown to the buyer)")}</Label><Textarea name="payNote" rows={2} maxLength={300} defaultValue={c.payNote} placeholder={L("נחזור אליך בוואטסאפ לתשלום בביט או במזומן במספרה.", "We'll contact you to pay by Bit or cash at the shop.")} disabled={!owner} /></div>
+              <div className="md:col-span-2"><Label>{L("תנאי מימוש (מוצג על הכרטיס)", "Redemption terms (on the card)")}</Label><Textarea name="terms" rows={2} maxLength={400} defaultValue={c.terms} disabled={!owner} /></div>
+              <div className="md:col-span-2">{save}</div>
+            </ActionForm>
+          </Card>
+          <Card className="p-5">
+            <CardTitle>{L("בקשות וכרטיסים", "Requests & cards")}</CardTitle>
+            {!cards.length ? <EmptyState title={L("עדיין אין כרטיסי מתנה", "No gift cards yet")} /> : <ul className="divide-y divide-border">{cards.map((g) => (
+              <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <span className="min-w-0">
+                  <b className="font-medium">{g.serviceName ?? `₪${g.amount}`}</b> · {L("עבור", "for")} {g.recipientName}
+                  <span className="block text-xs text-muted">{L("קונה:", "Buyer:")} {g.buyerName} · <a href={`tel:${g.buyerPhone}`} dir="ltr" className="text-gold">{g.buyerPhone}</a> · {formatDate(g.createdAt, locale)}{g.code ? ` · ` : ""}{g.code && <span dir="ltr" className="font-mono">{g.code}</span>}{g.expiresAt ? ` · ${L("עד", "until")} ${formatDate(g.expiresAt, locale)}` : ""}</span>
+                </span>
+                <span className="flex flex-wrap items-center gap-2"><Badge tone={ST[g.status][1]}>{ST[g.status][0]}</Badge>
+                  {owner && g.status === "REQUESTED" && <InlineAction action={markGiftPaidAction} fields={{ id: g.id }} variant="primary" confirm={L("לאשר שהתשלום התקבל? ייווצר קוד מימוש.", "Confirm payment received? A code will be issued.")}>{L("שולם", "Paid")}</InlineAction>}
+                  {owner && (g.status === "REQUESTED" || g.status === "ACTIVE") && <InlineAction action={cancelGiftAction} fields={{ id: g.id }} confirm={L("לבטל את הכרטיס?", "Cancel this card?")}>{L("ביטול", "Cancel")}</InlineAction>}
+                </span>
+              </li>))}</ul>}
           </Card>
         </>);
       })())}

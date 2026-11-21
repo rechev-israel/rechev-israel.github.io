@@ -293,6 +293,10 @@ model Appointment {
   paymentStatus    String            @default("UNPAID")
   /// SHA-256 of the customer's private manage link token (online bookings only).
   manageTokenHash  String?           @unique
+  /// Live status set by the shop (never invented): "delay" | "ready" | null
+  liveStatus       String?
+  liveDelayMin     Int?
+  liveUpdatedAt    DateTime?
   id               String            @id @default(cuid())
   businessId       String
   business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1164,6 +1168,8 @@ model ExperienceSettings {
   vip        Json     @default("{}")
   referral   Json     @default("{}")
   reminders  Json     @default("{}")
+  surprise   Json     @default("{}")
+  gifts      Json     @default("{}")
   updatedAt  DateTime @updatedAt
 }
 
@@ -1183,6 +1189,8 @@ model LoyaltyReward {
   expiresAt    DateTime?
   redeemedAt   DateTime?
   redeemedById String?
+  /// Surprise rewards: the benefit is assigned on the server; the scratch card only reveals it.
+  revealedAt   DateTime?
 
   @@index([customerId, status])
 }
@@ -1296,4 +1304,50 @@ model AppointmentReminder {
   createdAt     DateTime @default(now())
 
   @@unique([appointmentId, kind, startsAtKey])
+}
+
+/// "Special requests" for one existing appointment (never changes its duration or price).
+model AppointmentRequest {
+  id            String   @id @default(cuid())
+  businessId    String
+  appointmentId String   @unique
+  customerId    String
+  style         String?
+  fade          String?
+  beard         String?
+  changes       String?
+  note          String?
+  photoId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Digital gift cards. A code exists only after the owner confirms payment; redeemed once.
+model GiftCard {
+  id              String    @id @default(cuid())
+  businessId      String
+  /// REQUESTED | ACTIVE | REDEEMED | CANCELLED | EXPIRED
+  status          String    @default("REQUESTED")
+  /// service | amount
+  kind            String
+  serviceId       String?
+  serviceName     String?
+  amount          Int?
+  recipientName   String
+  message         String?
+  design          String    @default("noir")
+  buyerName       String
+  buyerPhone      String
+  buyerCustomerId String?
+  viewTokenHash   String    @unique
+  code            String?   @unique
+  paidAt          DateTime?
+  paidById        String?
+  expiresAt       DateTime?
+  redeemedAt      DateTime?
+  redeemedById    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([businessId, status])
 }

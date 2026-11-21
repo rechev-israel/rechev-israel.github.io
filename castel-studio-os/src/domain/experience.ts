@@ -86,3 +86,66 @@ export const isReferralCode = (v: unknown): v is string => typeof v === "string"
 
 /** A slot fits a waitlist request when it starts inside the customer's time range. */
 export const fitsWindow = (startMin: number, fromMin: number, toMin: number) => startMin >= fromMin && startMin < toMin;
+
+// ───────── Surprise after a completed visit (owner-defined benefits; free; assigned on the server) ─────────
+export const SurpriseSettings = z.object({
+  enabled: z.boolean().catch(false),
+  /// Owner-approved benefits. weight = how often it comes up relative to the others.
+  rewards: z.array(z.object({ label: z.string().trim().min(1).max(80), weight: z.coerce.number().int().min(1).max(100).catch(1) })).max(10).catch([]),
+  windowDays: z.coerce.number().int().min(1).max(60).catch(14), // completed within the last N days
+  expiryDays: z.coerce.number().int().min(0).max(3650).catch(30),
+  terms: text(300),
+});
+export type Surprise = z.infer<typeof SurpriseSettings>;
+export const parseSurprise = (v: unknown) => SurpriseSettings.parse(v ?? {});
+/** Weighted pick of one owner-approved benefit. r ∈ [0,1). */
+export function pickSurprise(rewards: { label: string; weight: number }[], r = Math.random()) {
+  const total = rewards.reduce((s, x) => s + x.weight, 0);
+  if (!total) return null;
+  let at = r * total;
+  for (const x of rewards) { if (at < x.weight) return x.label; at -= x.weight; }
+  return rewards[rewards.length - 1].label;
+}
+
+// ───────── Gift cards (manual payment: the owner confirms; no online checkout) ─────────
+export const GiftSettings = z.object({
+  enabled: z.boolean().catch(false),
+  amounts: z.array(z.coerce.number().int().min(20).max(5000)).max(8).catch([100, 150, 200]),
+  allowServices: z.boolean().catch(true),
+  expiryMonths: z.coerce.number().int().min(0).max(60).catch(12), // 0 = no expiry
+  payNote: text(300),
+  terms: text(400),
+});
+export type Gifts = z.infer<typeof GiftSettings>;
+export const parseGifts = (v: unknown) => GiftSettings.parse(v ?? {});
+export function makeGiftCode(rand: (n: number) => number = (n) => Math.floor(Math.random() * n)) {
+  let s = "";
+  for (let i = 0; i < 8; i++) s += ALPHA[rand(ALPHA.length)];
+  return `GIFT-${s.slice(0, 4)}-${s.slice(4)}`;
+}
+export const isGiftCode = (v: unknown): v is string => typeof v === "string" && /^GIFT-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(v);
+
+// ───────── Live appointment status (real data only) ─────────
+export type LiveState = "pending" | "confirmed" | "soon" | "delay" | "ready" | "completed" | "cancelled" | "no_show";
+/**
+ * What the customer sees. "delay" / "ready" appear only when the shop set them today for this appointment;
+ * "soon" = confirmed and starting within 2 hours. Nothing is guessed.
+ */
+export function liveState(a: { status: string; startsAt: Date; endsAt: Date; liveStatus?: string | null; liveUpdatedAt?: Date | null }, now = new Date()): LiveState {
+  if (a.status === "CANCELLED") return "cancelled";
+  if (a.status === "COMPLETED") return "completed";
+  if (a.status === "NO_SHOW") return "no_show";
+  const fresh = a.liveUpdatedAt && now.getTime() - a.liveUpdatedAt.getTime() < 12 * 3600_000 && now.getTime() < a.endsAt.getTime() + 3600_000;
+  if (fresh && a.liveStatus === "ready") return "ready";
+  if (fresh && a.liveStatus === "delay") return "delay";
+  if (a.status === "SCHEDULED") return "pending";
+  return a.startsAt.getTime() - now.getTime() <= 2 * 3600_000 ? "soon" : "confirmed";
+}
+
+/** Google Calendar "add event" link (UTC times, so the timezone is always right). */
+export function googleCalendarUrl(e: { title: string; start: Date; end: Date; location?: string; details?: string }) {
+  const f = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const q = new URLSearchParams({ action: "TEMPLATE", text: e.title, dates: `${f(e.start)}/${f(e.end)}`, ctz: "Asia/Jerusalem", ...(e.location ? { location: e.location } : {}), ...(e.details ? { details: e.details } : {}) });
+  return `https://calendar.google.com/calendar/render?${q.toString()}`;
+}
+export const bookingRef = (id: string) => id.slice(-6).toUpperCase();
