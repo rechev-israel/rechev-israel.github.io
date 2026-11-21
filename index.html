@@ -947,6 +947,8 @@
   }
   $('#nudgeX').addEventListener('click', () => { track('nudge_dismiss', {}); nudgeClose(); });
   $('#nudgeGo').addEventListener('click', () => { track('nudge_click', {}); nudgeClose(); openReg(); });
+  // The prompt steps aside while the footer (name, phone, links) is on screen, so it never covers the contact details.
+  if('IntersectionObserver' in window){ const ft = document.querySelector('footer'); if(ft) new IntersectionObserver(es => $('#nudge').classList.toggle('under', es[0].isIntersecting)).observe(ft); }
   function openReg(thenReq){
     pendingReq = !!thenReq;
     tallyOpen(REG_FORM, { onSubmit: p => {
