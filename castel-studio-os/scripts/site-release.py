@@ -7,7 +7,7 @@
 3. Digest-deploys to Netlify: unchanged files are reused, only changed files are uploaded.
 The Netlify API credential is injected by the environment's network proxy (never stored in the repo).
 """
-import hashlib, json, os, re, sys, time, urllib.request
+import hashlib, json, os, re, sys, time, urllib.error, urllib.request
 
 SITE_ID = "f8ec0200-590a-42a6-8a9b-b4023f14c146"
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "castel-website")
@@ -18,9 +18,13 @@ API = "https://api.netlify.com/api/v1"
 def sha1(path): return hashlib.sha1(open(path, "rb").read()).hexdigest()
 def api(method, url, body=None, ctype="application/json"):
     req = urllib.request.Request(API + url, data=body, method=method, headers={"Content-Type": ctype} if body is not None else {})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = r.read()
-        return json.loads(data) if data else None
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = r.read()
+            return json.loads(data) if data else None
+    except urllib.error.HTTPError as e:
+        print("netlify", method, url, e.code, e.read()[:300].decode("utf-8", "replace"))
+        raise
 
 os.chdir(ROOT)
 ah = {a: sha1(a)[:10] for a in ASSETS}
