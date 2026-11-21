@@ -50,6 +50,15 @@ def analytics_snippet():
 
 # Styling lives in assets/site.css, shared with the home page.
 
+MARK_SVG = ('<svg class="mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect width="48" height="48" rx="9" fill="#050505"/>'
+            '<rect x=".75" y=".75" width="46.5" height="46.5" rx="8.25" fill="none" stroke="#e10613" stroke-width="1.5"/>'
+            '<path d="M34 8h6l-6 32h-6z" fill="#e10613"/>'
+            '<text direction="ltr" x="7" y="31" font-family="Assistant,Arial,sans-serif" font-weight="800" font-size="18" fill="#ffffff">RI</text></svg>')
+
+# icon for each spec row on the car sheet and car pages (see assets/site.css)
+SPEC_ICONS = {'שנתון': 'cal', 'קילומטראז\'': 'gauge', 'יד': 'person', 'תיבת הילוכים': 'gear', 'צבע': 'drop', 'אזור': 'pin',
+              'תאונות': 'shield', 'היסטוריית טיפולים': 'clip', 'צמיגים': 'tire', 'מפתחות': 'key', 'טסט בתוקף עד': 'check'}
+
 WA_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3z"/></svg>'
 
 
@@ -57,7 +66,7 @@ def json_ld(c, biz, url):
     car = {
         '@context': 'https://schema.org', '@type': 'Car', 'name': title_of(c), 'url': url,
         'brand': {'@type': 'Brand', 'name': c.get('make', '')}, 'model': c.get('model', ''),
-        'image': [abs_url(p) for p in c.get('photos', [])] or [f'{SITE}/logo.jpg'],
+        'image': [abs_url(p) for p in c.get('photos', [])] or [f'{SITE}/assets/og.png'],
         'itemCondition': 'https://schema.org/UsedCondition',
         'offers': {'@type': 'Offer', 'price': c.get('price'), 'priceCurrency': 'ILS', 'url': url,
                    'availability': 'https://schema.org/InStock',
@@ -88,7 +97,7 @@ def page(c, cars, biz, analytics, sold=False):
     else:
         head_title = f'{t} · {money(price)} | {biz["name"]}'
         meta_desc = f'{desc}. מחיר {money(price)}. תמונות אמיתיות מהמגרש, פנייה מהירה בוואטסאפ {phone_fmt(biz["phone"])}.'
-    og_img = abs_url(photos[0]) if photos else f'{SITE}/logo.jpg'
+    og_img = abs_url(photos[0]) if photos else f'{SITE}/assets/og.png'
     msg = f'שלום, ראיתי באתר את ה{name(c)}{" " + str(c["year"]) if c.get("year") else ""} במחיר {money(price)}. אשמח לפרטים ולתאם נסיעת מבחן.\n{url}'
     wa = f'https://wa.me/{wa_num(biz["phone"])}?text={quote(msg)}'
     wa_plain = f'https://wa.me/{wa_num(biz["phone"])}'
@@ -96,7 +105,7 @@ def page(c, cars, biz, analytics, sold=False):
     rows = [('שנתון', c.get('year')), ('קילומטראז\'', km_fmt(c['km']) if c.get('km') is not None else ''), ('יד', c.get('hand')),
             ('תיבת הילוכים', c.get('gear')), ('צבע', c.get('color')), ('אזור', c.get('region')), ('תאונות', c.get('accidents')),
             ('היסטוריית טיפולים', c.get('service')), ('צמיגים', c.get('tires')), ('מפתחות', c.get('keys')), ('טסט בתוקף עד', test)]
-    tbl = ''.join(f'<div><span>{e(k)}</span><b>{e(v)}</b></div>' for k, v in rows if v)
+    tbl = ''.join(f'<div class="ic-{SPEC_ICONS[k]}"><span>{e(k)}</span><b>{e(v)}</b></div>' for k, v in rows if v)
     if photos:
         gal = (f'<div class="gal"><div class="slides" id="slides">'
                + ''.join(f'<img src="/{e(p)}" alt="{e(t)}, תמונה {i + 1}" {"" if i == 0 else "loading=\"lazy\""} decoding="async">' for i, p in enumerate(photos))
@@ -106,7 +115,7 @@ def page(c, cars, biz, analytics, sold=False):
                 f'<button type="button" data-i="{i}" aria-label="תמונה {i + 1}" aria-current="{str(i == 0).lower()}"><img src="/{e(p)}" alt="" loading="lazy"></button>'
                 for i, p in enumerate(photos)) + '</div>'
     else:
-        gal = '<div class="gal"><div class="ph"><div class="nophoto"><img src="/logo.jpg" alt=""><span>בקרוב יעלו תמונות</span></div></div></div>'
+        gal = '<div class="gal"><div class="ph"><div class="nophoto"><img src="/assets/mark.svg" alt=""><span>בקרוב יעלו תמונות</span></div></div></div>'
     sim = similar(c, cars)
     sim_html = ''
     if sim:
@@ -145,18 +154,18 @@ def page(c, cars, biz, analytics, sold=False):
 <meta property="og:url" content="{url}">
 <meta property="og:image" content="{e(og_img)}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#05080f">
+<meta name="theme-color" content="#050505">
 <script>try{{if(localStorage.getItem("rv_theme")==="light")document.documentElement.setAttribute("data-theme","light")}}catch(e){{}}</script>
 <script src="/assets/fab.js" defer></script>
-<link rel="icon" href="/logo.jpg">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
 <link rel="stylesheet" href="/assets/site.css">
 {ld}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="/"><img src="/logo.jpg" alt=""><b>{e(biz["name"])}</b></a>
+  <a class="brand" href="/">{MARK_SVG}<span class="lock"><span class="wm">RECHEV<i>-ISRAEL</i></span><b>{e(biz["name"])}</b></span></a>
   <a class="btn ghost" href="/">לכל המלאי</a>
 </div></header>
 <main class="wrap">
