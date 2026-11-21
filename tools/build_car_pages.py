@@ -50,10 +50,7 @@ def analytics_snippet():
 
 # Styling lives in assets/site.css, shared with the home page.
 
-MARK_SVG = ('<svg class="mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect width="48" height="48" rx="9" fill="#050505"/>'
-            '<rect x=".75" y=".75" width="46.5" height="46.5" rx="8.25" fill="none" stroke="#e10613" stroke-width="1.5"/>'
-            '<path d="M34 8h6l-6 32h-6z" fill="#e10613"/>'
-            '<text direction="ltr" x="7" y="31" font-family="Assistant,Arial,sans-serif" font-weight="800" font-size="18" fill="#ffffff">RI</text></svg>')
+LOCKUP_IMG = '<img class="logo" src="/assets/logo-lockup.png" width="560" height="135" alt="RECHEV-ISRAEL">'
 
 # icon for each spec row on the car sheet and car pages (see assets/site.css)
 SPEC_ICONS = {'שנתון': 'cal', 'קילומטראז\'': 'gauge', 'יד': 'person', 'תיבת הילוכים': 'gear', 'צבע': 'drop', 'אזור': 'pin',
@@ -115,7 +112,7 @@ def page(c, cars, biz, analytics, sold=False):
                 f'<button type="button" data-i="{i}" aria-label="תמונה {i + 1}" aria-current="{str(i == 0).lower()}"><img src="/{e(p)}" alt="" loading="lazy"></button>'
                 for i, p in enumerate(photos)) + '</div>'
     else:
-        gal = '<div class="gal"><div class="ph"><div class="nophoto"><img src="/assets/mark.svg" alt=""><span>בקרוב יעלו תמונות</span></div></div></div>'
+        gal = '<div class="gal"><div class="ph"><div class="nophoto"><img src="/assets/logo-badge.jpg" alt=""><span>בקרוב יעלו תמונות</span></div></div></div>'
     sim = similar(c, cars)
     sim_html = ''
     if sim:
@@ -157,7 +154,7 @@ def page(c, cars, biz, analytics, sold=False):
 <meta name="theme-color" content="#050505">
 <script>try{{if(localStorage.getItem("rv_theme")==="light")document.documentElement.setAttribute("data-theme","light")}}catch(e){{}}</script>
 <script src="/assets/fab.js" defer></script>
-<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/icon-192.png" type="image/png" sizes="192x192">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
 <link rel="stylesheet" href="/assets/site.css">
@@ -165,7 +162,7 @@ def page(c, cars, biz, analytics, sold=False):
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="/">{MARK_SVG}<span class="lock"><span class="wm">RECHEV<i>-ISRAEL</i></span><b>{e(biz["name"])}</b></span></a>
+  <a class="brand" href="/">{LOCKUP_IMG}</a>
   <a class="btn ghost" href="/">לכל המלאי</a>
 </div></header>
 <main class="wrap">
