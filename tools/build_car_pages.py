@@ -268,7 +268,7 @@ def page(c, cars, biz, analytics, sold=False):
 
 def main():
     data = json.load(open(os.path.join(ROOT, 'cars.json'), encoding='utf-8'))
-    biz = {'name': 'רכב ישראל', 'phone': '0555711239', **(data.get('business') or {})}
+    biz = {'name': (data.get('business') or {}).get('name') or 'רכב ישראל', 'phone': '0554679136'}
     cars = [c for c in data.get('cars', []) if c.get('id')]
     sold = [s for s in data.get('sold', []) if s.get('id') and s['id'] not in {c['id'] for c in cars}]
     analytics = analytics_snippet()

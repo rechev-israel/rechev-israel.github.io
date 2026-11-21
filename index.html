@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google-site-verification" content="kpoJuxLLN-oIxqX8oVZ5BSUJPXuQca4D0GKP1vh-SZA" />
-<meta name="description" content="רכב ישראל – רכבים יד שנייה למכירה. כל המלאי המעודכן, חיפוש לפי תקציב, אפשרויות מימון ויצירת קשר מהירה בוואטסאפ 055-571-1239.">
+<meta name="description" content="רכב ישראל – רכבים יד שנייה למכירה. כל המלאי המעודכן, חיפוש לפי תקציב, אפשרויות מימון ויצירת קשר מהירה בוואטסאפ 055-467-9136.">
 <meta property="og:title" content="רכב ישראל – מלאי רכבים למכירה">
 <meta property="og:description" content="כל הרכבים הזמינים שלנו במקום אחד. חיפוש לפי תקציב ופנייה מהירה בוואטסאפ.">
 <meta property="og:type" content="website">
@@ -800,8 +800,8 @@ html[data-theme="light"] .nudge{background:#0b2347}
   const daysAgo = d => d ? Math.floor((Date.now() - new Date(d)) / 864e5) : 999;
   let data = {cars: [], business: {}}, budget = null, open = null;
 
-  const DEFAULT_PHONE = '055-571-1239';
-  const phone = () => data.business.phone || DEFAULT_PHONE;
+  const DEFAULT_PHONE = '055-467-9136'; // המספר קבוע כאן, ולא נלקח מקובץ הנתונים
+  const phone = () => DEFAULT_PHONE;
   const waNum = p => { let d = String(p || '').replace(/\D/g,''); if(d.startsWith('0')) d = '972' + d.slice(1); return d; };
   const carUrl = c => new URL('car/' + encodeURIComponent(c.id) + '/', location.origin + location.pathname.replace(/[^/]*$/, '')).href;
   const waLink = text => { const n = waNum(phone()); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : ''; };
