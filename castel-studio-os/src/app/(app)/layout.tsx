@@ -2,6 +2,8 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { LiveBell } from "@/components/shell/live-bell";
 import { AppFreshness } from "@/components/shell/app-freshness";
+import { PushKeeper } from "@/components/shell/push-keeper";
+import { vapidPublicKey } from "@/server/notify/push";
 import { notificationWhere } from "@/server/notify/visibility";
 import { requireUser } from "@/server/auth/session";
 import { can } from "@/server/auth/rbac";
@@ -44,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-dvh safe-x">
       <AppFreshness build={(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 12)} />
+      {(user.role === "OWNER" || user.role === "MANAGER") && <PushKeeper vapidKey={vapidPublicKey()} />}
       <Sidebar
         groups={groups}
         tagline={t.app.tagline}

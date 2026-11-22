@@ -16,12 +16,14 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "validation" }, { status: 422 });
   const { endpoint, keys } = parsed.data;
+  const existed = await db.pushSubscription.findUnique({ where: { endpoint }, select: { id: true } });
   await db.pushSubscription.upsert({
     where: { endpoint },
     create: { businessId: r.user.businessId, userId: r.user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth, userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null },
     update: { businessId: r.user.businessId, userId: r.user.id, p256dh: keys.p256dh, auth: keys.auth, failures: 0, lastError: null },
   });
-  await audit({ businessId: r.user.businessId, userId: r.user.id, action: "push.subscribe", entityType: "PushSubscription" });
+  // The automatic keep-alive re-sends the same subscription; only a new device is worth an audit entry.
+  if (!existed) await audit({ businessId: r.user.businessId, userId: r.user.id, action: req.headers.get("x-push-keepalive") ? "push.resubscribed_automatically" : "push.subscribe", entityType: "PushSubscription" });
   return Response.json({ ok: true });
 }
 

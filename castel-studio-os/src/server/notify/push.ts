@@ -28,7 +28,7 @@ export async function sendPush(businessId: string, userIds: string[] | null, pay
   let sent = 0, failed = 0;
   await Promise.all(subs.map(async (s) => {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(payload), { TTL: 60 * 60 * 24, urgency: "high", topic: payload.tag?.slice(0, 32) });
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(payload), { TTL: 60 * 60 * 24, urgency: "high" });
       sent++;
       await db.pushSubscription.update({ where: { id: s.id }, data: { lastSuccessAt: new Date(), lastError: null, failures: 0 } });
     } catch (e) {
