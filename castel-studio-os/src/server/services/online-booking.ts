@@ -121,10 +121,10 @@ export async function staffDays(businessId: string, date: string, staffIds: stri
 }
 
 /** Which bookable days have at least one free slot for this service/barber (for the date calendar). */
-export async function availableDays(businessId: string, q: { serviceId: string; staffId: string; withSlots?: boolean }, now = new Date()) {
+export async function availableDays(businessId: string, q: { serviceId: string; staffId: string; withSlots?: boolean }, now = new Date(), opts: { includeHidden?: boolean } = {}) {
   const settings = await getBookingSettings(businessId);
   if (!settings.enabled) throw new BookingError("disabled");
-  const service = await db.service.findFirst({ where: { id: q.serviceId, businessId, isActive: true, bookableOnline: true } });
+  const service = await db.service.findFirst({ where: { id: q.serviceId, businessId, isActive: true, ...(opts.includeHidden ? {} : { bookableOnline: true }) } });
   if (!service) throw new BookingError("service");
   const staff = await bookableStaff(businessId);
   const ids = q.staffId === "any" ? staff.map((s) => s.id) : staff.some((s) => s.id === q.staffId) ? [q.staffId] : [];
@@ -141,10 +141,11 @@ export async function availableDays(businessId: string, q: { serviceId: string; 
   });
 }
 
-export async function getSlots(businessId: string, q: { serviceId: string; staffId: string; date: string }, now = new Date()) {
+export async function getSlots(businessId: string, q: { serviceId: string; staffId: string; date: string }, now = new Date(), opts: { includeHidden?: boolean } = {}) {
   const settings = await getBookingSettings(businessId);
   if (!settings.enabled) throw new BookingError("disabled");
-  const service = await db.service.findFirst({ where: { id: q.serviceId, businessId, isActive: true, bookableOnline: true } });
+  // includeHidden: server-internal only (the hair-model service is never bookable through the regular booking flow)
+  const service = await db.service.findFirst({ where: { id: q.serviceId, businessId, isActive: true, ...(opts.includeHidden ? {} : { bookableOnline: true }) } });
   if (!service) throw new BookingError("service");
   if (!bookableDates(settings.maxDaysAhead, now).includes(q.date)) throw new BookingError("date");
   const staff = await bookableStaff(businessId);

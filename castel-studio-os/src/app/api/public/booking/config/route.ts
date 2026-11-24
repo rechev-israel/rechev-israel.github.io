@@ -1,3 +1,4 @@
+import { getExperience } from "@/server/services/experience";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
@@ -31,6 +32,7 @@ export async function GET(req: Request) {
     open: !reason, reason, ...base,
     services: services.map((x) => ({ id: x.id, he: x.nameHe, en: x.nameEn, durationMin: x.durationMin, price: toNumber(x.price), premiumOnly: x.premiumOnly })),
     premiumSurcharge: s.premiumSurcharge,
+    model: (await getExperience(b.id)).model.enabled,
     staff, dates: bookableDates(s.maxDaysAhead),
   }, { headers: { "Cache-Control": "no-store" } }));
 }

@@ -1170,6 +1170,7 @@ model ExperienceSettings {
   reminders  Json     @default("{}")
   surprise   Json     @default("{}")
   gifts      Json     @default("{}")
+  model      Json     @default("{}")
   updatedAt  DateTime @updatedAt
 }
 
@@ -1350,4 +1351,42 @@ model GiftCard {
   updatedAt       DateTime  @updatedAt
 
   @@index([businessId, status])
+}
+
+/// CASTEL MODEL EXPERIENCE: a hair-model application (free, 120 min). Never an appointment until the owner approves.
+model ModelApplication {
+  id              String    @id @default(cuid())
+  businessId      String
+  customerId      String
+  /// Requested day in Asia/Jerusalem (YYYY-MM-DD)
+  dayKey          String
+  /// Set while the application holds its day (pending / approved / completed); null once released.
+  /// Unique per business → one model per calendar day, enforced by the database itself.
+  activeDay       String?
+  startsAt        DateTime
+  endsAt          DateTime
+  /// PENDING_APPROVAL | APPROVED | REJECTED | ALT_PROPOSED | CANCELLED | EXPIRED
+  status          String    @default("PENDING_APPROVAL")
+  notes           String?
+  photoFrontId    String?
+  photoSideId     String?
+  photoBackId     String?
+  consentTerms    Boolean   @default(false)
+  consentPhotos   Boolean   @default(false)
+  /// The temporary two-hour calendar hold (TimeOff) while pending
+  holdId          String?
+  appointmentId   String?   @unique
+  rejectReason    String?
+  altStartsAt     DateTime?
+  manageTokenHash String    @unique
+  expiresAt       DateTime
+  decidedAt       DateTime?
+  decidedById     String?
+  photosDeletedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([businessId, activeDay])
+  @@index([businessId, status, startsAt])
+  @@index([customerId])
 }

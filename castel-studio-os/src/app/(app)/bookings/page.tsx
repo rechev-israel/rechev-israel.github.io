@@ -79,7 +79,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       customer: a.customer ? { id: a.customer.id, name: fullName(a.customer), phone: a.customer.phone } : null,
       serviceId: a.serviceId, service: a.service ? (he ? a.service.nameHe : a.service.nameEn) : "", staffId: a.staffId, staff: a.staff?.name ?? null,
       price: a.price == null ? null : toNumber(a.price), paymentStatus: a.paymentStatus, source: a.source, notes: a.notes, startsAtLocal: toLocalInput(a.startsAt), durationMin: dur, cancelReason: a.cancelReason,
-      live: liveState(a), liveDelayMin: a.liveDelayMin,
+      live: liveState(a), liveDelayMin: a.liveDelayMin, model: a.service?.externalRef === "auto:model",
       request: rq ? { style: rq.style, fade: rq.fade, beard: rq.beard, changes: rq.changes, note: rq.note, photoId: rq.photoId } : null,
     };
   });

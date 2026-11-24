@@ -16,7 +16,7 @@ export type CalAppt = {
   id: string; dayKey: string; startMin: number; endMin: number; start: string; end: string; status: "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   customer: { id: string; name: string; phone: string | null } | null; serviceId: string | null; service: string; staffId: string | null; staff: string | null;
   price: number | null; paymentStatus: string; source: string; notes: string | null; startsAtLocal: string; durationMin: number; cancelReason: string | null;
-  live?: string; liveDelayMin?: number | null;
+  live?: string; liveDelayMin?: number | null; model?: boolean;
   request?: { style: string | null; fade: string | null; beard: string | null; changes: string | null; note: string | null; photoId: string | null } | null;
 };
 export type CalBlock = { id: string; dayKey: string; startMin: number; endMin: number; reason: string | null; staff: string | null };
@@ -202,8 +202,9 @@ export function ScheduleCalendar(props: {
                     const phone = localPhone(a.customer?.phone);
                     return (
                       <button key={a.id} type="button" data-appt onClick={() => go({ appt: a.id })}
-                        className={`absolute z-[2] flex flex-col overflow-hidden rounded-lg border border-s-[3px] px-2 py-1.5 text-start text-[12px] leading-snug shadow-[0_4px_14px_-8px_rgba(0,0,0,0.7)] transition-transform hover:z-[3] hover:-translate-y-px ${STATUS_STYLE[a.status]} ${selectedId === a.id ? "ring-2 ring-gold ring-offset-1 ring-offset-[var(--surface)]" : ""}`}
+                        className={`absolute z-[2] flex flex-col overflow-hidden rounded-lg border border-s-[3px] px-2 py-1.5 text-start text-[12px] leading-snug shadow-[0_4px_14px_-8px_rgba(0,0,0,0.7)] transition-transform hover:z-[3] hover:-translate-y-px ${STATUS_STYLE[a.status]} ${a.model ? "!border-gold" : ""} ${selectedId === a.id ? "ring-2 ring-gold ring-offset-1 ring-offset-[var(--surface)]" : ""}`}
                         style={{ top: (a.startMin - range[0]) * PX + 1, height: h, insetInlineStart: `calc(${(lane / lanesInGroup) * 100}% + 2px)`, width: `calc(${100 / lanesInGroup}% - 4px)` }}>
+                        {a.model && <span className="mb-0.5 self-start rounded-sm bg-gradient-to-l from-[#b38d5c] via-[#e2c99f] to-[#b38d5c] px-1.5 py-px text-[9px] font-bold tracking-[0.18em] text-black">CASTEL MODEL</span>}
                         {/* Name first and biggest; then time, phone, service — as much as the height allows. */}
                         {narrow ? (<>
                           {/* Narrow column: the name gets its own full line, the time goes under it. */}

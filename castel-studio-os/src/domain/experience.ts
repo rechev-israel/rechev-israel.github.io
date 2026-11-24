@@ -149,3 +149,18 @@ export function googleCalendarUrl(e: { title: string; start: Date; end: Date; lo
   return `https://calendar.google.com/calendar/render?${q.toString()}`;
 }
 export const bookingRef = (id: string) => id.slice(-6).toUpperCase();
+
+// ───────── CASTEL MODEL EXPERIENCE (hair-model applications) ─────────
+export const ModelSettings = z.object({
+  enabled: z.boolean().catch(false),
+  holdHours: z.coerce.number().int().min(2).max(240).catch(48), // a pending request expires after N hours
+  releaseOnReject: z.boolean().catch(true), // free the day again after a rejection
+  disabledDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(200).catch([]),
+  photoRetentionDays: z.coerce.number().int().min(1).max(365).catch(30), // photos of closed requests are deleted after N days
+});
+export type ModelCfg = z.infer<typeof ModelSettings>;
+export const parseModel = (v: unknown) => ModelSettings.parse(v ?? {});
+export const MODEL_SERVICE_REF = "auto:model";
+export const MODEL_DURATION_MIN = 120;
+/** Statuses that hold their day (one model per calendar day). */
+export const MODEL_ACTIVE = ["PENDING_APPROVAL", "APPROVED"] as const;

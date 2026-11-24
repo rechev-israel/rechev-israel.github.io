@@ -205,4 +205,6 @@ export async function commsTick(businessId: string) {
   const exp = await import("@/server/services/experience");
   await exp.waitlistTick(businessId).catch(() => 0);
   await exp.reminderTick(businessId).catch(() => 0);
+  const { modelTick } = await import("@/server/services/model-applications");
+  await modelTick(businessId).catch(() => 0);
 }

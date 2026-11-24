@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { zonedParts } from "@/lib/dates";
 import {
-  clubProgress, fitsWindow, isReferralCode, makeReferralCode, parseClub, parseGifts, parseReferral, parseReminders, parseSurprise, parseVip, pickSurprise, qualifyingVisits, rewardText,
+  clubProgress, fitsWindow, isReferralCode, makeReferralCode, parseClub, parseGifts, parseModel, parseReferral, parseReminders, parseSurprise, parseVip, pickSurprise, qualifyingVisits, rewardText,
   type Club, type ReferralCfg, type Vip,
 } from "@/domain/experience";
 import { sendPush } from "@/server/notify/push";
@@ -19,13 +19,13 @@ const DAY = 86400_000;
 
 export async function getExperience(businessId: string) {
   const s = await db.experienceSettings.findUnique({ where: { businessId } });
-  return { club: parseClub(s?.club), vip: parseVip(s?.vip), referral: parseReferral(s?.referral), reminders: parseReminders(s?.reminders), surprise: parseSurprise(s?.surprise), gifts: parseGifts(s?.gifts) };
+  return { club: parseClub(s?.club), vip: parseVip(s?.vip), referral: parseReferral(s?.referral), reminders: parseReminders(s?.reminders), surprise: parseSurprise(s?.surprise), gifts: parseGifts(s?.gifts), model: parseModel(s?.model) };
 }
 export type Experience = Awaited<ReturnType<typeof getExperience>>;
 
-export type Section = "club" | "vip" | "referral" | "reminders" | "surprise" | "gifts";
+export type Section = "club" | "vip" | "referral" | "reminders" | "surprise" | "gifts" | "model";
 export async function saveExperience(businessId: string, section: Section, value: unknown) {
-  const v = section === "club" ? parseClub(value) : section === "vip" ? parseVip(value) : section === "referral" ? parseReferral(value) : section === "surprise" ? parseSurprise(value) : section === "gifts" ? parseGifts(value) : parseReminders(value);
+  const v = section === "club" ? parseClub(value) : section === "vip" ? parseVip(value) : section === "referral" ? parseReferral(value) : section === "surprise" ? parseSurprise(value) : section === "gifts" ? parseGifts(value) : section === "model" ? parseModel(value) : parseReminders(value);
   const data = { [section]: v as Prisma.InputJsonValue };
   await db.experienceSettings.upsert({ where: { businessId }, create: { businessId, ...data }, update: data });
   return v;

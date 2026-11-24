@@ -1,3 +1,4 @@
+import { publicView } from "./model-applications";
 import { db } from "@/lib/db";
 import { zonedDate, zonedParts } from "@/lib/dates";
 import { icsEvent } from "@/domain/booking";
@@ -85,6 +86,7 @@ export async function portalOverview(device: unknown) {
     waitlist: waitlist.map((w) => ({ id: w.id, serviceId: w.serviceId, dates: w.dates, from: w.fromMin, to: w.toMin, notify: w.notify, status: w.status, match: w.status === "NOTIFIED" && w.matchDate ? { date: w.matchDate, time: `${pad(Math.floor(w.matchStart! / 60))}:${pad(w.matchStart! % 60)}` } : null })),
     services: services.map((s) => ({ id: s.id, he: s.nameHe, en: s.nameEn, premiumOnly: s.premiumOnly })),
     giftsEnabled: exp.gifts.enabled,
+    models: (await db.modelApplication.findMany({ where: { customerId: c.id }, orderBy: { createdAt: "desc" }, take: 5 })).map(publicView),
     notifications,
   };
 }
