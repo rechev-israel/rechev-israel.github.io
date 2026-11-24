@@ -11,8 +11,8 @@ import hashlib, json, os, re, sys, time, urllib.error, urllib.request
 
 SITE_ID = "f8ec0200-590a-42a6-8a9b-b4023f14c146"
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "castel-website")
-PAGES = [("index.html", ""), ("academy/index.html", "../"), ("privacy/index.html", "/"), ("accessibility/index.html", "/"), ("book/index.html", "/"), ("my/index.html", "/"), ("style/index.html", "/"), ("gift/index.html", "/")]
-ASSETS = ["assets/castel.css", "assets/castel.js", "assets/booking.js", "assets/account.js", "assets/book.css", "assets/book.js", "assets/review.js", "assets/my.css", "assets/my.js", "assets/style-data.js", "assets/style.js", "assets/gift.js"]
+PAGES = [("index.html", ""), ("academy/index.html", "../"), ("privacy/index.html", "/"), ("accessibility/index.html", "/"), ("book/index.html", "/"), ("my/index.html", "/"), ("style/index.html", "/"), ("gift/index.html", "/"), ("model/index.html", "/")]
+ASSETS = ["assets/castel.css", "assets/castel.js", "assets/booking.js", "assets/account.js", "assets/book.css", "assets/book.js", "assets/review.js", "assets/my.css", "assets/my.js", "assets/style-data.js", "assets/style.js", "assets/gift.js", "assets/model.js"]
 API = "https://api.netlify.com/api/v1"
 
 def sha1(path): return hashlib.sha1(open(path, "rb").read()).hexdigest()

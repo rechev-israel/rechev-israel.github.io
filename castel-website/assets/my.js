@@ -143,6 +143,12 @@
       '<button type="button" class="my-q" data-tab="looks">' + ICON.img + "<b>" + l.qLooks + "</b><small>" + l.qLooksSub + "</small></button>" +
       '<a class="my-q" href="/style/">' + ICON.cut + "<b>" + l.qStyle + "</b><small>" + l.qStyleSub + "</small></a>" +
       (d.giftsEnabled ? '<a class="my-q" href="/gift/">' + ICON.crown + "<b>" + l.qGift + "</b><small>" + l.qGiftSub + "</small></a>" : "") + "</div></section>";
+    if (d.models && d.models.length) {
+      var MST = lang() === "he" ? { PENDING_APPROVAL: "ממתין לאישור", APPROVED: "הבקשה אושרה", REJECTED: "הבקשה נדחתה", ALT_PROPOSED: "הוצע מועד חלופי", CANCELLED: "הבקשה בוטלה", EXPIRED: "תוקף הבקשה פג" } : { PENDING_APPROVAL: "Awaiting approval", APPROVED: "Approved", REJECTED: "Declined", ALT_PROPOSED: "Alternative proposed", CANCELLED: "Cancelled", EXPIRED: "Expired" };
+      h += '<section class="my-sec"><h2>CASTEL MODEL</h2><div class="my-card gold">' + d.models.map(function (m) {
+        return '<div class="my-appt"><b>' + (lang() === "he" ? "בקשת מודליסט" : "Hair-model request") + '</b><div class="my-appt-act"><span class="my-live ' + (m.status === "APPROVED" ? "ready" : m.status === "PENDING_APPROVAL" ? "delay" : "cancelled") + '">' + esc(MST[m.status] || m.status) + '</span></div><p class="my-muted">' + esc(dShort(m.date)) + ' · <span dir="ltr">' + m.time + "</span>" + (m.reason ? " · " + esc(m.reason) : "") + (m.alt ? ' · <a class="bp-link" href="/model/?date=' + esc(m.alt.date) + '">' + esc(dShort(m.alt.date)) + " " + esc(m.alt.time) + "</a>" : "") + "</p></div>";
+      }).join("") + "</div></section>";
+    }
     if (d.referral) h += '<section class="my-sec"><h2>' + l.friends + "</h2>" + referralCard(d.referral) + "</section>";
     if (d.club) h += '<section class="my-sec">' + clubCard() + "</section>";
     if (d.vip && d.vip.member) h += '<section class="my-sec">' + vipCard() + "</section>";

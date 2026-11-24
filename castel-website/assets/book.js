@@ -159,7 +159,15 @@
         '<span class="bp-svc-name">' + esc(svcName(s)) + "</span>" + (desc ? '<span class="bp-svc-desc">' + esc(desc) + "</span>" : "") +
         '<span class="bp-svc-meta"><span class="dur">' + s.durationMin + " " + L.min + '</span><span class="price"><span class="bp-cur">₪</span>' + s.price + "</span></span></span>" +
         '<span class="bp-svc-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>';
-    }).join("") + "</div>";
+    }).join("") + (c.model ? modelCard() : "") + "</div>";
+  }
+  // CASTEL MODEL EXPERIENCE: a separate application flow (owner approval), not a regular booking.
+  function modelCard() {
+    var he = lang() === "he";
+    return '<a class="bp-svc model" href="/model/" style="grid-template-columns:112px 1fr"><span class="bp-svc-img"><img src="/images/hero-m.webp" alt="" loading="lazy" decoding="async"></span><span class="bp-svc-body">' +
+      '<span class="bp-badge">★ ' + (he ? "מקום אחד בלבד בכל יום" : "One spot per day") + '</span><span class="bp-svc-name">' + (he ? "מודליסט" : "Hair Model") + '</span><span class="bp-svc-desc">' +
+      (he ? "חוויית ספרות יצירתית: הספר בוחר את התספורת. בקשה באישור אישי." : "A creative session: the barber chooses the cut. By personal approval.") +
+      '</span><span class="bp-svc-meta"><span class="dur">' + (he ? "כשעתיים" : "About 2 h") + '</span><span class="price">' + (he ? "ללא עלות" : "Free") + "</span></span></span></a>";
   }
   function stepDay() {
     var L = t(), h = head(L.h2, L.h2s) + picked();
